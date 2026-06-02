@@ -1,0 +1,7 @@
+
+syntax="proto3";
+message User{
+    int32 age=1;
+    repeated string arr=2;
+    string stu=3;
+}
