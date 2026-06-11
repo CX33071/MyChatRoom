@@ -49,18 +49,39 @@ bool sendn(int fd, char* data, ssize_t len) {
         redis_.sync_commit();
         return true;
     }
-    bool Friend::cancleblock(std::string applyaccount, std::string appliedaccount){
+    int Friend::cancleblock(std::string applyaccount, std::string appliedaccount){
+        auto fut = redis_.exists({appliedaccount});
+        redis_.sync_commit();
+        int num = fut.get().as_integer();
+        if(!num){
+            return 1;
+        }
+        auto fut1 = redis_.exists({"block" + applyaccount});
+        int num1 = fut1.get().as_integer();
+        if(!num1){
+            return 2;
+        }
         redis_.srem("block" + applyaccount, {appliedaccount});
         redis_.srem("blocked" + appliedaccount, {applyaccount});
         redis_.sync_commit();
-        return true;
+        return 0;
     }
-    bool Friend::delfriend(std::string applyaccount, std::string appliedaccount){
+    int Friend::delfriend(std::string applyaccount, std::string appliedaccount){
+        auto fut = redis_.exists({appliedaccount});
+        int num = fut.get().as_integer();
+        if(!num){
+            return 1;
+        }
+        auto fut1 = redis_.exists({"friend" + appliedaccount});
+        int num1 = fut1.get().as_integer();
+        if(!num1){
+            return 2;
+        }
         redis_.srem("friend" + applyaccount, {appliedaccount});
         redis_.srem("friend" + appliedaccount, {applyaccount});
         redis_.sync_commit();
         std::cout << "好友删除成功!" << std::endl;
-        return true;
+        return 0;
     }
     bool Friend::isfriend(std::string applyaccount, std::string appliedaccount){
         auto fut = redis_.exists({"friend" + applyaccount});

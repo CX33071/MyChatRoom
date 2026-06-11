@@ -2,7 +2,8 @@
 #include "/home/cx33071/muduo-/base/logger.h"
 #include "/home/cx33071/muduo-/net/TcpServer.h"
 #include "friend.h"
-#include "account.h"
+#include "json.hpp"
+using json = nlohmann::json;
 std::mutex g_mutex;
 std::map<std::string, TcpConnectionPtr> clientmap;
 Verifycode verifycode;
@@ -22,134 +23,197 @@ void connectioncallback(const TcpConnectionPtr& conn) {
 }
 void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
     std::string message = buf->retrieveAllAsString();
-    size_t pos = message.find(':');
-    std::string cmd = message.substr(0, pos);
-    std::string data = message.substr(pos + 1);
-   if(cmd=="signup"){
-       size_t pos = data.find(' ');
-       std::string account = data.substr(0, pos);
-       std::string password = data.substr(pos + 1);
-       bool res=verifycode.signup(account,password);
-       if(res){
-           conn->send("注册成功");
-       }else{
-           conn->send("用户帐号已经存在，请重新输入账号");
-       }
-   }
-   if(cmd=="verifycode:"){
-       verifycode.addredis(data);
-   }
-   if(cmd=="verifycodesignin:"){
-       size_t pos = data.find(' ');
-       std::string account = data.substr(0, pos);
-       std::string code = data.substr(pos + 1);
-       bool res = verifycode.verify(account, code);
-       if(res){
-           conn->send("验证码正确，登录成功");
-       }else{
-           conn->send("验证码错误，登录失败");
-       }
-   }
-        if(cmd=="keysignin:"){
-            size_t pos = data.find(' ');
-            std::string account = data.substr(0, pos);
-            std::string password = data.substr(pos + 1);
-            bool res=verifycode.loginwithkey(account,password);
-        if(res){
-        conn->send("密码正确，登录成功!");
-        }else{
-        conn->send("密码错误，登录失败");
+    json j;
+    j = json::parse(message);
+    std::string cmd=j["cmd"];
+    if(cmd=="signup"){
+    std::string account=j["account"];
+    std::string password = j["password"];
+    bool res = verifycode.signup(account, password);
+    json j1;
+    j1["cmd"] = "signup_res";
+    if (res) {
+        j1["data"] = "成功登录";
+    } else {
+        j1["data"] = "该账号已被注册过，请重新尝试";
+    }
+    conn->send(j.dump());
+    }
+    if(cmd=="verifycode"){
+        std::string account = j["account"];
+        verifycode.addredis(account);
+    }
+    if(cmd=="verifycodesignin"){
+        std::string account = j["account"];
+        std::string code = j["code"];
+        bool res = verifycode.verify(account, code);
+        json j1;
+        j1["cmd"] = "codesignin_res";
+        if (res) {
+            j1["data"] = "验证码正确，登录成功";
+        } else {
+            j1["data"] = "验证码错误，登录失败";
         }
+        conn->send(j1.dump());
+    }
+    if(cmd=="keysignin"){
+        std::string account = j["account"];
+        std::string password = j["password"];
+        bool res = verifycode.verify(account,password);
+        json j1;
+        j1["cmd"] = "keysignin_res";
+        if (res) {
+            j1["data"] = "密码正确，登录成功";
+        } else {
+            j1["data"] = "密码错误，登录失败";
         }
-        if(cmd=="forgetkey:"){
-           bool res= verifycode.forgetkey(data);
-           if(res){
-               conn->send("该账号并未注册");
-           }else{
-               conn->send("密码已经发到您的邮箱");
-           }
+        conn->send(j1.dump());
+    }
+    if(cmd=="forgetkey"){
+        std::string account = j["account"];
+        bool res = verifycode.forgetkey(account);
+        json j1;
+        j1["cmd"] = "forgetkey_res";
+        if (res) {
+            j1["data"] = "该账号并未注册";
+        } else {
+            j1["data"] = "密码已经发到您的邮箱";
         }
-    if(cmd=="destory:"){
-        size_t pos = data.find(' ');
-        std::string account = data.substr(0, pos);
-        std::string password = data.substr(pos + 1);
-        bool res=verifycode.destroy(account,password);
-        if(res){
-            conn->send("密码错误，请重新输入");
-        }else{
-            conn->send("密码正确，注销成功");
+        conn->send(j1.dump());
+    }
+    if(cmd=="destory"){
+        std::string account = j["account"];
+        std::string password = j["password"];
+        bool res = verifycode.destroy(account, password);
+        json j1;
+        j1["cmd"] = "destory_res";
+        if (res) {
+            j1["data"] = "注销账号成功";
+        } else {
+            j1["data"] = "密码错误，注销失败";
+        }
+        conn->send(j1.dump());
+    }
+    if(cmd=="addfrined"){
+    std::string from=j["from"]; 
+    std::string to = j["to"];
+    bool res = F.addapply(from,to);
+    json j1;
+    j1["cmd"] = "addres";
+    if (res) {
+        j1["data"] = "好友申请已经发送";
+        auto it = clientmap.find(to);
+        json j2;
+        std::string s = "有一条来自" + from + "的好友申请";
+        j2["cmd"] = "addedres";
+        j2["message"]=s;
+        j2["target"] = to;
+        if (it != clientmap.end()) {
+            it->second->send(j2.dump());
+        }
+    } else {
+        j1["data"] = "要添加的好友账号不存在";
+    }
+    conn->send(j1.dump());
+    }
+    if(cmd=="agreefriend"){
+    std::string account=j["account"];
+    std::string friendaccount = j["friendaccount"];
+    F.agreeapply(account, friendaccount);
+    json j1, j2;
+    j1["cmd"] = "agreeres";
+    j2["cmd"] = "agreedres";
+    j1["data"] = "同意对方的好友申请";
+    j2["data"] = account + "已经同意你的好友申请";
+    conn->send(j1.dump());
+    auto it = clientmap.find(friendaccount);
+    if(it!=clientmap.end()){
+    it->second->send(j2.dump());
+}
+    }
+    if(cmd=="refusefriend"){
+        std::string account = j["account"];
+        std::string friendaccount = j["friendaccount"];
+        F.agreeapply(account, friendaccount);
+        json j1, j2;
+        j1["cmd"] = "refuseres";
+        j2["cmd"] = "refusedres";
+        j1["data"] = "已经拒绝对方的好友申请";
+        j2["data"] = account + "拒绝了你的好友申请";
+        auto it = clientmap.find(friendaccount);
+        if (it != clientmap.end()) {
+            it->second->send(j2.dump());
         }
     }
-    if(cmd=="addfriend:"){
-        size_t pos = data.find(' ');
-        std::string account = data.substr(0, pos);
-        std::string friendaccount = data.substr(pos + 1);
-        bool res=F.addapply(account, friendaccount);
-        if(res){
-            conn->send("好友申请已发送");
-            auto it = clientmap.find(friendaccount);
-            if (it != clientmap.end()) {
-                it->second->send("有一条来自" + account + "的好友申请");
-            }
-        }else{
-            conn->send("要添加的好友账号不存在");
-        }
-        }
-        if(cmd=="agreefriend:"){
-            size_t pos=data.find(' ');
-            std::string account = data.substr(0, pos);
-            std::string friendaccount = data.substr(pos + 1);
-            F.agreeapply(account, friendaccount);
-            conn->send("已同意对方的好友申请");
-            auto it = clientmap.find(friendaccount);
-            if(it!=clientmap.end()){
-                it->second->send(friendaccount + "已经同意你的好友申请");
-            }
-        }
-        if(cmd=="refusefriend"){
-            size_t pos = data.find(' ');
-            std::string account = data.substr(0, pos);
-            std::string friendaccount = data.substr(pos + 1);
-            F.refuseapply(account, friendaccount);
-            conn->send("");
-            auto it = clientmap.find(friendaccount);
-            if (it != clientmap.end()) {
-                it->second->send(friendaccount + "已经同意你的好友申请");
-            }
-        }
-    if(cmd=="friendlist:"){
-        std::vector<std::string> res = F.friendlist(data);
-        std::string list="好友列表:\n";
-        for (int i = 0; i < res.size();i++){
+    if(cmd=="friendlist"){
+        std::string account = j["account"];
+        std::vector<std::string> res = F.friendlist(account);
+        std::string list = "好友列表:\n";
+        for (int i = 0; i < res.size(); i++) {
             list += res[i];
             list += "\n";
         }
-        conn->send(list);
+        json j1;
+        j1["cmd"] = "friendlistres";
+        j1["data"] = list;
+        conn->send(j1.dump());
     }
-    if(cmd=="chat:"){
-        size_t pos = data.find(' ');
-        std::string account = data.substr(0, pos);
-        size_t p=data.find(':');
-        std::string friendaccount = data.substr(pos + 1,p);
-        std::string content = data.substr(p + 1);
-        auto it = clientmap.find(friendaccount);
-        if(it!=clientmap.end()){
-            it->second->send(content);
+    if(cmd=="chat"){
+std::string account= j["account"];
+std::string target = j["target"];
+std::string message = j["message"];
+json j1, j2;
+j1["cmd"] = "chatres";
+j2["cmd"] = "chatedres";
+j1["data"] = "已给" + target + "发送消息";
+auto it = clientmap.find(target);
+if(it!=clientmap.end()){
+    j2["data"] = "收到来自" + account + "的消息:" + message;
+}
+conn->send(j1.dump());
+it->second->send(j2.dump());
+    }
+    if(cmd=="block"){
+std::string account=j["account"];
+std::string target=j["target"];
+bool res=F.block(account,target);
+json j1;
+j1["cmd"] = "blockres";
+if (res) {
+    j1["data"] = "已经拉黑" + target;
+} else {
+    j1["data"] = "拉黑失败，该用户不存在";
+}
+conn->send(j1.dump());
+    }
+    if(cmd=="cancleblock"){
+        std::string account=j["cancleaccount"];
+        std::string target=j["target"];
+        int res = F.cancleblock(account, target);
+        json j1;
+        j1["cmd"] = "cancleres";
+        if (res == 0) {
+            j1["data"] = "已成功取消拉黑";
+        } else if (res == 1) {
+            j1["data"] = "目标用户不存在";
+        } else {
+            j1["data"] = "目标用户本身并不在拉黑名单";
         }
     }
-    if(cmd=="block:"){
-        size_t pos = data.find(' ');
-        std::string account = data.substr(0, pos);
-        std::string blockedaccount=data.substr(pos+1);
-        F.block(account, blockedaccount);
-        conn->send("该用户已经拉黑");
+    if(cmd=="delfriend"){
+    std::string account=j["account"];
+    std::string target=j["target"];
+    int res=F.delfriend(account,target);
+    json j1;
+    j1["cmd"] = "delfriendres";
+    if (res == 1) {
+        j1["data"] = "目标用户根本不存在";
+    } else if (res == 2) {
+        j1["data"] = "目标用户还不是好友";
+    } else {
+        j1["data"] = "已删除目标用户好友";
     }
-    if(cmd=="delfriend:"){
-        size_t pos = data.find(' ');
-        std::string account = data.substr(0, pos);
-        std::string delfriend = data.substr(pos + 1);
-        F.delfriend(account,delfriend);
-        conn->send("该好友已经删除");
+    conn->send(j1.dump());
     }
 }
 int main(){

@@ -1,6 +1,8 @@
-#include "/home/cx33071/muduo-/net/TcpClient.h"
-#include <condition_variable>
 #include <termios.h>
+#include <condition_variable>
+#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "json.hpp"
+using json = nlohmann::json;
 TcpClient::TcpConnectionPtr g_conn;
 std::condition_variable g_cv;
 std::mutex g_mutex;
@@ -32,7 +34,31 @@ void connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
 }
 void messagecallback(const TcpClient::TcpConnectionPtr&conn,Buffer*buf,Timestamp){
     std::string message = buf->retrieveAllAsString();
-    std::cout << "收到消息:" << message << std::endl;
+    json j;
+    j = json::parse(message);
+    std::string cmd=j["cmd"];
+    if(cmd=="addedres"){
+std::string message=j["message"];
+std::cout << message << std::endl;
+std::cout << "请选择同意好友申请y/拒绝好友申请n:";
+std::string target = j["target"];
+char c;
+std::cin>>c;
+json j1;
+if (c == 'y') {
+    j1["cmd"]="agreefriend";
+    j1["account"] = account;
+    j1["target"] = target;
+} else {
+    j1["cmd"] = "refusefriend";
+    j1["account"] = account;
+    j1["target"] = target;
+}
+conn->send(j1.dump());
+    }else{
+        std::string data = j["data"];
+        std::cout << data << std::endl;       
+    }
 }
 void main_menu(){
     std::cout << "欢迎使用MyChatRoom!" << std::endl;
@@ -59,6 +85,7 @@ void friendfunction(){
     while(is_login){
         friend_menu();
         int num;
+        json j1;
         std::cin >> num;
         std::string frienduser;
         std::string servermsg;
@@ -67,33 +94,46 @@ void friendfunction(){
             case 1:
                 std::cout << "请输入要添加好友的账号:";
                 std::getline(std::cin, frienduser);
-                g_conn->send("addfriend:" + account + " " + frienduser);
+                j1["cmd"] = "addfriend";
+                j1["from"] = account;
+                j1["to"] = frienduser;
+                g_conn->send(j1.dump());
                 break;
             case 2:
-                g_conn->send("friendlist:" + account);
+                j1["cmd"] = "friendlist";
+                j1["account"] = account;
+                g_conn->send(j1.dump());
                 break;
             case 3:
                 std::cout << "请输入要私聊的好友账号:";
                 std::cin >> frienduser;
                 std::cout << "请输入要发送的信息:";
                 std::getline(std::cin, chatmsg);
-                g_conn->send("chat:" + account + " " + frienduser + ":" +
-                             chatmsg);
+                j1["cmd"] = "chat";
+                j1["account"] = account;
+                j1["target"] = frienduser;
+                j1["message"] = chatmsg;
+                g_conn->send(j1.dump());
                 break;
             case 4:
                 std::cout << "请输入要拉黑的好友账号:";
                 std::cin >> frienduser;
-                g_conn->send("block:" + account + " " + frienduser);
+                j1["cmd"] = "block";
+                j1["account"] = account;
+                j1["target"] = frienduser;
+                g_conn->send(j1.dump());
                 break;
             case 5:
                 std::cout << "请输入要删除的好友账号:";
                 std::cin >> frienduser;
-                g_conn->send("delfriend:" + account + " " + frienduser);
+                j1["cmd"] = "delfriend";
+                j1["account"] = account;
+                j1["target"] = frienduser;
+                g_conn->send(j1.dump());
                 break;
             case 0:
                 is_login = false;
                 break;
-            default:
         }
     }
 }
@@ -104,32 +144,49 @@ void mainfunction(){
         std::cin >> choice;
         std::string password;
         std::string verifycode;
-        std::string servermsg; 
+        std::string servermsg;
+        json j;
         switch (choice) {
             case 1:
                 std::cout << "请输入你的qq邮箱:";
                 std::cin >> account;
                 std::cout<<"请输入你的密码:";
                 password = cinkey();
-                g_conn->send("signup:" + account + " " + password);
+                j["cmd"] == "signup";
+                j["account"]=account;
+                j["password"] = password;
+                g_conn->send(j.dump());
             case 2:
-                g_conn->send("verifycode:" + account);
+                j["cmd"] = "verifycode";
+                j["account"] = account;
+                g_conn->send(j.dump());
                 std::cout << "验证码已经发送到您的qq邮箱\n";
                 std::cout << "请输入验证码:";
                 std::cin >> verifycode;
-                g_conn->send("verifycodesignin:" + account + verifycode);
+                j["cmd"]="verifycodesignin";
+                j["account"] = account;
+                j["code"] = verifycode;
+                g_conn->send(j.dump());
                 friendfunction();
             case 3:
                 std::cout << "请输入您的密码:";
                 password = cinkey();
-                g_conn->send("keysignin:" + account + password);
+                j["cmd"]="keysignin";
+                j["account"] = account;
+                j["password"] = password;
+                g_conn->send(j.dump());
                 friendfunction();
             case 4:
-                g_conn->send("forgetkey:" + account);
+                j["cmd"] = "forgetkey";
+                j["account"] = account;
+                g_conn->send(j.dump());
             case 5:
                 std::cout << "请输入您的密码:";
                 std::getline(std::cin, password);
-                g_conn->send("destory:" + account+" "+password);
+                j["cmd"]="destory";
+                j["account"] = account;
+                j["password"] = password;
+                g_conn->send(j.dump());
             case 0:
                 exit(0);
             default:
