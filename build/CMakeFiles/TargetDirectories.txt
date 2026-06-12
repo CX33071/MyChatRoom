@@ -1,0 +1,4 @@
+/home/cx33071/MyChatRoom/build/CMakeFiles/server.dir
+/home/cx33071/MyChatRoom/build/CMakeFiles/client.dir
+/home/cx33071/MyChatRoom/build/CMakeFiles/edit_cache.dir
+/home/cx33071/MyChatRoom/build/CMakeFiles/rebuild_cache.dir

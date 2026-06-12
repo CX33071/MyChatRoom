@@ -337,7 +337,7 @@ int main(){
     server.setConnectionCallback(connectioncallback);
     LOG_INFO << "服务器启动";
     server.start();
-    int timeout;
+    int timeout=0;
     loop.loop(timeout);
     return 0;
 }

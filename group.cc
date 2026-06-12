@@ -72,4 +72,5 @@ bool Group::groupchat(std::string groupname,
                     std::string account,
                     std::string msg){
     redis_.rpush(groupname + "msg", {account + ":" + msg});
+    return true;
 }

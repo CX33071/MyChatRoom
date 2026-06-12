@@ -175,6 +175,7 @@ void friendfunction(){
                 j1["groupname"] = groupname;
                 j1["target"]=frienduser;
                 g_conn->send(j1.dump());
+                break;
             case 8:
                 std::cout << "请输入要删除的群聊的名称:";
                 std::getline(std::cin, groupname);
@@ -182,6 +183,7 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["groupname"] = groupname;
                 g_conn->send(j1.dump());
+                break;
             case 9:
                 std::cout << "请输入要发消息的群聊名称:";
                 std::getline(std::cin,groupmsg);
@@ -192,6 +194,7 @@ void friendfunction(){
                 j1["groupname"] = groupname;
                 j1["groupmsg"] = groupmsg;
                 g_conn->send(j1.dump());
+                break;
             case 0:
                 is_login = false;
                 break;
@@ -213,10 +216,11 @@ void mainfunction(){
                 std::cin >> account;
                 std::cout<<"请输入你的密码:";
                 password = cinkey();
-                j["cmd"] == "signup";
+                j["cmd"] = "signup";
                 j["account"]=account;
                 j["password"] = password;
                 g_conn->send(j.dump());
+                break;
             case 2:
                 j["cmd"] = "verifycode";
                 j["account"] = account;
@@ -229,6 +233,7 @@ void mainfunction(){
                 j["code"] = verifycode;
                 g_conn->send(j.dump());
                 friendfunction();
+                break;
             case 3:
                 std::cout << "请输入您的密码:";
                 password = cinkey();
@@ -237,10 +242,12 @@ void mainfunction(){
                 j["password"] = password;
                 g_conn->send(j.dump());
                 friendfunction();
+                break;
             case 4:
                 j["cmd"] = "forgetkey";
                 j["account"] = account;
                 g_conn->send(j.dump());
+                break;
             case 5:
                 std::cout << "请输入您的密码:";
                 std::getline(std::cin, password);
@@ -248,16 +255,16 @@ void mainfunction(){
                 j["account"] = account;
                 j["password"] = password;
                 g_conn->send(j.dump());
+                break;
             case 0:
                 exit(0);
             default:
                 std::cout << "请输入有效选项!" << std::endl;
+                break;
         };
     }
 }
 int main(int argc,char*argv[]){
-    Logger logger;
-    logger.setLogLevel(Logger::INFO);
     EventLoop loop;
     InetAddress addr(argv[1], 8888);
     TcpClient client(&loop, addr);
@@ -266,7 +273,7 @@ int main(int argc,char*argv[]){
     client.connect();
     std::thread t(mainfunction);
     t.detach();
-    int timeout;
+    int timeout=0;
     loop.loop(timeout);
     return 0;
 }
