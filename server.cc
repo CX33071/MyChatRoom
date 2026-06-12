@@ -3,11 +3,16 @@
 #include "/home/cx33071/muduo-/net/TcpServer.h"
 #include "friend.h"
 #include "json.hpp"
+#include "group.h"
+#include <unordered_map>
+#include <unordered_set>
 using json = nlohmann::json;
 std::mutex g_mutex;
 std::map<std::string, TcpConnectionPtr> clientmap;
 Verifycode verifycode;
 Friend F;
+Group G;
+std::unordered_map<std::string, std::unordered_set<std::string>> group_map;
 void connectioncallback(const TcpConnectionPtr& conn) {
     if(conn->connected()){
         LOG_INFO << "有一个客户端连接成功:" << conn->peerAddress().toIpPort();
@@ -215,6 +220,111 @@ conn->send(j1.dump());
     }
     conn->send(j1.dump());
     }
+    if(cmd=="creategroup"){
+    std::string groupname=j["groupname"];
+    std::string account=j["account"];
+    std::string res = G.creategroup(account,groupname);
+    json j1;
+    j1["cmd"] = "creategroupres";
+    j1["data"] = "群聊已成功创建:"+res;
+    conn->send(j1.dump());
+    }
+    if(cmd=="invite"){
+        std::string groupname=j["groupname"];
+        std::string account=j["account"];
+        std::string target=j["target"];
+        int res=G.invite(account,target,groupname);
+        json j1, j2;
+        j1["cmd"] = "inviteres";
+        if(res==0){
+        j1["data"] = "邀请入群消息已经发送";
+            auto it = clientmap.find(target);
+            json j2;
+            std::string s = "有一条来自" + account + "加入群:"+groupname+"的申请";
+            j2["cmd"] = "invitedres";
+            j2["data"] = s;
+            j2["groupname"] = groupname;
+            j2["account"] = account;
+            if (it != clientmap.end()) {
+                it->second->send(j2.dump());
+            }
+        }else if(res==1){
+        j1["data"] = "要邀请的好友账号不存在";
+        }else{
+            j1["data"] = "要邀请进群的好友已经在群里！";
+        }
+        conn->send(j1.dump());
+    }
+    if(cmd=="agreejoin"){
+        std::string account = j["account"];
+        std::string groupname = j["groupname"];
+        G.agreejoin(account, groupname);
+        json j1, j2;
+        j1["cmd"] = "agreegroupres";
+        j2["cmd"] = "agreedgroupres";
+        j1["data"] = "同意对方的邀请入群申请";
+        j2["data"] = account + "已经同意你的邀请入群申请";
+        conn->send(j1.dump());
+        auto it = clientmap.find(account);
+        if (it != clientmap.end()) {
+            it->second->send(j2.dump());
+        }
+    }
+    if(cmd=="refusegroup"){
+        std::string account = j["account"];
+        std::string target=j["target"];
+        std::string groupname = j["groupname"];
+        G.refusejoin(account,target,groupname);
+        json j1, j2;
+        j1["cmd"]="refusegroupres";
+        j2["cmd"] = "refusedgroupres";
+        j1["data"] = "已拒绝对方的入群邀请";
+        j2["data"]=account+"拒绝了你的邀请入群申请";
+        conn->send(j1.dump());
+        auto it=clientmap.find(target);
+        if(it!=clientmap.end()){
+            it->second->send(j2.dump());
+        }
+    }
+    if(cmd=="delgroup"){
+std::string account=j["account"];
+std::string groupname = j["groupname"];
+int res = G.delgroup(groupname, account);
+json j1;
+j1["cmd"] = "delgroupres";
+if (res==0) {
+    j1["data"] = "删除群聊成功";
+}else if(res==1){
+    j1["data"] = "该群聊并不存在";
+}else{
+    j1["data"] = "你不是该群群主，没有解散群聊的权限!";
+}
+conn->send(j1.dump());
+    }
+if (cmd == "groupchat") {
+    std::string account=j["account"];
+    std::string msg = j["groupmsg"];
+    std::string groupname = j["groupname"];
+    json j1;
+    j1["cmd"] = "groupchatres";
+    auto it = group_map.find(groupname);
+    std::string s =
+        "收到来自" + groupname + "的成员:" + account + "发来的消息:" + msg;
+    if (it == group_map.end()) {
+        j1["data"] = "该群并不存在";
+    } else {
+        bool res = G.groupchat(groupname, account, msg);
+        j1["data"] = "消息已发送";
+        for (auto it1 : it->second) {
+            auto it2 = clientmap.find(it1);
+            if(it2!=clientmap.end()){
+                json j2{{"cmd", "groupchatedres"}, {"data", s}};
+                it2->second->send(j2.dump());
+            }
+        }
+    }
+    conn->send(j1.dump());
+}
 }
 int main(){
     Logger logger;

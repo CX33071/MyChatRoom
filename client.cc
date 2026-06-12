@@ -42,10 +42,10 @@ std::string message=j["message"];
 std::cout << message << std::endl;
 std::cout << "请选择同意好友申请y/拒绝好友申请n:";
 std::string target = j["target"];
-char c;
-std::cin>>c;
+std::string c;
+std::getline(std::cin, c);
 json j1;
-if (c == 'y') {
+if (c == "y") {
     j1["cmd"]="agreefriend";
     j1["account"] = account;
     j1["target"] = target;
@@ -55,9 +55,29 @@ if (c == 'y') {
     j1["target"] = target;
 }
 conn->send(j1.dump());
-    }else{
+    }else if(cmd=="invitedres"){
+        std::string data=j["data"];
+        std::string target = j["account"];
+        std::string groupname = j["groupname"];
+        std::cout << data << std::endl;
+        std::cout << "请选择同意加入群聊y/拒绝加入群聊n:";
+        std::string c;
+        std::getline(std::cin, c);
+        json j1;
+        if(c=="y"){
+            j1["cmd"] = "agreejoin";
+            j1["account"] = account;
+            j1["groupname"] = groupname;
+        }else{
+            j1["cmd"]="refusegroup";
+            j1["target"] = target;
+            j1["account"] = account;
+            j1["groupname"] = groupname;
+        }
+        conn->send(j1.dump());
+    } else {
         std::string data = j["data"];
-        std::cout << data << std::endl;       
+        std::cout << data << std::endl;
     }
 }
 void main_menu(){
@@ -78,6 +98,10 @@ void friend_menu(){
     std::cout << "3.私聊\n";
     std::cout << "4.拉黑好友\n";
     std::cout << "5.删除好友\n";
+    std::cout<<"6.创建群聊\n";
+    std::cout<<"7.邀请好友加入群聊\n";
+    std::cout << "8.删除群聊\n";
+    std::cout << "9.群聊天\n";
     std::cout << "0. 返回主菜单\n";
     std::cout << "请选择:";
 }
@@ -90,6 +114,8 @@ void friendfunction(){
         std::string frienduser;
         std::string servermsg;
         std::string chatmsg;
+        std::string groupname;
+        std::string groupmsg;
         switch (num) {
             case 1:
                 std::cout << "请输入要添加好友的账号:";
@@ -131,6 +157,41 @@ void friendfunction(){
                 j1["target"] = frienduser;
                 g_conn->send(j1.dump());
                 break;
+            case 6:
+                std::cout<<"请输入要创建的群聊的名字:";
+                std::getline(std::cin, groupname);
+                j1["cmd"] = "creategroup";
+                j1["account"] = account;
+                j1["groupname"] = groupname;
+                g_conn->send(j1.dump());
+                break;
+            case 7:
+                std::cout << "请输入要邀请好友加入的群聊名称:";
+                std::getline(std::cin, groupname);
+                std::cout << "请输入要邀请哪位好友加入该群聊:";
+                std::getline(std::cin, frienduser);
+                j1["cmd"]="invite";
+                j1["account"] = account;
+                j1["groupname"] = groupname;
+                j1["target"]=frienduser;
+                g_conn->send(j1.dump());
+            case 8:
+                std::cout << "请输入要删除的群聊的名称:";
+                std::getline(std::cin, groupname);
+                j1["cmd"]="delgroup";
+                j1["account"] = account;
+                j1["groupname"] = groupname;
+                g_conn->send(j1.dump());
+            case 9:
+                std::cout << "请输入要发消息的群聊名称:";
+                std::getline(std::cin,groupmsg);
+                std::cout << "请输入要发送的消息:";
+                std::getline(std::cin, groupmsg);
+                j1["cmd"] = "groupchat";
+                j1["account"] = account;
+                j1["groupname"] = groupname;
+                j1["groupmsg"] = groupmsg;
+                g_conn->send(j1.dump());
             case 0:
                 is_login = false;
                 break;
