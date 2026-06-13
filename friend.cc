@@ -15,7 +15,7 @@ bool sendn(int fd, char* data, ssize_t len) {
         redis_.sync_commit();
      }
     bool Friend::addapply(std::string applyaccount,std::string appliedaccount){
-        auto fut1 = redis_.exists({applyaccount});
+        auto fut1 = redis_.exists({appliedaccount});
         redis_.sync_commit();
 
         int num1 = fut1.get().as_integer();

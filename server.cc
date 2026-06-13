@@ -57,6 +57,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         if (res) {
             j1["code"] = "1";
             j1["data"] = "验证码正确，登录成功";
+            clientmap[account] = conn;
         } else {
             j1["code"] = "2";
             j1["data"] = "验证码错误，登录失败";
@@ -72,10 +73,11 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         if (res==0) {
             j1["code"] = "1";
             j1["data"] = "密码正确，登录成功";
-        } else if(res==2) {
+            clientmap[account] = conn;
+        } else if (res == 2) {
             j1["code"] = "2";
             j1["data"] = "密码错误，登录失败";
-        }else{
+        } else {
             j1["code"] = "2";
             j1["data"] = "该账号并不存在";
         }
