@@ -21,13 +21,11 @@ std::string cinkey() {
     return key;
 }
 void connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
-    if (conn->connected()) {
-        LOG_INFO << "成功连接服务器";
+    if (conn->connected()) {        
         g_conn = conn;
         connok = true;
         g_cv.notify_all();
-    } else {
-        LOG_INFO << "与服务器断开连接";
+    } else {        
         g_conn.reset();
         connok = false;
     }
@@ -43,16 +41,16 @@ std::cout << message << std::endl;
 std::cout << "请选择同意好友申请y/拒绝好友申请n:";
 std::string target = j["target"];
 std::string c;
-std::getline(std::cin, c);
+std::getline(std::cin >> std::ws, c);
 json j1;
 if (c == "y") {
     j1["cmd"]="agreefriend";
     j1["account"] = account;
-    j1["target"] = target;
+    j1["friendaccount"] = target;
 } else {
     j1["cmd"] = "refusefriend";
     j1["account"] = account;
-    j1["target"] = target;
+    j1["friendaccount"] = target;
 }
 conn->send(j1.dump());
     }else if(cmd=="invitedres"){
@@ -62,7 +60,7 @@ conn->send(j1.dump());
         std::cout << data << std::endl;
         std::cout << "请选择同意加入群聊y/拒绝加入群聊n:";
         std::string c;
-        std::getline(std::cin, c);
+        std::getline(std::cin >> std::ws, c);
         json j1;
         if(c=="y"){
             j1["cmd"] = "agreejoin";
@@ -75,12 +73,26 @@ conn->send(j1.dump());
             j1["groupname"] = groupname;
         }
         conn->send(j1.dump());
-    } else {
-        std::string data = j["data"];
-        std::cout << data << std::endl;
+    } else if (cmd == "codesignin_res"){
+        if(j["code"]=="1"){
+            is_login = true;
+        }else{
+            is_login = false;
+        }
+    } else if (cmd == "keysignin"){
+        if (j["code"] == "1") {
+            is_login = true;
+        } else {
+            is_login = false;
+        }
     }
+        else {
+            std::string data = j["data"];
+            std::cout << data << std::endl;
+        }
 }
 void main_menu(){
+    std::cout << "\n";
     std::cout << "欢迎使用MyChatRoom!" << std::endl;
     std::cout << "    用户管理\n";
     std::cout << "1.注册\n";
@@ -119,7 +131,7 @@ void friendfunction(){
         switch (num) {
             case 1:
                 std::cout << "请输入要添加好友的账号:";
-                std::getline(std::cin, frienduser);
+                std::getline(std::cin >> std::ws, frienduser);
                 j1["cmd"] = "addfriend";
                 j1["from"] = account;
                 j1["to"] = frienduser;
@@ -134,7 +146,7 @@ void friendfunction(){
                 std::cout << "请输入要私聊的好友账号:";
                 std::cin >> frienduser;
                 std::cout << "请输入要发送的信息:";
-                std::getline(std::cin, chatmsg);
+                std::getline(std::cin >> std::ws, chatmsg);
                 j1["cmd"] = "chat";
                 j1["account"] = account;
                 j1["target"] = frienduser;
@@ -159,7 +171,7 @@ void friendfunction(){
                 break;
             case 6:
                 std::cout<<"请输入要创建的群聊的名字:";
-                std::getline(std::cin, groupname);
+                std::getline(std::cin >> std::ws, groupname);
                 j1["cmd"] = "creategroup";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
@@ -167,9 +179,9 @@ void friendfunction(){
                 break;
             case 7:
                 std::cout << "请输入要邀请好友加入的群聊名称:";
-                std::getline(std::cin, groupname);
+                std::getline(std::cin >> std::ws, groupname);
                 std::cout << "请输入要邀请哪位好友加入该群聊:";
-                std::getline(std::cin, frienduser);
+                std::getline(std::cin >> std::ws, frienduser);
                 j1["cmd"]="invite";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
@@ -178,7 +190,7 @@ void friendfunction(){
                 break;
             case 8:
                 std::cout << "请输入要删除的群聊的名称:";
-                std::getline(std::cin, groupname);
+                std::getline(std::cin >> std::ws, groupname);
                 j1["cmd"]="delgroup";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
@@ -188,7 +200,7 @@ void friendfunction(){
                 std::cout << "请输入要发消息的群聊名称:";
                 std::getline(std::cin,groupmsg);
                 std::cout << "请输入要发送的消息:";
-                std::getline(std::cin, groupmsg);
+                std::getline(std::cin >> std::ws, groupmsg);
                 j1["cmd"] = "groupchat";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
@@ -222,6 +234,8 @@ void mainfunction(){
                 g_conn->send(j.dump());
                 break;
             case 2:
+                std::cout << "请先输入你的qq邮箱:";
+                std::getline(std::cin >> std::ws, account);
                 j["cmd"] = "verifycode";
                 j["account"] = account;
                 g_conn->send(j.dump());
@@ -232,16 +246,23 @@ void mainfunction(){
                 j["account"] = account;
                 j["code"] = verifycode;
                 g_conn->send(j.dump());
-                friendfunction();
+                sleep(1);
+                if (is_login) {
+                    friendfunction();
+                }
                 break;
             case 3:
+                std::cout << "请先输入你的qq邮箱:";
+                std::getline(std::cin >> std::ws, account);
                 std::cout << "请输入您的密码:";
                 password = cinkey();
                 j["cmd"]="keysignin";
                 j["account"] = account;
                 j["password"] = password;
                 g_conn->send(j.dump());
-                friendfunction();
+                if (is_login) {
+                    friendfunction();
+                }
                 break;
             case 4:
                 j["cmd"] = "forgetkey";
@@ -250,7 +271,7 @@ void mainfunction(){
                 break;
             case 5:
                 std::cout << "请输入您的密码:";
-                std::getline(std::cin, password);
+                std::getline(std::cin >> std::ws, password);
                 j["cmd"]="destory";
                 j["account"] = account;
                 j["password"] = password;
@@ -273,7 +294,7 @@ int main(int argc,char*argv[]){
     client.connect();
     std::thread t(mainfunction);
     t.detach();
-    int timeout=0;
+    int timeout=-1;
     loop.loop(timeout);
     return 0;
 }

@@ -42,7 +42,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
     } else {
         j1["data"] = "该账号已被注册过，请重新尝试";
     }
-    conn->send(j.dump());
+    conn->send(j1.dump());
     }
     if(cmd=="verifycode"){
         std::string account = j["account"];
@@ -55,8 +55,10 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         json j1;
         j1["cmd"] = "codesignin_res";
         if (res) {
+            j1["code"] = "1";
             j1["data"] = "验证码正确，登录成功";
         } else {
+            j1["code"] = "2";
             j1["data"] = "验证码错误，登录失败";
         }
         conn->send(j1.dump());
@@ -64,13 +66,18 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
     if(cmd=="keysignin"){
         std::string account = j["account"];
         std::string password = j["password"];
-        bool res = verifycode.verify(account,password);
+        int res = verifycode.loginwithkey(account,password);
         json j1;
         j1["cmd"] = "keysignin_res";
-        if (res) {
+        if (res==0) {
+            j1["code"] = "1";
             j1["data"] = "密码正确，登录成功";
-        } else {
+        } else if(res==2) {
+            j1["code"] = "2";
             j1["data"] = "密码错误，登录失败";
+        }else{
+            j1["code"] = "2";
+            j1["data"] = "该账号并不存在";
         }
         conn->send(j1.dump());
     }
@@ -99,7 +106,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         }
         conn->send(j1.dump());
     }
-    if(cmd=="addfrined"){
+    if(cmd=="addfriend"){
     std::string from=j["from"]; 
     std::string to = j["to"];
     bool res = F.addapply(from,to);
@@ -139,7 +146,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
     if(cmd=="refusefriend"){
         std::string account = j["account"];
         std::string friendaccount = j["friendaccount"];
-        F.agreeapply(account, friendaccount);
+        F.refuseapply(account, friendaccount);
         json j1, j2;
         j1["cmd"] = "refuseres";
         j2["cmd"] = "refusedres";
@@ -149,6 +156,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         if (it != clientmap.end()) {
             it->second->send(j2.dump());
         }
+        conn->send(j1.dump());
     }
     if(cmd=="friendlist"){
         std::string account = j["account"];
@@ -174,9 +182,12 @@ j1["data"] = "已给" + target + "发送消息";
 auto it = clientmap.find(target);
 if(it!=clientmap.end()){
     j2["data"] = "收到来自" + account + "的消息:" + message;
+    it->second->send(j2.dump());
+    conn->send(j1.dump());
+} else {
+    j1["data"] = "对方当前不在线";
+    conn->send(j1.dump());
 }
-conn->send(j1.dump());
-it->second->send(j2.dump());
     }
     if(cmd=="block"){
 std::string account=j["account"];
@@ -204,6 +215,7 @@ conn->send(j1.dump());
         } else {
             j1["data"] = "目标用户本身并不在拉黑名单";
         }
+        conn->send(j1.dump());
     }
     if(cmd=="delfriend"){
     std::string account=j["account"];
@@ -337,7 +349,7 @@ int main(){
     server.setConnectionCallback(connectioncallback);
     LOG_INFO << "服务器启动";
     server.start();
-    int timeout=0;
+    int timeout=-1;
     loop.loop(timeout);
     return 0;
 }

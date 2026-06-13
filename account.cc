@@ -79,20 +79,19 @@ bool Verifycode::verify(std::string account,std::string code) {
     }
     return false;
 }
-bool Verifycode::loginwithkey(std::string account,std::string password) {
+int Verifycode::loginwithkey(std::string account,std::string password) {
     auto fut = redis_.get(account);
     redis_.sync_commit();
     auto reply = fut.get();
     if (!reply.is_string()) {
-        // std::cout << "该账号不存在，请先注册" << std::endl;
-        exit(1);
+        return 1;
     }
     std::string hashkey = reply.as_string();
     if(!checkkey(password, hashkey)) {
-        return false;
+        return 1;
     }
     redis_.set("online" + account, "1");
-    return true;
+    return 0;
 }
 bool Verifycode::forgetkey(std::string account) {
     auto fut = redis_.exists({account});

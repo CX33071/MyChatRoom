@@ -25,7 +25,7 @@ class Verifycode {
     void addredis(const std::string& account) ;
     bool signup(std::string account,std::string password) ;
     bool verify(std::string account,std::string code) ;
-    bool loginwithkey(std::string account, std::string password);
+    int loginwithkey(std::string account, std::string password);
     bool  loginwithcode(std::string account,std::string code) ;
     bool forgetkey(std::string account) ;
     bool destroy(std::string account,std::string password);
