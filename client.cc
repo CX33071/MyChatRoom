@@ -116,7 +116,12 @@ void friendfunction(){
         friend_menu();
         int num;
         json j1;
-        std::cin >> num;
+        std::string input;
+        std::getline(std::cin >> std::ws, input);
+        if (input.find_first_not_of(" \t\r\n") == std::string::npos) {
+            continue;
+        }
+        num = std::stoi(input);
         std::string frienduser;
         std::string servermsg;
         std::string chatmsg;
@@ -209,7 +214,7 @@ void friendfunction(){
                 break;
             case 9:
                 std::cout << "请输入要发消息的群聊名称:";
-                std::getline(std::cin,groupmsg);
+                std::getline(std::cin>>std::ws,groupmsg);
                 std::cout << "请输入要发送的消息:";
                 std::getline(std::cin >> std::ws, groupmsg);
                 j1["cmd"] = "groupchat";
@@ -230,6 +235,7 @@ void mainfunction(){
     while(1){
         if(is_friendres){
             std::string c;
+
             std::getline(std::cin >> std::ws, c);
             json j1;
             if (c == "y") {
@@ -247,8 +253,12 @@ void mainfunction(){
         main_menu();
         
         int choice;
-        std::cin >> choice;
-        
+        std::string input;
+        std::getline(std::cin >> std::ws, input);
+        if (input.find_first_not_of(" \t\r\n") == std::string::npos) {
+            continue;
+        }
+        choice = std::stoi(input);
         std::string password;
         std::string verifycode;
         std::string servermsg;

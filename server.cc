@@ -79,15 +79,15 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             j1["cmd"] = "keysignin_res";
             if (res == 0) {
                 j1["code"] = "1";
-                j1["data"] = "密码正确，登录成功";
+                j1["data"] = "\n密码正确，登录成功";
                 std::lock_guard<std::mutex> lock(g_mutex);
                 clientmap[account] = conn;
             } else if (res == 2) {
                 j1["code"] = "2";
-                j1["data"] = "密码错误，登录失败";
+                j1["data"] = "\n密码错误，登录失败";
             } else {
                 j1["code"] = "2";
-                j1["data"] = "该账号并不存在";
+                j1["data"] = "\n该账号并不存在";
             }
             conn->send(j1.dump() + '\n');
         }
@@ -97,9 +97,9 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1;
             j1["cmd"] = "forgetkey_res";
             if (res) {
-                j1["data"] = "该账号并未注册";
+                j1["data"] = "\n该账号并未注册";
             } else {
-                j1["data"] = "密码已经发到您的邮箱";
+                j1["data"] = "\n密码已经发到您的邮箱";
             }
             conn->send(j1.dump() + '\n');
         }
@@ -110,9 +110,9 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1;
             j1["cmd"] = "destory_res";
             if (res) {
-                j1["data"] = "注销账号成功";
+                j1["data"] = "\n注销账号成功";
             } else {
-                j1["data"] = "密码错误，注销失败";
+                j1["data"] = "\n密码错误，注销失败";
             }
             conn->send(j1.dump() + '\n');
         }
