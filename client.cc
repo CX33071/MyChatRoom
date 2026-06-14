@@ -8,6 +8,7 @@ std::condition_variable g_cv;
 std::mutex g_mutex;
 bool connok = false;
 bool is_login = false;
+bool recivemsg = false;
 std::string account;
 std::string cinkey() {
     struct termios oldt, newt;
@@ -53,7 +54,8 @@ if (c == "y") {
     j1["friendaccount"] = target;
 }
 conn->send(j1.dump());
-    }else if(cmd=="invitedres"){
+recivemsg = true;
+    } else if (cmd == "invitedres") {
         std::string data=j["data"];
         std::string target = j["account"];
         std::string groupname = j["groupname"];
@@ -73,23 +75,30 @@ conn->send(j1.dump());
             j1["groupname"] = groupname;
         }
         conn->send(j1.dump());
-    } else if (cmd == "codesignin_res"){
+        recivemsg = true;
+    } else if (cmd == "codesignin_res") {
         if(j["code"]=="1"){
             is_login = true;
         }else{
             is_login = false;
         }
-    } else if (cmd == "keysignin"){
+        std::string data = j["data"];
+        std::cout << data;
+        recivemsg = true;
+    } else if (cmd == "keysignin_res") {
         if (j["code"] == "1") {
             is_login = true;
         } else {
             is_login = false;
         }
+        std::string data=j["data"];
+        std::cout << data;
+        recivemsg = true;
+    } else {
+        std::string data = j["data"];
+        std::cout << data << std::endl;
+        recivemsg = true;
     }
-        else {
-            std::string data = j["data"];
-            std::cout << data << std::endl;
-        }
 }
 void main_menu(){
     std::cout << "\n";
@@ -104,7 +113,7 @@ void main_menu(){
     std::cout << "请选择:";
 }
 void friend_menu(){
-    std::cout << "    好友管理\n";
+    std::cout << "\n好友管理\n";
     std::cout << "1.添加好友\n";
     std::cout << "2.好友列表\n";
     std::cout << "3.私聊\n";
@@ -136,11 +145,16 @@ void friendfunction(){
                 j1["from"] = account;
                 j1["to"] = frienduser;
                 g_conn->send(j1.dump());
+                while(!recivemsg){
+
+                }
                 break;
             case 2:
                 j1["cmd"] = "friendlist";
                 j1["account"] = account;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 3:
                 std::cout << "请输入要私聊的好友账号:";
@@ -152,6 +166,8 @@ void friendfunction(){
                 j1["target"] = frienduser;
                 j1["message"] = chatmsg;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 4:
                 std::cout << "请输入要拉黑的好友账号:";
@@ -160,6 +176,8 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["target"] = frienduser;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 5:
                 std::cout << "请输入要删除的好友账号:";
@@ -168,6 +186,8 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["target"] = frienduser;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 6:
                 std::cout<<"请输入要创建的群聊的名字:";
@@ -176,6 +196,8 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["groupname"] = groupname;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 7:
                 std::cout << "请输入要邀请好友加入的群聊名称:";
@@ -187,6 +209,8 @@ void friendfunction(){
                 j1["groupname"] = groupname;
                 j1["target"]=frienduser;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 8:
                 std::cout << "请输入要删除的群聊的名称:";
@@ -195,6 +219,8 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["groupname"] = groupname;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 9:
                 std::cout << "请输入要发消息的群聊名称:";
@@ -206,6 +232,8 @@ void friendfunction(){
                 j1["groupname"] = groupname;
                 j1["groupmsg"] = groupmsg;
                 g_conn->send(j1.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 0:
                 is_login = false;
@@ -232,6 +260,8 @@ void mainfunction(){
                 j["account"]=account;
                 j["password"] = password;
                 g_conn->send(j.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 2:
                 std::cout << "请先输入你的qq邮箱:";
@@ -246,10 +276,12 @@ void mainfunction(){
                 j["account"] = account;
                 j["code"] = verifycode;
                 g_conn->send(j.dump());
-                sleep(1);
+                while (!recivemsg) {
+                }
                 if (is_login) {
                     friendfunction();
                 }
+               
                 break;
             case 3:
                 std::cout << "请先输入你的qq邮箱:";
@@ -260,14 +292,19 @@ void mainfunction(){
                 j["account"] = account;
                 j["password"] = password;
                 g_conn->send(j.dump());
+                while (!recivemsg) {
+                }
                 if (is_login) {
                     friendfunction();
                 }
+               
                 break;
             case 4:
                 j["cmd"] = "forgetkey";
                 j["account"] = account;
                 g_conn->send(j.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 5:
                 std::cout << "请输入您的密码:";
@@ -276,6 +313,8 @@ void mainfunction(){
                 j["account"] = account;
                 j["password"] = password;
                 g_conn->send(j.dump());
+                while (!recivemsg) {
+                }
                 break;
             case 0:
                 exit(0);
