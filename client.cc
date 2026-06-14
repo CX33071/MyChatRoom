@@ -9,7 +9,9 @@ std::mutex g_mutex;
 bool connok = false;
 bool is_login = false;
 bool recivemsg = false;
+bool is_friendres = false;
 std::string account;
+std::string friendtarget;
 std::string cinkey() {
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
@@ -32,73 +34,56 @@ void connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
     }
 }
 void messagecallback(const TcpClient::TcpConnectionPtr&conn,Buffer*buf,Timestamp){
-    std::string message = buf->retrieveAllAsString();
-    json j;
-    j = json::parse(message);
-    std::string cmd=j["cmd"];
-    if(cmd=="addedres"){
-std::string message=j["message"];
-std::cout << message << std::endl;
-std::cout << "请选择同意好友申请y/拒绝好友申请n:";
-std::string target = j["target"];
-std::string c;
-std::getline(std::cin >> std::ws, c);
-json j1;
-if (c == "y") {
-    j1["cmd"]="agreefriend";
-    j1["account"] = account;
-    j1["friendaccount"] = target;
-} else {
-    j1["cmd"] = "refusefriend";
-    j1["account"] = account;
-    j1["friendaccount"] = target;
-}
-conn->send(j1.dump());
-recivemsg = true;
-    } else if (cmd == "invitedres") {
-        std::string data=j["data"];
-        std::string target = j["account"];
-        std::string groupname = j["groupname"];
-        std::cout << data << std::endl;
-        std::cout << "请选择同意加入群聊y/拒绝加入群聊n:";
-        std::string c;
-        std::getline(std::cin >> std::ws, c);
-        json j1;
-        if(c=="y"){
-            j1["cmd"] = "agreejoin";
-            j1["account"] = account;
-            j1["groupname"] = groupname;
-        }else{
-            j1["cmd"]="refusegroup";
-            j1["target"] = target;
-            j1["account"] = account;
-            j1["groupname"] = groupname;
+    while (1) {
+        const char* pos = buf->findn();  
+        if(!pos){
+            break;
         }
-        conn->send(j1.dump());
-        recivemsg = true;
-    } else if (cmd == "codesignin_res") {
-        if(j["code"]=="1"){
-            is_login = true;
-        }else{
-            is_login = false;
-        }
-        std::string data = j["data"];
-        std::cout << data;
-        recivemsg = true;
-    } else if (cmd == "keysignin_res") {
-        if (j["code"] == "1") {
-            is_login = true;
+        std::string msg(buf->peek(), pos - buf->peek());
+        buf->retrieveUntil(pos + 1);
+
+        json j;
+        j = json::parse(msg);
+        std::string cmd = j["cmd"];
+        if (cmd == "addedres") {
+            std::string message = j["message"];
+            std::cout << message << std::endl;
+            std::cout << "请选择同意好友申请y/拒绝好友申请n:" << std::endl;
+            friendtarget = j["target"];
+            recivemsg = true;
+            is_friendres = true;
+        } else if (cmd == "invitedres") {
+            std::string data = j["data"];
+            std::string target = j["account"];
+            std::string groupname = j["groupname"];
+            std::cout << data << std::endl;
+            std::cout << "请选择同意加入群聊y/拒绝加入群聊n:";
+            recivemsg = true;
+        } else if (cmd == "codesignin_res") {
+            if (j["code"] == "1") {
+                is_login = true;
+            } else {
+                is_login = false;
+            }
+            std::string data = j["data"];
+            std::cout << data;
+            recivemsg = true;
+        } else if (cmd == "keysignin_res") {
+            if (j["code"] == "1") {
+                is_login = true;
+            } else {
+                is_login = false;
+            }
+            std::string data = j["data"];
+            std::cout << data;
+            recivemsg = true;
         } else {
-            is_login = false;
+            std::string data = j["data"];
+            std::cout << data << std::endl;
         }
-        std::string data=j["data"];
-        std::cout << data;
-        recivemsg = true;
-    } else {
-        std::string data = j["data"];
-        std::cout << data << std::endl;
-        recivemsg = true;
     }
+
+  
 }
 void main_menu(){
     std::cout << "\n";
@@ -144,15 +129,15 @@ void friendfunction(){
                 j1["cmd"] = "addfriend";
                 j1["from"] = account;
                 j1["to"] = frienduser;
-                g_conn->send(j1.dump());
-                while(!recivemsg){
+                g_conn->send(j1.dump() + '\n');
+                while(recivemsg){
 
                 }
                 break;
             case 2:
                 j1["cmd"] = "friendlist";
                 j1["account"] = account;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -165,7 +150,7 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["target"] = frienduser;
                 j1["message"] = chatmsg;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -175,7 +160,7 @@ void friendfunction(){
                 j1["cmd"] = "block";
                 j1["account"] = account;
                 j1["target"] = frienduser;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -185,7 +170,7 @@ void friendfunction(){
                 j1["cmd"] = "delfriend";
                 j1["account"] = account;
                 j1["target"] = frienduser;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -195,7 +180,7 @@ void friendfunction(){
                 j1["cmd"] = "creategroup";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -208,7 +193,7 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["groupname"] = groupname;
                 j1["target"]=frienduser;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -218,7 +203,7 @@ void friendfunction(){
                 j1["cmd"]="delgroup";
                 j1["account"] = account;
                 j1["groupname"] = groupname;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -231,7 +216,7 @@ void friendfunction(){
                 j1["account"] = account;
                 j1["groupname"] = groupname;
                 j1["groupmsg"] = groupmsg;
-                g_conn->send(j1.dump());
+                g_conn->send(j1.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -243,9 +228,27 @@ void friendfunction(){
 }
 void mainfunction(){
     while(1){
+        if(is_friendres){
+            std::string c;
+            std::getline(std::cin >> std::ws, c);
+            json j1;
+            if (c == "y") {
+                j1["cmd"] = "agreefriend";
+                j1["account"] = account;
+                j1["friendaccount"] = friendtarget;
+            } else {
+                j1["cmd"] = "refusefriend";
+                j1["account"] = account;
+                j1["friendaccount"] = friendtarget;
+            }
+            g_conn->send(j1.dump() + '\n');
+            is_friendres = false;
+        }
         main_menu();
+        
         int choice;
         std::cin >> choice;
+        
         std::string password;
         std::string verifycode;
         std::string servermsg;
@@ -259,7 +262,7 @@ void mainfunction(){
                 j["cmd"] = "signup";
                 j["account"]=account;
                 j["password"] = password;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -268,14 +271,14 @@ void mainfunction(){
                 std::getline(std::cin >> std::ws, account);
                 j["cmd"] = "verifycode";
                 j["account"] = account;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 std::cout << "验证码已经发送到您的qq邮箱\n";
                 std::cout << "请输入验证码:";
                 std::cin >> verifycode;
                 j["cmd"]="verifycodesignin";
                 j["account"] = account;
                 j["code"] = verifycode;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 while (!recivemsg) {
                 }
                 if (is_login) {
@@ -291,18 +294,17 @@ void mainfunction(){
                 j["cmd"]="keysignin";
                 j["account"] = account;
                 j["password"] = password;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 while (!recivemsg) {
                 }
                 if (is_login) {
                     friendfunction();
                 }
-               
                 break;
             case 4:
                 j["cmd"] = "forgetkey";
                 j["account"] = account;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
@@ -312,7 +314,7 @@ void mainfunction(){
                 j["cmd"]="destory";
                 j["account"] = account;
                 j["password"] = password;
-                g_conn->send(j.dump());
+                g_conn->send(j.dump() + '\n');
                 while (!recivemsg) {
                 }
                 break;
