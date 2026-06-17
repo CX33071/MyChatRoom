@@ -43,6 +43,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.signup(account, password);
             json j1;
             j1["cmd"] = "signup_res";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "成功登录";
             } else {
@@ -60,6 +61,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.verify(account, code);
             json j1;
             j1["cmd"] = "codesignin_res";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["code"] = "1";
                 j1["data"] = "验证码正确，登录成功";
@@ -77,17 +79,18 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = verifycode.loginwithkey(account, password);
             json j1;
             j1["cmd"] = "keysignin_res";
+            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["code"] = "1";
-                j1["data"] = "\n密码正确，登录成功";
+                j1["data"] = "密码正确，登录成功";
                 std::lock_guard<std::mutex> lock(g_mutex);
                 clientmap[account] = conn;
             } else if (res == 2) {
                 j1["code"] = "2";
-                j1["data"] = "\n密码错误，登录失败";
+                j1["data"] = "密码错误，登录失败";
             } else {
                 j1["code"] = "2";
-                j1["data"] = "\n该账号并不存在";
+                j1["data"] = "该账号并不存在";
             }
             conn->send(j1.dump() + '\n');
         }
@@ -96,6 +99,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.forgetkey(account);
             json j1;
             j1["cmd"] = "forgetkey_res";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "\n该账号并未注册";
             } else {
@@ -109,6 +113,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.destroy(account, password);
             json j1;
             j1["cmd"] = "destory_res";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "\n注销账号成功";
             } else {
@@ -122,18 +127,26 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = F.addapply(from, to);
             json j1;
             j1["cmd"] = "addres";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "好友申请已经发送";
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(to);
-                json j2;
-                std::string s = "有一条来自" + from + "的好友申请";
-                j2["cmd"] = "addedres";
-                j2["message"] = s;
-                j2["target"] = to;
-                if (it != clientmap.end()) {
-                    it->second->send(j2.dump() + '\n');
-                }
+                TcpConnectionPtr target_conn;
+               {
+                   std::lock_guard<std::mutex> lock(g_mutex);
+                   auto it = clientmap.find(to);
+                   if (it != clientmap.end()) {
+                       target_conn = it->second;
+                   }
+               }
+               if(target_conn){
+                   json j2;
+                   std::string s = "有一条来自" + from + "的好友申请";
+                   j2["cmd"] = "addedres";
+                   j2["message"] = s;
+                   j2["target"] = from;
+                   target_conn->send(j2.dump() + '\n');
+               }
+
             } else {
                 j1["data"] = "要添加的好友账号不存在";
             }
@@ -145,14 +158,20 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             F.agreeapply(account, friendaccount);
             json j1, j2;
             j1["cmd"] = "agreeres";
+            j1["request_id"] = j["request_id"];
             j2["cmd"] = "agreedres";
             j1["data"] = "同意对方的好友申请";
             j2["data"] = account + "已经同意你的好友申请";
             conn->send(j1.dump() + '\n');
-            std::lock_guard<std::mutex> lock(g_mutex);
-            auto it = clientmap.find(friendaccount);
-            if (it != clientmap.end()) {
-                it->second->send(j2.dump() + '\n');
+            TcpConnectionPtr target_conn;{
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(friendaccount);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                }
+            }
+            if(target_conn){
+                target_conn->send(j2.dump() + '\n');
             }
         }
         if (cmd == "refusefriend") {
@@ -161,14 +180,21 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             F.refuseapply(account, friendaccount);
             json j1, j2;
             j1["cmd"] = "refuseres";
+            j1["request_id"] = j["request_id"];
             j2["cmd"] = "refusedres";
             j1["data"] = "已经拒绝对方的好友申请";
             j2["data"] = account + "拒绝了你的好友申请";
-            std::lock_guard<std::mutex> lock(g_mutex);
-            auto it = clientmap.find(friendaccount);
-            if (it != clientmap.end()) {
-                it->second->send(j2.dump() + '\n');
+            TcpConnectionPtr target_conn;
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(friendaccount);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                }
             }
+           if(target_conn){
+               target_conn->send(j2.dump() + '\n');
+           }
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "friendlist") {
@@ -182,6 +208,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1;
             j1["cmd"] = "friendlistres";
             j1["data"] = list;
+            j1["request_id"] = j["request_id"];
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "chat") {
@@ -191,17 +218,24 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1, j2;
             j1["cmd"] = "chatres";
             j2["cmd"] = "chatedres";
+            j1["request_id"] = j["request_id"];
+            TcpConnectionPtr target_conn;
+            
             j1["data"] = "已给" + target + "发送消息";
-            std::lock_guard<std::mutex> lock(g_mutex);
-            auto it = clientmap.find(target);
-            if (it != clientmap.end()) {
-                j2["data"] = "收到来自" + account + "的消息:" + message;
-                it->second->send(j2.dump() + '\n');
-                conn->send(j1.dump() + '\n');
-            } else {
-                j1["data"] = "对方当前不在线";
-                conn->send(j1.dump() + '\n');
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(target);
+                if(it!=clientmap.end()){
+                    target_conn = it->second;
+                }
             }
+           if(target_conn){
+               j2["data"] = "收到来自" + account + "的消息:" + message;
+               target_conn->send(j2.dump() + '\n');
+           }else{
+               j1["data"] = "对方当前不在线";
+           }
+           conn->send(j1.dump() + '\n');
         }
         if (cmd == "block") {
             std::string account = j["account"];
@@ -209,6 +243,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = F.block(account, target);
             json j1;
             j1["cmd"] = "blockres";
+            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "已经拉黑" + target;
             } else {
@@ -222,6 +257,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = F.cancleblock(account, target);
             json j1;
             j1["cmd"] = "cancleres";
+            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "已成功取消拉黑";
             } else if (res == 1) {
@@ -237,6 +273,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = F.delfriend(account, target);
             json j1;
             j1["cmd"] = "delfriendres";
+            j1["request_id"] = j["request_id"];
             if (res == 1) {
                 j1["data"] = "目标用户根本不存在";
             } else if (res == 2) {
@@ -252,6 +289,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             std::string res = G.creategroup(account, groupname);
             json j1;
             j1["cmd"] = "creategroupres";
+            j1["request_id"] = j["request_id"];
             j1["data"] = "群聊已成功创建:" + res;
             conn->send(j1.dump() + '\n');
         }
@@ -262,20 +300,27 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = G.invite(account, target, groupname);
             json j1, j2;
             j1["cmd"] = "inviteres";
+            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "邀请入群消息已经发送";
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(target);
-                json j2;
-                std::string s =
-                    "有一条来自" + account + "加入群:" + groupname + "的申请";
-                j2["cmd"] = "invitedres";
-                j2["data"] = s;
-                j2["groupname"] = groupname;
-                j2["account"] = account;
-                if (it != clientmap.end()) {
-                    it->second->send(j2.dump() + '\n');
+                TcpConnectionPtr target_conn;
+                {
+                    std::lock_guard<std::mutex> lock(g_mutex);
+                    auto it = clientmap.find(target);
+                    if(it!=clientmap.end()){
+                        target_conn = it->second;
+                    }
                 }
+               if(target_conn){
+                   json j2;
+                   std::string s = "有一条来自" + account +
+                                   "加入群:" + groupname + "的申请";
+                   j2["cmd"] = "invitedres";
+                   j2["data"] = s;
+                   j2["groupname"] = groupname;
+                   j2["account"] = account;
+                   target_conn->send(j2.dump() + '\n');
+               }
             } else if (res == 1) {
                 j1["data"] = "要邀请的好友账号不存在";
             } else {
@@ -289,15 +334,23 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             G.agreejoin(account, groupname);
             json j1, j2;
             j1["cmd"] = "agreegroupres";
+            j1["request_id"] = j["request_id"];
             j2["cmd"] = "agreedgroupres";
             j1["data"] = "同意对方的邀请入群申请";
             j2["data"] = account + "已经同意你的邀请入群申请";
             conn->send(j1.dump() + '\n');
-            std::lock_guard<std::mutex> lock(g_mutex);
-            auto it = clientmap.find(account);
-            if (it != clientmap.end()) {
-                it->second->send(j2.dump() + '\n');
+            TcpConnectionPtr target_conn;
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(account);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                }
             }
+            if(target_conn){
+                target_conn->send(j2.dump() + '\n');
+            }
+         
         }
         if (cmd == "refusegroup") {
             std::string account = j["account"];
@@ -306,15 +359,22 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             G.refusejoin(account, target, groupname);
             json j1, j2;
             j1["cmd"] = "refusegroupres";
+            j1["request_id"] = j["request_id"];
             j2["cmd"] = "refusedgroupres";
             j1["data"] = "已拒绝对方的入群邀请";
             j2["data"] = account + "拒绝了你的邀请入群申请";
             conn->send(j1.dump() + '\n');
-            std::lock_guard<std::mutex> lock(g_mutex);
-            auto it = clientmap.find(target);
-            if (it != clientmap.end()) {
-                it->second->send(j2.dump() + '\n');
-            }
+            TcpConnectionPtr target_conn;
+           {
+               std::lock_guard<std::mutex> lock(g_mutex);
+               auto it = clientmap.find(target);
+               if (it != clientmap.end()) {
+                   target_conn = it->second;
+               }
+           }
+           if(target_conn){
+               target_conn->send(j2.dump() + '\n');
+           }
         }
         if (cmd == "delgroup") {
             std::string account = j["account"];
@@ -322,6 +382,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = G.delgroup(groupname, account);
             json j1;
             j1["cmd"] = "delgroupres";
+            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "删除群聊成功";
             } else if (res == 1) {
@@ -337,6 +398,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             std::string groupname = j["groupname"];
             json j1;
             j1["cmd"] = "groupchatres";
+            j1["request_id"] = j["request_id"];
             auto it = group_map.find(groupname);
             std::string s = "收到来自" + groupname + "的成员:" + account +
                             "发来的消息:" + msg;
@@ -346,11 +408,17 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
                 bool res = G.groupchat(groupname, account, msg);
                 j1["data"] = "消息已发送";
                 for (auto it1 : it->second) {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it2 = clientmap.find(it1);
-                    if (it2 != clientmap.end()) {
+                    TcpConnectionPtr target_conn;
+                    {
+                        std::lock_guard<std::mutex> lock(g_mutex);
+                        auto it2 = clientmap.find(it1);
+                        if (it2 != clientmap.end()) {
+                            target_conn = it2->second;
+                        }
+                    }
+                    if(target_conn){
                         json j2{{"cmd", "groupchatedres"}, {"data", s}};
-                        it2->second->send(j2.dump() + '\n');
+                        target_conn->send(j2.dump() + '\n');
                     }
                 }
             }
