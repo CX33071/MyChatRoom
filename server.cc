@@ -43,7 +43,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.signup(account, password);
             json j1;
             j1["cmd"] = "signup_res";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "成功登录";
             } else {
@@ -61,7 +60,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.verify(account, code);
             json j1;
             j1["cmd"] = "codesignin_res";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["code"] = "1";
                 j1["data"] = "验证码正确，登录成功";
@@ -79,7 +77,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = verifycode.loginwithkey(account, password);
             json j1;
             j1["cmd"] = "keysignin_res";
-            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["code"] = "1";
                 j1["data"] = "密码正确，登录成功";
@@ -99,7 +96,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.forgetkey(account);
             json j1;
             j1["cmd"] = "forgetkey_res";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "\n该账号并未注册";
             } else {
@@ -113,7 +109,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = verifycode.destroy(account, password);
             json j1;
             j1["cmd"] = "destory_res";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "\n注销账号成功";
             } else {
@@ -127,7 +122,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = F.addapply(from, to);
             json j1;
             j1["cmd"] = "addres";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "好友申请已经发送";
                 TcpConnectionPtr target_conn;
@@ -158,7 +152,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             F.agreeapply(account, friendaccount);
             json j1, j2;
             j1["cmd"] = "agreeres";
-            j1["request_id"] = j["request_id"];
             j2["cmd"] = "agreedres";
             j1["data"] = "同意对方的好友申请";
             j2["data"] = account + "已经同意你的好友申请";
@@ -180,7 +173,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             F.refuseapply(account, friendaccount);
             json j1, j2;
             j1["cmd"] = "refuseres";
-            j1["request_id"] = j["request_id"];
             j2["cmd"] = "refusedres";
             j1["data"] = "已经拒绝对方的好友申请";
             j2["data"] = account + "拒绝了你的好友申请";
@@ -208,7 +200,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1;
             j1["cmd"] = "friendlistres";
             j1["data"] = list;
-            j1["request_id"] = j["request_id"];
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "chat") {
@@ -218,7 +209,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1, j2;
             j1["cmd"] = "chatres";
             j2["cmd"] = "chatedres";
-            j1["request_id"] = j["request_id"];
             TcpConnectionPtr target_conn;
             
             j1["data"] = "已给" + target + "发送消息";
@@ -230,7 +220,8 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
                 }
             }
            if(target_conn){
-               j2["data"] = "收到来自" + account + "的消息:" + message;
+               j2["from"] = account;
+               j2["message"] = message;
                target_conn->send(j2.dump() + '\n');
            }else{
                j1["data"] = "对方当前不在线";
@@ -243,7 +234,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             bool res = F.block(account, target);
             json j1;
             j1["cmd"] = "blockres";
-            j1["request_id"] = j["request_id"];
             if (res) {
                 j1["data"] = "已经拉黑" + target;
             } else {
@@ -257,7 +247,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = F.cancleblock(account, target);
             json j1;
             j1["cmd"] = "cancleres";
-            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "已成功取消拉黑";
             } else if (res == 1) {
@@ -273,7 +262,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = F.delfriend(account, target);
             json j1;
             j1["cmd"] = "delfriendres";
-            j1["request_id"] = j["request_id"];
             if (res == 1) {
                 j1["data"] = "目标用户根本不存在";
             } else if (res == 2) {
@@ -289,7 +277,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             std::string res = G.creategroup(account, groupname);
             json j1;
             j1["cmd"] = "creategroupres";
-            j1["request_id"] = j["request_id"];
             j1["data"] = "群聊已成功创建:" + res;
             conn->send(j1.dump() + '\n');
         }
@@ -300,7 +287,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = G.invite(account, target, groupname);
             json j1, j2;
             j1["cmd"] = "inviteres";
-            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "邀请入群消息已经发送";
                 TcpConnectionPtr target_conn;
@@ -334,7 +320,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             G.agreejoin(account, groupname);
             json j1, j2;
             j1["cmd"] = "agreegroupres";
-            j1["request_id"] = j["request_id"];
             j2["cmd"] = "agreedgroupres";
             j1["data"] = "同意对方的邀请入群申请";
             j2["data"] = account + "已经同意你的邀请入群申请";
@@ -359,7 +344,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             G.refusejoin(account, target, groupname);
             json j1, j2;
             j1["cmd"] = "refusegroupres";
-            j1["request_id"] = j["request_id"];
             j2["cmd"] = "refusedgroupres";
             j1["data"] = "已拒绝对方的入群邀请";
             j2["data"] = account + "拒绝了你的邀请入群申请";
@@ -382,7 +366,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             int res = G.delgroup(groupname, account);
             json j1;
             j1["cmd"] = "delgroupres";
-            j1["request_id"] = j["request_id"];
             if (res == 0) {
                 j1["data"] = "删除群聊成功";
             } else if (res == 1) {
@@ -398,7 +381,6 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             std::string groupname = j["groupname"];
             json j1;
             j1["cmd"] = "groupchatres";
-            j1["request_id"] = j["request_id"];
             auto it = group_map.find(groupname);
             std::string s = "收到来自" + groupname + "的成员:" + account +
                             "发来的消息:" + msg;
