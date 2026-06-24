@@ -9,6 +9,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/cx33071/MyChatRoom/account.cc" "CMakeFiles/server.dir/account.cc.o" "gcc" "CMakeFiles/server.dir/account.cc.o.d"
+  "/home/cx33071/MyChatRoom/choicework.cc" "CMakeFiles/server.dir/choicework.cc.o" "gcc" "CMakeFiles/server.dir/choicework.cc.o.d"
   "/home/cx33071/MyChatRoom/friend.cc" "CMakeFiles/server.dir/friend.cc.o" "gcc" "CMakeFiles/server.dir/friend.cc.o.d"
   "/home/cx33071/MyChatRoom/group.cc" "CMakeFiles/server.dir/group.cc.o" "gcc" "CMakeFiles/server.dir/group.cc.o.d"
   "/home/cx33071/muduo-/base/CurrentThread.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/CurrentThread.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/CurrentThread.cc.o.d"

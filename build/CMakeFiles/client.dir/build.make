@@ -125,10 +125,24 @@ CMakeFiles/client.dir/group.cc.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/client.dir/group.cc.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/cx33071/MyChatRoom/group.cc -o CMakeFiles/client.dir/group.cc.s
 
+CMakeFiles/client.dir/choicework.cc.o: CMakeFiles/client.dir/flags.make
+CMakeFiles/client.dir/choicework.cc.o: /home/cx33071/MyChatRoom/choicework.cc
+CMakeFiles/client.dir/choicework.cc.o: CMakeFiles/client.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/client.dir/choicework.cc.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/choicework.cc.o -MF CMakeFiles/client.dir/choicework.cc.o.d -o CMakeFiles/client.dir/choicework.cc.o -c /home/cx33071/MyChatRoom/choicework.cc
+
+CMakeFiles/client.dir/choicework.cc.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/client.dir/choicework.cc.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/cx33071/MyChatRoom/choicework.cc > CMakeFiles/client.dir/choicework.cc.i
+
+CMakeFiles/client.dir/choicework.cc.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/client.dir/choicework.cc.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/cx33071/MyChatRoom/choicework.cc -o CMakeFiles/client.dir/choicework.cc.s
+
 CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o: /home/cx33071/muduo-/base/CurrentThread.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o -c /home/cx33071/muduo-/base/CurrentThread.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.i: cmake_force
@@ -142,7 +156,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o: /home/cx33071/muduo-/base/logger.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o -c /home/cx33071/muduo-/base/logger.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.i: cmake_force
@@ -156,7 +170,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o: /home/cx33071/muduo-/base/logStream.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o -c /home/cx33071/muduo-/base/logStream.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.i: cmake_force
@@ -170,7 +184,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o: /home/cx33071/muduo-/base/Timestamp.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.o -c /home/cx33071/muduo-/base/Timestamp.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.i: cmake_force
@@ -184,7 +198,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/base/Timestamp.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o: /home/cx33071/muduo-/net/Acceptor.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.o -c /home/cx33071/muduo-/net/Acceptor.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.i: cmake_force
@@ -198,7 +212,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Acceptor.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o: /home/cx33071/muduo-/net/Buffer.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.o -c /home/cx33071/muduo-/net/Buffer.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.i: cmake_force
@@ -212,7 +226,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Buffer.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o: /home/cx33071/muduo-/net/Channel.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.o -c /home/cx33071/muduo-/net/Channel.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.i: cmake_force
@@ -226,7 +240,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Channel.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o: /home/cx33071/muduo-/net/Connector.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.o -c /home/cx33071/muduo-/net/Connector.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.i: cmake_force
@@ -240,7 +254,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Connector.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o: /home/cx33071/muduo-/net/Epoller.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.o -c /home/cx33071/muduo-/net/Epoller.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.i: cmake_force
@@ -254,7 +268,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Epoller.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o: /home/cx33071/muduo-/net/EventLoop.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.o -c /home/cx33071/muduo-/net/EventLoop.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.i: cmake_force
@@ -268,7 +282,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoop.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o: /home/cx33071/muduo-/net/EventLoopThreadpool.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.o -c /home/cx33071/muduo-/net/EventLoopThreadpool.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.i: cmake_force
@@ -282,7 +296,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/EventLoopThreadpool.cc.s: cmake_fo
 CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o: /home/cx33071/muduo-/net/SocketOps.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.o -c /home/cx33071/muduo-/net/SocketOps.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.i: cmake_force
@@ -296,7 +310,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/SocketOps.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o: /home/cx33071/muduo-/net/TcpClient.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.o -c /home/cx33071/muduo-/net/TcpClient.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.i: cmake_force
@@ -310,7 +324,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpClient.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o: /home/cx33071/muduo-/net/TcpConnection.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.o -c /home/cx33071/muduo-/net/TcpConnection.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.i: cmake_force
@@ -324,7 +338,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpConnection.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o: /home/cx33071/muduo-/net/TcpServer.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.o -c /home/cx33071/muduo-/net/TcpServer.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.i: cmake_force
@@ -338,7 +352,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/TcpServer.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o: /home/cx33071/muduo-/net/Timer.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.o -c /home/cx33071/muduo-/net/Timer.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.i: cmake_force
@@ -352,7 +366,7 @@ CMakeFiles/client.dir/home/cx33071/muduo-/net/Timer.cc.s: cmake_force
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o: CMakeFiles/client.dir/flags.make
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o: /home/cx33071/muduo-/net/TimerQueue.cc
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o: CMakeFiles/client.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o -MF CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o.d -o CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.o -c /home/cx33071/muduo-/net/TimerQueue.cc
 
 CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.i: cmake_force
@@ -369,6 +383,7 @@ client_OBJECTS = \
 "CMakeFiles/client.dir/account.cc.o" \
 "CMakeFiles/client.dir/friend.cc.o" \
 "CMakeFiles/client.dir/group.cc.o" \
+"CMakeFiles/client.dir/choicework.cc.o" \
 "CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o" \
 "CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o" \
 "CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o" \
@@ -394,6 +409,7 @@ client: CMakeFiles/client.dir/client.cc.o
 client: CMakeFiles/client.dir/account.cc.o
 client: CMakeFiles/client.dir/friend.cc.o
 client: CMakeFiles/client.dir/group.cc.o
+client: CMakeFiles/client.dir/choicework.cc.o
 client: CMakeFiles/client.dir/home/cx33071/muduo-/base/CurrentThread.cc.o
 client: CMakeFiles/client.dir/home/cx33071/muduo-/base/logger.cc.o
 client: CMakeFiles/client.dir/home/cx33071/muduo-/base/logStream.cc.o
@@ -416,7 +432,7 @@ client: /usr/lib/x86_64-linux-gnu/libcurl.so
 client: /usr/local/lib/libcpp_redis.so
 client: /usr/local/lib/libtacopie.a
 client: CMakeFiles/client.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Linking CXX executable client"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/cx33071/MyChatRoom/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Linking CXX executable client"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/client.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

@@ -1,7 +1,7 @@
-CMakeFiles/client.dir/client.cc.o: /home/cx33071/MyChatRoom/client.cc \
- /usr/include/stdc-predef.h /home/cx33071/MyChatRoom/choicework.h \
- /usr/include/termios.h /usr/include/features.h \
- /usr/include/features-time64.h \
+CMakeFiles/client.dir/choicework.cc.o: \
+ /home/cx33071/MyChatRoom/choicework.cc /usr/include/stdc-predef.h \
+ /home/cx33071/MyChatRoom/choicework.h /usr/include/termios.h \
+ /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
  /usr/include/x86_64-linux-gnu/bits/timesize.h \
  /usr/include/x86_64-linux-gnu/sys/cdefs.h \

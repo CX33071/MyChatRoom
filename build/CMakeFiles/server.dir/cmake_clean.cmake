@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/server.dir/account.cc.o"
   "CMakeFiles/server.dir/account.cc.o.d"
+  "CMakeFiles/server.dir/choicework.cc.o"
+  "CMakeFiles/server.dir/choicework.cc.o.d"
   "CMakeFiles/server.dir/friend.cc.o"
   "CMakeFiles/server.dir/friend.cc.o.d"
   "CMakeFiles/server.dir/group.cc.o"

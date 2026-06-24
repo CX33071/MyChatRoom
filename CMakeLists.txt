@@ -3,9 +3,12 @@ project(MyChatRoom)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -pthread")
 
+# ===== 设置输出目录 =====
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 # ===== 包含目录 =====
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../muduo-/base)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../muduo-/net)
 include_directories(/usr/local/include)
@@ -39,11 +42,12 @@ set(MUDUO_NET_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../muduo-/net/TimerQueue.cc
 )
 
-# ===== 聊天室源文件（不包含 protobuf） =====
+# ===== 聊天室源文件（注意：没有global.cc）=====
 set(CHATROOM_COMMON_SOURCES
     account.cc
     friend.cc
     group.cc
+    choicework.cc      # 这里定义全局变量
 )
 
 # ===== 服务器 =====
@@ -66,11 +70,9 @@ add_executable(client
 target_link_libraries(server pthread)
 target_link_libraries(client pthread)
 
-# curl 库
 target_link_libraries(server ${CURL_LIBRARIES})
 target_link_libraries(client ${CURL_LIBRARIES})
 
-# cpp_redis 和 tacopie
 if(CPP_REDIS_LIB AND TACOPIE_LIB)
     target_link_libraries(server ${CPP_REDIS_LIB} ${TACOPIE_LIB})
     target_link_libraries(client ${CPP_REDIS_LIB} ${TACOPIE_LIB})
@@ -79,7 +81,6 @@ else()
     target_link_libraries(client /usr/local/lib/libcpp_redis.so /usr/local/lib/libtacopie.a)
 endif()
 
-# 添加 RPATH
 set_target_properties(server PROPERTIES 
     INSTALL_RPATH "/usr/local/lib"
     BUILD_WITH_INSTALL_RPATH TRUE

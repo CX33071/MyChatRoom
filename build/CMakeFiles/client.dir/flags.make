@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/cx33071/MyChatRoom/../muduo-/base -I/home/cx33071/MyChatRoom/../muduo-/net
+CXX_INCLUDES = -I/home/cx33071/MyChatRoom -I/home/cx33071/MyChatRoom/../muduo-/base -I/home/cx33071/MyChatRoom/../muduo-/net
 
-CXX_FLAGS =  -g -Wall -std=gnu++14
+CXX_FLAGS =  -g -Wall -pthread -std=gnu++14
 

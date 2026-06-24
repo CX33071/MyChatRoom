@@ -16,19 +16,13 @@ class Verifycode {
 
    public:
     Verifycode() ;
-    std::string generatesalt() ;
-    std::string sha(std::string input) ;
-    std::string screctkey(std::string key) ;
-    std::string getstartkey(std::string hashkey) ;
-    bool checkkey(const std::string& inputkey, const std::string& getkeyvalue) ;
     std::string code() ;
     void addredis(const std::string& account) ;
     bool signup(std::string account,std::string password) ;
     bool verify(std::string account,std::string code) ;
     int loginwithkey(std::string account, std::string password);
-    bool  loginwithcode(std::string account,std::string code) ;
     bool forgetkey(std::string account) ;
-    bool destroy(std::string account,std::string password);
+    int destroy(std::string account,std::string password);
     void sendcom(
                  const std::string clientaccount,
                  const std::string& subject,

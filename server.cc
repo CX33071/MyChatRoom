@@ -44,7 +44,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             json j1;
             j1["cmd"] = "signup_res";
             if (res) {
-                j1["data"] = "成功登录";
+                j1["data"] = "注册成功!";
             } else {
                 j1["data"] = "该账号已被注册过，请重新尝试";
             }
@@ -106,13 +106,15 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         if (cmd == "destory") {
             std::string account = j["account"];
             std::string password = j["password"];
-            bool res = verifycode.destroy(account, password);
+            int res = verifycode.destroy(account, password);
             json j1;
             j1["cmd"] = "destory_res";
-            if (res) {
-                j1["data"] = "\n注销账号成功";
-            } else {
+            if (res==1) {
+                j1["data"] = "\n该账号并不存在";
+            } else if(res==2){
                 j1["data"] = "\n密码错误，注销失败";
+            }else{
+                j1["data"] = "\n密码正确，成功注销!";
             }
             conn->send(j1.dump() + '\n');
         }
@@ -138,6 +140,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
                    j2["cmd"] = "addedres";
                    j2["message"] = s;
                    j2["target"] = from;
+                   j2["time"] = j["time"];
                    target_conn->send(j2.dump() + '\n');
                }
 
@@ -154,7 +157,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             j1["cmd"] = "agreeres";
             j2["cmd"] = "agreedres";
             j1["data"] = "同意对方的好友申请";
-            j2["data"] = account + "已经同意你的好友申请";
+            j2["data"] = account + "已经同意你的好友申请"+"\n"+"请继续菜单输入:";
             conn->send(j1.dump() + '\n');
             TcpConnectionPtr target_conn;{
                 std::lock_guard<std::mutex> lock(g_mutex);
@@ -175,7 +178,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             j1["cmd"] = "refuseres";
             j2["cmd"] = "refusedres";
             j1["data"] = "已经拒绝对方的好友申请";
-            j2["data"] = account + "拒绝了你的好友申请";
+            j2["data"] = account + "拒绝了你的好友申请"+"\n"+"请继续菜单输入:";
             TcpConnectionPtr target_conn;
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
@@ -317,6 +320,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
         if (cmd == "agreejoin") {
             std::string account = j["account"];
             std::string groupname = j["groupname"];
+            std::string addaccount = j["addaccount"];
             G.agreejoin(account, groupname);
             json j1, j2;
             j1["cmd"] = "agreegroupres";
@@ -327,7 +331,7 @@ void messagecallback(const TcpConnectionPtr&conn,Buffer*buf,Timestamp){
             TcpConnectionPtr target_conn;
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(account);
+                auto it = clientmap.find(addaccount);
                 if (it != clientmap.end()) {
                     target_conn = it->second;
                 }

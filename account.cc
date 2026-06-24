@@ -11,38 +11,6 @@ Verifycode::Verifycode() {
     srand(time(NULL));
     redis_.connect("127.0.0.1", 6379);
 }
-std::string Verifycode::generatesalt() {
-    std::string salt;
-    for (int i = 0; i < 10; i++) {
-        salt += ('0' + rand() % 10);
-    }
-    return salt;
-}
-std::string Verifycode::sha(std::string input) {
-    std::reverse(input.begin(), input.end());
-    return input;
-}
-std::string Verifycode::screctkey(std::string key) {
-    std::string salt = generatesalt();
-    std::string hash = sha(salt + key);
-    return salt + ":" + hash;
-}
-std::string Verifycode::getstartkey(std::string hashkey) {
-    size_t pos = hashkey.find(':');
-    std::string salt = hashkey.substr(0, pos);
-    std::string hash = hashkey.substr(pos + 1);
-    std::reverse(hash.begin(), hash.end());
-    std::string startkey = hash.substr(10);
-    return startkey;
-}
-bool Verifycode::checkkey(const std::string& inputkey,
-                          const std::string& getkeyvalue) {
-    size_t pos = getkeyvalue.find(':');
-    std::string salt = getkeyvalue.substr(0, pos);
-    std::string hash = getkeyvalue.substr(pos + 1);
-    std::string inputhash = sha(salt + inputkey);
-    return inputhash == hash;
-}
 std::string Verifycode::code() {
     std::string code;
     for (int i = 0; i < 4; i++) {
@@ -53,71 +21,75 @@ std::string Verifycode::code() {
 void Verifycode::addredis(
                           const std::string& account) {
     std::string s = code();
-    redis_.setex(account + "1", 300, s);
+    redis_.setex(account + "code", 300, s);
     redis_.sync_commit();
     sendcom( account, "验证码", "您的验证码是: " + s + " 5分钟内有效");
 }
 bool Verifycode::signup(std::string account,std::string password) {
-    auto fut = redis_.exists({account});
+    auto fut = redis_.exists({account+"key"});
     redis_.sync_commit();
     int exists = fut.get().as_integer();
     if(exists){
         return false;
     }
-    std::string finalkey = screctkey(password);
-    redis_.set(account, finalkey);
+    redis_.set(account+"key", password);
     redis_.sync_commit();
     return true;
 }
 bool Verifycode::verify(std::string account,std::string code) {
-    auto fut = redis_.get(account + "1");
+    auto fut = redis_.get(account + "code");
     redis_.sync_commit();
     if (fut.get().as_string() == code) {
-        redis_.del({account + "1"});
+        redis_.del({account + "code"});
         redis_.sync_commit();
+        redis_.set("online" + account, "1");
         return true;
     }
     return false;
 }
 int Verifycode::loginwithkey(std::string account,std::string password) {
-    auto fut = redis_.get(account);
+    auto fut = redis_.get(account+"key");
     redis_.sync_commit();
     auto reply = fut.get();
     if (!reply.is_string()) {
         return 1;
     }
     std::string hashkey = reply.as_string();
-    if(!checkkey(password, hashkey)) {
-        return 1;
+    if(password!=hashkey) {
+        return 2;
     }
     redis_.set("online" + account, "1");
     return 0;
 }
 bool Verifycode::forgetkey(std::string account) {
-    auto fut = redis_.exists({account});
+    auto fut = redis_.exists({account+"key"});
     redis_.sync_commit();
     if (fut.get().as_integer() == 0) {
         // std::cout << "该账号并未注册" << std::endl;
         return false;
     }
     addredis(account);
-    auto fut1 = redis_.get(account);
+    auto fut1 = redis_.get(account+"key");
     redis_.sync_commit();
     std::string hashcode = fut1.get().as_string();
-    std::string truecode = getstartkey(hashcode);
-    sendcom( account, "密码", "您的密码是: " + truecode);
+    sendcom( account, "密码", "您的密码是: " + hashcode);
     return true;
 }
-bool Verifycode::destroy(std::string account,std::string password) {
-    auto fut = redis_.get(account);
+int Verifycode::destroy(std::string account,std::string password) {
+    auto fut = redis_.exists({account + "key"});
     redis_.sync_commit();
-    auto reply = fut.get();
-    if (reply.as_string() !=password){
-        return false;
+    if (fut.get().as_integer() == 0) {
+        return 1;
     }
-    redis_.del({account, account + "1"});
+    auto fut1 = redis_.get(account+"key");
     redis_.sync_commit();
-    return true;
+    auto reply = fut1.get();
+    if (reply.as_string() !=password){
+        return 2;
+    }
+    redis_.del({account+"key", account + "code"});
+    redis_.sync_commit();
+    return 0;
 }
 void Verifycode::sendcom(
                          const std::string clientaccount,

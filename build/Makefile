@@ -169,6 +169,33 @@ account.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/account.cc.s
 .PHONY : account.cc.s
 
+choicework.o: choicework.cc.o
+.PHONY : choicework.o
+
+# target to build an object file
+choicework.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.o
+.PHONY : choicework.cc.o
+
+choicework.i: choicework.cc.i
+.PHONY : choicework.i
+
+# target to preprocess a source file
+choicework.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.i
+.PHONY : choicework.cc.i
+
+choicework.s: choicework.cc.s
+.PHONY : choicework.s
+
+# target to generate assembly for a file
+choicework.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.s
+.PHONY : choicework.cc.s
+
 client.o: client.cc.o
 .PHONY : client.o
 
@@ -743,6 +770,9 @@ help:
 	@echo "... account.o"
 	@echo "... account.i"
 	@echo "... account.s"
+	@echo "... choicework.o"
+	@echo "... choicework.i"
+	@echo "... choicework.s"
 	@echo "... client.o"
 	@echo "... client.i"
 	@echo "... client.s"
