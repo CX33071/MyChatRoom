@@ -1,0 +1,358 @@
+#pragma once
+#include <termios.h>
+#include <wait.h>
+#include <condition_variable>
+#include <future>
+#include "ChatClient.h"
+#include "FileClient.h"
+#include <queue>
+#include <unordered_map>
+#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "json.hpp"
+#define RESET "\033[0m"
+#define GREEN "\033[1;32m"
+#define BLUEC "\033[1;34m"
+#define BLUE "\033[34m"
+#define PURPLE "\033[1;35m"
+using json = nlohmann::json;
+std::string get_current_time(){
+    Timestamp now = Timestamp::now();
+    return now.toFormattedString(true);
+}
+void handle_message(chatclient*client) {
+    while (1) {
+        std::unique_lock<std::mutex> lock(client->msg_mutex);
+        client->msg_cv.wait(lock, [&client] { return !client->msg_map.empty(); });
+        for (auto it = client->msg_map.begin(); it != client->msg_map.end();) {
+            std::string cmd = it->first;
+            std::queue<json>& q = it->second;
+            while (!q.empty()) {
+                json msg = q.front();
+                q.pop();
+                if(cmd=="finish"){
+                    json j1;
+                    j1["cmd"] = "sendfinishtofileclient";
+                    std::string request_id = msg.value("request_id1", "");
+                    if (!request_id.empty()) {
+                        j1["request_id"] = request_id;
+                    }
+                    client->fileclient_->file_conn->send(j1.dump() + '\n');
+                } else if (cmd == "chatedres") {
+                    chatclient::Event e;
+                    e.type = chatclient::Event::FRIENDCHAT;
+                    std::string from = msg["account"];
+                    std::string content = msg["message"];
+                    std::string q = "\n收到来自[" + from + "]的消息:" + content;
+                    e.data["data"]=q;
+                    e.data["time"] = msg["time"];
+                    if (client->inchat && client->current_chat == from) {
+                        std::cout << "\r\33[2K";
+                        std::cout << "[" << from << "]:   " << content
+                                  << std::endl;
+                        std::cout << GREEN << "[" << client->account
+                                  << "]:    " << RESET;
+                        std::cout.flush();
+
+                    } else {
+                        if(!client->is_blockfriend(from)){
+                            {
+                                std::lock_guard<std::mutex> lock(client->event_mutex);
+                                client->event_queue.push(e);
+                                client->event_cv.notify_one();
+                            }
+                        }
+                        
+                    }
+                } else if (cmd == "groupchatedres") {
+                    chatclient::Event e;
+                    e.type = chatclient::Event::GROUPCHAT;
+                    std::string from = msg["account"];
+                    std::string content = msg["message"];
+                    std::string groupname = msg["groupname"];
+                   std::string content1 = "\n收到来自群聊[" + groupname + "]的成员:[" + from +
+                          "]的消息:" + content;
+                    e.data["data"] = content1;
+                    e.data["time"] = msg["time"];
+                    if (client->groupchat) {
+                        std::cout << "\r\33[2K";
+                        std::cout << "[" << from << "]:   " << content
+                                  << std::endl;
+                        std::cout << GREEN << "[" << client->account
+                                  << "]:    " << RESET;
+                        std::cout.flush();
+                    } else {
+                        {
+                            std::lock_guard<std::mutex> lock(client->event_mutex);
+                            client->event_queue.push(e);
+                            client->event_cv.notify_one();
+                        }
+                    }
+                } else if (cmd == "addedres") {
+                    chatclient::Event e;
+                    e.type = chatclient::Event::Friendadd;
+                    e.data = msg;
+                    std::string from = msg["target"] ;
+                   json s;
+                   s["account"] = from;
+                   s["time"] = e.data["time"];
+                   client->addlist.push_back(s);
+                   if (!client->is_blockfriend(from)) {
+                       {
+                           std::lock_guard<std::mutex> lock(
+                               client->event_mutex);
+                           client->event_queue.push(e);
+                           client->event_cv.notify_one();
+                       }
+                    }
+                } else if (cmd == "toRETRres") {
+                    std::cout << PURPLE << msg["data"] <<msg["time"]<< RESET << std::endl;
+                } else if (cmd == "sendedfile") {
+                    chatclient::Event e;
+                    e.type = chatclient::Event::SENDFILE;
+                    e.data = msg;
+                    std::string from = msg["from"];
+                    json apply;
+                    apply["from"] = from;
+                    apply["filename"] = e.data["filename"];
+                    apply["ID"] = e.data["ID"];
+                    apply["data"] = e.data["data"];
+                    
+                    client->sendfilelist.push_back(apply);
+                    if (!client->is_blockfriend(from)) {
+                        {
+                            std::lock_guard<std::mutex> lock(client->event_mutex);
+                            client->event_queue.push(e);
+                            client->event_cv.notify_one();
+                        }
+                    }
+                }else if(cmd =="groupsendedfile"){
+                    chatclient::Event e;
+                    e.type = chatclient::Event::SENDFILE;
+                    e.data = msg;
+                    std::string from = msg["from"];
+                    json apply;
+                    apply["from"] = from;
+                    
+                    apply["filename"] = e.data["filename"];
+                    apply["ID"] = e.data["ID"];
+                    apply["data"] = e.data["data"];
+                    client->sendfilelist.push_back(apply);
+                    if (!client->is_blockfriend(from)) {
+                        {
+                            std::lock_guard<std::mutex> lock(
+                                client->event_mutex);
+                            client->event_queue.push(e);
+                            client->event_cv.notify_one();
+                        }
+                    }
+                } else if (cmd == "appliedjoinres") {
+                    chatclient::Event e;
+                    e.type = chatclient::Event::APPLYJOINGROUP;
+                    e.data = msg;
+                    std::string from = e.data["account"];
+                    std::string t = get_current_time();
+                    json apply;
+                    apply["from"] = from;
+                    apply["groupname"] = e.data["groupname"];
+                    apply["data"] = e.data["data"];
+                    client->applyjoinlist.push_back(apply);
+                    if (!client->is_blockfriend(from)) {
+                        {
+                            std::lock_guard<std::mutex> lock(client->event_mutex);
+                            client->event_queue.push(e);
+                            client->event_cv.notify_one();
+                        }
+                    }
+                } else {
+                    std::string data = msg["data"];
+                    std::cout <<PURPLE<< "\n[系统消息]: " << data<<RESET << std::endl;
+                }
+            }
+            if (q.empty()) {
+                it = client->msg_map.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+}
+void handle_event(chatclient*client) {
+    while (1) {
+        std::unique_lock<std::mutex> lock(client->event_mutex);
+        client->event_cv.wait(lock, [
+            &client] { return !client->event_queue.empty(); });
+        chatclient::Event e;
+        e = client->event_queue.front();
+        client->event_queue.pop();
+        json reply;
+        if (e.type == chatclient::Event::Friendadd) {
+            std::cout << std::endl;
+            std::cout << PURPLE << e.data["time"] << "[系统消息]："
+                      << e.data["message"] << "请稍后在菜单中查看" << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        }else if(e.type==chatclient::Event::SENDFILE){
+            std::cout << std::endl;
+            std::cout << PURPLE << "[系统消息]："
+                      << e.data["data"] << "请稍后在菜单中查看" << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        }
+         else if (e.type == chatclient::Event::GroupInvite) {
+            std::cout << std::endl;
+            std::cout << PURPLE << e.data["time"]
+                      << "[系统消息]:" << e.data["data"] << "请稍候在菜单中查看"
+                      << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        }else if(e.type==chatclient::Event::FRIENDCHAT){
+            std::cout << std::endl;
+            std::cout << PURPLE<<e.data["time"] << "[系统消息]:" << e.data["data"]
+                      << "请稍候在菜单中查看" << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        } else if (e.type == chatclient::Event::GROUPCHAT) {
+            std::cout << std::endl;
+            std::cout << PURPLE<<e.data["time"] << "[系统消息]:" << e.data["data"]
+                      << "请稍候在菜单中查看" << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        }else if(e.type==chatclient::Event::APPLYJOINGROUP){
+            std::cout << std::endl;
+            std::cout << PURPLE <<e.data["time"]<< "\n[系统消息]:" << e.data["data"]
+                      << "请稍候在菜单中查看:" << "\n"
+                      << "请继续菜单输入:" << RESET << std::endl;
+        }
+    }
+}
+void mainfunction(chatclient*chatclient) {
+    json res;
+    while (1) {
+        if (!chatclient->chatis_login) {
+            chatclient->main_menu();
+        } else { 
+            chatclient->friend_menu();
+        }
+        int choice;
+        std::string sschoice;
+        std::getline(std::cin >> std::ws, sschoice);
+        std::vector<std::string> nums={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28"};
+        for(auto t:nums){
+            if(sschoice==t){
+                choice = std::stoi(sschoice);
+                switch (choice) {
+                    case 1:
+                        chatclient->handle_signup();
+                        break;
+                    case 2:
+                        chatclient->handle_login_code();
+                        break;
+                    case 3:
+                        chatclient->handle_login_key();
+                        break;
+                    case 4:
+                        chatclient->handle_forget_key();
+                        break;
+                    case 5:
+                        chatclient->handle_destory();
+                        break;
+                    case 0:
+                        chatclient->handle_exit();
+                        exit(0);
+                    case 6:
+                        chatclient->handle_addfriend();
+                        break;
+                    case 7:
+                        chatclient->handle_delfriend();
+                        break;
+                    case 8:
+                        chatclient->handle_block();
+                        break;
+                    case 9:
+                        chatclient->handle_disblock();
+                        break;
+                    case 10:
+                        chatclient->handle_friendlist();
+                        break;
+                    case 11:
+                        chatclient->handle_blocklist();
+                        break;
+                    case 12:
+                        chatclient->handle_addfriendmsg();
+                        break;
+                    case 13:
+                        chatclient->handle_friendchat();
+                        break;
+                    case 14:
+                        chatclient->handle_onlinelist();
+                        break;
+                    case 15:
+                        chatclient->handle_creategroup();
+                        break;
+                    case 16:
+                        chatclient->handle_applyjoingroup();
+                        break;
+                    case 17:
+                        chatclient->handle_exitgroup();
+                    case 18:
+                        chatclient->handle_groupmember();
+                        break;
+                    case 19:
+                        chatclient->handle_setgroupmanager();
+                        break;
+                    case 20:
+                        chatclient->handle_delgroup();
+                        break;
+                    case 21:
+                        chatclient->handle_grouplist();
+                        break;
+                    case 22:
+                        chatclient->handle_delmember();
+                        break;
+                    case 23:
+                        chatclient->handle_groupchat();
+                        break;
+                    case 24:
+                        chatclient->handle_applyjoinmsg();
+                        break;
+                    case 25:
+                        chatclient->handle_sendfile();
+                        break;
+                    case 26:
+                        chatclient->handle_sendedfile();
+                        break;
+                    case 27:
+                        chatclient->handle_groupsendfile();
+                        break;
+                    case 28:
+                        chatclient->handle_exitlogin();
+                        chatclient->chatis_login = false;
+                        break;
+                    case 29:
+                        chatclient->handle_exit();
+                        exit(0);
+                    default:
+                        std::cout << choice;
+                        std::cout << "请输入有效选项!" << std::endl;
+                        break;
+                };
+            }else{
+            }
+        }
+   
+    }
+}
+int main(int argc, char* argv[]) {
+    EventLoop loop;
+    InetAddress chataddr(argv[1], 8888);
+    InetAddress fileaddr(argv[1], 9999);
+    chatclient chatclient(&loop, chataddr);
+    FileClient fileclient(&loop, fileaddr);
+    chatclient.setfileclient(&fileclient);
+    fileclient.setchatclient(&chatclient);
+    std::thread t1(mainfunction, &chatclient);
+    std::thread t2(handle_message,&chatclient);
+    std::thread t3(handle_event,&chatclient);
+    int timeout = -1;
+    loop.loop(timeout);
+    chatclient.msg_cv.notify_all();
+    chatclient.event_cv.notify_all();
+    t2.join();
+    t3.join();
+    return 0;
+}

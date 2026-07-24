@@ -8,10 +8,6 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/cx33071/MyChatRoom/account.cc" "CMakeFiles/server.dir/account.cc.o" "gcc" "CMakeFiles/server.dir/account.cc.o.d"
-  "/home/cx33071/MyChatRoom/choicework.cc" "CMakeFiles/server.dir/choicework.cc.o" "gcc" "CMakeFiles/server.dir/choicework.cc.o.d"
-  "/home/cx33071/MyChatRoom/friend.cc" "CMakeFiles/server.dir/friend.cc.o" "gcc" "CMakeFiles/server.dir/friend.cc.o.d"
-  "/home/cx33071/MyChatRoom/group.cc" "CMakeFiles/server.dir/group.cc.o" "gcc" "CMakeFiles/server.dir/group.cc.o.d"
   "/home/cx33071/muduo-/base/CurrentThread.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/CurrentThread.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/CurrentThread.cc.o.d"
   "/home/cx33071/muduo-/base/Timestamp.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/Timestamp.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/Timestamp.cc.o.d"
   "/home/cx33071/muduo-/base/logStream.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/logStream.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/base/logStream.cc.o.d"
@@ -29,7 +25,14 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/cx33071/muduo-/net/TcpServer.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/TcpServer.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/TcpServer.cc.o.d"
   "/home/cx33071/muduo-/net/Timer.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/Timer.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/Timer.cc.o.d"
   "/home/cx33071/muduo-/net/TimerQueue.cc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/TimerQueue.cc.o" "gcc" "CMakeFiles/server.dir/home/cx33071/muduo-/net/TimerQueue.cc.o.d"
-  "/home/cx33071/MyChatRoom/server.cc" "CMakeFiles/server.dir/server.cc.o" "gcc" "CMakeFiles/server.dir/server.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/ChatServer.cc" "CMakeFiles/server.dir/server/ChatServer.cc.o" "gcc" "CMakeFiles/server.dir/server/ChatServer.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/FILEredis.cc" "CMakeFiles/server.dir/server/FILEredis.cc.o" "gcc" "CMakeFiles/server.dir/server/FILEredis.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/FileServer.cc" "CMakeFiles/server.dir/server/FileServer.cc.o" "gcc" "CMakeFiles/server.dir/server/FileServer.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/Mysql.cc" "CMakeFiles/server.dir/server/Mysql.cc.o" "gcc" "CMakeFiles/server.dir/server/Mysql.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/account.cc" "CMakeFiles/server.dir/server/account.cc.o" "gcc" "CMakeFiles/server.dir/server/account.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/friend.cc" "CMakeFiles/server.dir/server/friend.cc.o" "gcc" "CMakeFiles/server.dir/server/friend.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/group.cc" "CMakeFiles/server.dir/server/group.cc.o" "gcc" "CMakeFiles/server.dir/server/group.cc.o.d"
+  "/home/cx33071/MyChatRoom/server/server.cc" "CMakeFiles/server.dir/server/server.cc.o" "gcc" "CMakeFiles/server.dir/server/server.cc.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

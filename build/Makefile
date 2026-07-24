@@ -142,137 +142,77 @@ client/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/build
 .PHONY : client/fast
 
-account.o: account.cc.o
-.PHONY : account.o
+client/ChatClient.o: client/ChatClient.cc.o
+.PHONY : client/ChatClient.o
 
 # target to build an object file
-account.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/account.cc.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/account.cc.o
-.PHONY : account.cc.o
+client/ChatClient.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/ChatClient.cc.o
+.PHONY : client/ChatClient.cc.o
 
-account.i: account.cc.i
-.PHONY : account.i
+client/ChatClient.i: client/ChatClient.cc.i
+.PHONY : client/ChatClient.i
 
 # target to preprocess a source file
-account.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/account.cc.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/account.cc.i
-.PHONY : account.cc.i
+client/ChatClient.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/ChatClient.cc.i
+.PHONY : client/ChatClient.cc.i
 
-account.s: account.cc.s
-.PHONY : account.s
+client/ChatClient.s: client/ChatClient.cc.s
+.PHONY : client/ChatClient.s
 
 # target to generate assembly for a file
-account.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/account.cc.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/account.cc.s
-.PHONY : account.cc.s
+client/ChatClient.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/ChatClient.cc.s
+.PHONY : client/ChatClient.cc.s
 
-choicework.o: choicework.cc.o
-.PHONY : choicework.o
+client/FileClient.o: client/FileClient.cc.o
+.PHONY : client/FileClient.o
 
 # target to build an object file
-choicework.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.o
-.PHONY : choicework.cc.o
+client/FileClient.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/FileClient.cc.o
+.PHONY : client/FileClient.cc.o
 
-choicework.i: choicework.cc.i
-.PHONY : choicework.i
+client/FileClient.i: client/FileClient.cc.i
+.PHONY : client/FileClient.i
 
 # target to preprocess a source file
-choicework.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.i
-.PHONY : choicework.cc.i
+client/FileClient.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/FileClient.cc.i
+.PHONY : client/FileClient.cc.i
 
-choicework.s: choicework.cc.s
-.PHONY : choicework.s
+client/FileClient.s: client/FileClient.cc.s
+.PHONY : client/FileClient.s
 
 # target to generate assembly for a file
-choicework.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/choicework.cc.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/choicework.cc.s
-.PHONY : choicework.cc.s
+client/FileClient.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/FileClient.cc.s
+.PHONY : client/FileClient.cc.s
 
-client.o: client.cc.o
-.PHONY : client.o
+client/client.o: client/client.cc.o
+.PHONY : client/client.o
 
 # target to build an object file
-client.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client.cc.o
-.PHONY : client.cc.o
+client/client.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cc.o
+.PHONY : client/client.cc.o
 
-client.i: client.cc.i
-.PHONY : client.i
-
-# target to preprocess a source file
-client.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client.cc.i
-.PHONY : client.cc.i
-
-client.s: client.cc.s
-.PHONY : client.s
-
-# target to generate assembly for a file
-client.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client.cc.s
-.PHONY : client.cc.s
-
-friend.o: friend.cc.o
-.PHONY : friend.o
-
-# target to build an object file
-friend.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/friend.cc.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/friend.cc.o
-.PHONY : friend.cc.o
-
-friend.i: friend.cc.i
-.PHONY : friend.i
+client/client.i: client/client.cc.i
+.PHONY : client/client.i
 
 # target to preprocess a source file
-friend.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/friend.cc.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/friend.cc.i
-.PHONY : friend.cc.i
+client/client.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cc.i
+.PHONY : client/client.cc.i
 
-friend.s: friend.cc.s
-.PHONY : friend.s
-
-# target to generate assembly for a file
-friend.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/friend.cc.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/friend.cc.s
-.PHONY : friend.cc.s
-
-group.o: group.cc.o
-.PHONY : group.o
-
-# target to build an object file
-group.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/group.cc.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/group.cc.o
-.PHONY : group.cc.o
-
-group.i: group.cc.i
-.PHONY : group.i
-
-# target to preprocess a source file
-group.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/group.cc.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/group.cc.i
-.PHONY : group.cc.i
-
-group.s: group.cc.s
-.PHONY : group.s
+client/client.s: client/client.cc.s
+.PHONY : client/client.s
 
 # target to generate assembly for a file
-group.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/group.cc.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/group.cc.s
-.PHONY : group.cc.s
+client/client.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/client/client.cc.s
+.PHONY : client/client.cc.s
 
 home/cx33071/muduo-/base/CurrentThread.o: home/cx33071/muduo-/base/CurrentThread.cc.o
 .PHONY : home/cx33071/muduo-/base/CurrentThread.o
@@ -733,29 +673,197 @@ home/cx33071/muduo-/net/TimerQueue.cc.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/client.dir/build.make CMakeFiles/client.dir/home/cx33071/muduo-/net/TimerQueue.cc.s
 .PHONY : home/cx33071/muduo-/net/TimerQueue.cc.s
 
-server.o: server.cc.o
-.PHONY : server.o
+server/ChatServer.o: server/ChatServer.cc.o
+.PHONY : server/ChatServer.o
 
 # target to build an object file
-server.cc.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cc.o
-.PHONY : server.cc.o
+server/ChatServer.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/ChatServer.cc.o
+.PHONY : server/ChatServer.cc.o
 
-server.i: server.cc.i
-.PHONY : server.i
+server/ChatServer.i: server/ChatServer.cc.i
+.PHONY : server/ChatServer.i
 
 # target to preprocess a source file
-server.cc.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cc.i
-.PHONY : server.cc.i
+server/ChatServer.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/ChatServer.cc.i
+.PHONY : server/ChatServer.cc.i
 
-server.s: server.cc.s
-.PHONY : server.s
+server/ChatServer.s: server/ChatServer.cc.s
+.PHONY : server/ChatServer.s
 
 # target to generate assembly for a file
-server.cc.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server.cc.s
-.PHONY : server.cc.s
+server/ChatServer.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/ChatServer.cc.s
+.PHONY : server/ChatServer.cc.s
+
+server/FILEredis.o: server/FILEredis.cc.o
+.PHONY : server/FILEredis.o
+
+# target to build an object file
+server/FILEredis.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FILEredis.cc.o
+.PHONY : server/FILEredis.cc.o
+
+server/FILEredis.i: server/FILEredis.cc.i
+.PHONY : server/FILEredis.i
+
+# target to preprocess a source file
+server/FILEredis.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FILEredis.cc.i
+.PHONY : server/FILEredis.cc.i
+
+server/FILEredis.s: server/FILEredis.cc.s
+.PHONY : server/FILEredis.s
+
+# target to generate assembly for a file
+server/FILEredis.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FILEredis.cc.s
+.PHONY : server/FILEredis.cc.s
+
+server/FileServer.o: server/FileServer.cc.o
+.PHONY : server/FileServer.o
+
+# target to build an object file
+server/FileServer.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FileServer.cc.o
+.PHONY : server/FileServer.cc.o
+
+server/FileServer.i: server/FileServer.cc.i
+.PHONY : server/FileServer.i
+
+# target to preprocess a source file
+server/FileServer.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FileServer.cc.i
+.PHONY : server/FileServer.cc.i
+
+server/FileServer.s: server/FileServer.cc.s
+.PHONY : server/FileServer.s
+
+# target to generate assembly for a file
+server/FileServer.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/FileServer.cc.s
+.PHONY : server/FileServer.cc.s
+
+server/Mysql.o: server/Mysql.cc.o
+.PHONY : server/Mysql.o
+
+# target to build an object file
+server/Mysql.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/Mysql.cc.o
+.PHONY : server/Mysql.cc.o
+
+server/Mysql.i: server/Mysql.cc.i
+.PHONY : server/Mysql.i
+
+# target to preprocess a source file
+server/Mysql.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/Mysql.cc.i
+.PHONY : server/Mysql.cc.i
+
+server/Mysql.s: server/Mysql.cc.s
+.PHONY : server/Mysql.s
+
+# target to generate assembly for a file
+server/Mysql.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/Mysql.cc.s
+.PHONY : server/Mysql.cc.s
+
+server/account.o: server/account.cc.o
+.PHONY : server/account.o
+
+# target to build an object file
+server/account.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/account.cc.o
+.PHONY : server/account.cc.o
+
+server/account.i: server/account.cc.i
+.PHONY : server/account.i
+
+# target to preprocess a source file
+server/account.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/account.cc.i
+.PHONY : server/account.cc.i
+
+server/account.s: server/account.cc.s
+.PHONY : server/account.s
+
+# target to generate assembly for a file
+server/account.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/account.cc.s
+.PHONY : server/account.cc.s
+
+server/friend.o: server/friend.cc.o
+.PHONY : server/friend.o
+
+# target to build an object file
+server/friend.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/friend.cc.o
+.PHONY : server/friend.cc.o
+
+server/friend.i: server/friend.cc.i
+.PHONY : server/friend.i
+
+# target to preprocess a source file
+server/friend.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/friend.cc.i
+.PHONY : server/friend.cc.i
+
+server/friend.s: server/friend.cc.s
+.PHONY : server/friend.s
+
+# target to generate assembly for a file
+server/friend.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/friend.cc.s
+.PHONY : server/friend.cc.s
+
+server/group.o: server/group.cc.o
+.PHONY : server/group.o
+
+# target to build an object file
+server/group.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/group.cc.o
+.PHONY : server/group.cc.o
+
+server/group.i: server/group.cc.i
+.PHONY : server/group.i
+
+# target to preprocess a source file
+server/group.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/group.cc.i
+.PHONY : server/group.cc.i
+
+server/group.s: server/group.cc.s
+.PHONY : server/group.s
+
+# target to generate assembly for a file
+server/group.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/group.cc.s
+.PHONY : server/group.cc.s
+
+server/server.o: server/server.cc.o
+.PHONY : server/server.o
+
+# target to build an object file
+server/server.cc.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cc.o
+.PHONY : server/server.cc.o
+
+server/server.i: server/server.cc.i
+.PHONY : server/server.i
+
+# target to preprocess a source file
+server/server.cc.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cc.i
+.PHONY : server/server.cc.i
+
+server/server.s: server/server.cc.s
+.PHONY : server/server.s
+
+# target to generate assembly for a file
+server/server.cc.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/server/server.cc.s
+.PHONY : server/server.cc.s
 
 # Help Target
 help:
@@ -767,21 +875,15 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... client"
 	@echo "... server"
-	@echo "... account.o"
-	@echo "... account.i"
-	@echo "... account.s"
-	@echo "... choicework.o"
-	@echo "... choicework.i"
-	@echo "... choicework.s"
-	@echo "... client.o"
-	@echo "... client.i"
-	@echo "... client.s"
-	@echo "... friend.o"
-	@echo "... friend.i"
-	@echo "... friend.s"
-	@echo "... group.o"
-	@echo "... group.i"
-	@echo "... group.s"
+	@echo "... client/ChatClient.o"
+	@echo "... client/ChatClient.i"
+	@echo "... client/ChatClient.s"
+	@echo "... client/FileClient.o"
+	@echo "... client/FileClient.i"
+	@echo "... client/FileClient.s"
+	@echo "... client/client.o"
+	@echo "... client/client.i"
+	@echo "... client/client.s"
 	@echo "... home/cx33071/muduo-/base/CurrentThread.o"
 	@echo "... home/cx33071/muduo-/base/CurrentThread.i"
 	@echo "... home/cx33071/muduo-/base/CurrentThread.s"
@@ -833,9 +935,30 @@ help:
 	@echo "... home/cx33071/muduo-/net/TimerQueue.o"
 	@echo "... home/cx33071/muduo-/net/TimerQueue.i"
 	@echo "... home/cx33071/muduo-/net/TimerQueue.s"
-	@echo "... server.o"
-	@echo "... server.i"
-	@echo "... server.s"
+	@echo "... server/ChatServer.o"
+	@echo "... server/ChatServer.i"
+	@echo "... server/ChatServer.s"
+	@echo "... server/FILEredis.o"
+	@echo "... server/FILEredis.i"
+	@echo "... server/FILEredis.s"
+	@echo "... server/FileServer.o"
+	@echo "... server/FileServer.i"
+	@echo "... server/FileServer.s"
+	@echo "... server/Mysql.o"
+	@echo "... server/Mysql.i"
+	@echo "... server/Mysql.s"
+	@echo "... server/account.o"
+	@echo "... server/account.i"
+	@echo "... server/account.s"
+	@echo "... server/friend.o"
+	@echo "... server/friend.i"
+	@echo "... server/friend.s"
+	@echo "... server/group.o"
+	@echo "... server/group.i"
+	@echo "... server/group.s"
+	@echo "... server/server.o"
+	@echo "... server/server.i"
+	@echo "... server/server.s"
 .PHONY : help
 
 

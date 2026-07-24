@@ -1,0 +1,121 @@
+#pragma once
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <termios.h>
+#include <wait.h>
+#include <condition_variable>
+#include <future>
+#include <queue>
+#include <unordered_map>
+#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "ChatClient.h"
+#include "json.hpp" 
+#define RESET "\033[0m"
+#define GREEN "\033[1;32m"
+#define BLUEC "\033[1;34m"
+#define BLUE "\033[34m"
+#define PURPLE "\033[1;35m"
+using json = nlohmann::json;
+class FileClient;
+class chatclient {
+   private:
+    TcpClient client_;
+    std::vector<std::string> friendhistory;
+    std::vector<std::string> groupnamehistory;
+    std::string filename;
+    std::string filepath;
+    std::string password;
+    std::string verifycode;
+    std::string frienduser;
+    std::string groupname;
+    json j;
+    std::condition_variable chat_cv;
+    std::mutex chat_mutex;
+
+    std::atomic<bool> chatconnok=false;
+    std::mutex active_mutex;
+    std::unordered_map<std::string, std::promise<json>> active_requests;
+    std::atomic<bool> running=false;
+    std::atomic<int> req_id=0;
+    std::string id;
+    EventLoop *loop_;
+
+   public:
+    FileClient* fileclient_;
+    std::unordered_map<std::string, std::queue<json>> msg_map;
+    TcpClient::TcpConnectionPtr chat_conn;
+    std::vector<json> addlist;
+    std::vector<json> applyjoinlist;
+    std::vector<json> sendfilelist;
+    std::string account;
+    std::atomic<bool> inchat=false;
+    std::atomic<bool> groupchat=false;
+    std::string current_chat;
+    struct Event {
+        enum Type {
+            Friendadd,
+            GroupInvite,
+            FRIENDCHAT,
+            GROUPCHAT,
+            APPLYJOINGROUP,
+            SENDFILE
+        } type;
+        json data;
+    };
+    std::queue<Event> event_queue;
+    std::mutex event_mutex;
+    std::condition_variable event_cv;
+    std::atomic<bool> chatis_login=false;
+    std::mutex msg_mutex;
+    std::condition_variable msg_cv;
+    chatclient(EventLoop* loop, const InetAddress& addr);
+    void sendheart();
+    void setfileclient(FileClient* client);
+    void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
+    void messagecallback(const TcpClient::TcpConnectionPtr& conn,
+                         Buffer* buf,
+                         Timestamp);
+    void main_menu();
+    void friend_menu();
+    void handle_signup();
+    void handle_login_code();
+    void handle_login_key();
+    void handle_forget_key();
+    void handle_destory();
+    void handle_exit();
+    void handle_addfriend();
+    void handle_delgroup();
+    void handle_applyjoingroup();
+    void handle_friendchat();
+    void getgrouphistory(std::string groupname);
+    void handle_friendlist();
+    void handle_block();
+    void handle_disblock();
+    void handle_delmember();
+    bool is_exists(std::string account);
+    void handle_delfriend();
+    void handle_creategroup();
+    void handle_exitgroup();
+    void handle_groupsendfile();
+    void handle_exitlogin();
+    void handle_addfriendmsg();
+    void handle_applyjoinmsg();
+    void handle_groupchat();
+    void handle_onlinelist();
+    void handle_blocklist();
+    void handle_grouplist();
+    void handle_groupmember();
+    void handle_setgroupmanager();
+    void handle_sendedfile();
+    void handle_sendfile();
+    void handle_loadfile();
+    bool is_existsgroup(std::string groupname);
+    bool is_manager(std::string groupname, std::string count);
+    bool is_groupmember(std::string groupname, std::string count);
+    int is_friend(std::string account);
+    void printfmembers();
+
+    int is_blockfriend(std::string account);
+    std::string gen_req_id();
+    std::string cinkey();
+};

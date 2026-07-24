@@ -230,6 +230,12 @@ CURL_LIBRARY_DEBUG:FILEPATH=CURL_LIBRARY_DEBUG-NOTFOUND
 //Path to a library.
 CURL_LIBRARY_RELEASE:FILEPATH=/usr/lib/x86_64-linux-gnu/libcurl.so
 
+//Path to a library.
+MYSQL_CLIENT_LIB:FILEPATH=/usr/lib/x86_64-linux-gnu/libmysqlclient.so
+
+//Path to a file.
+MYSQL_INCLUDE_DIR:PATH=/usr/include
+
 //Value Computed by CMake
 MyChatRoom_BINARY_DIR:STATIC=/home/cx33071/MyChatRoom/build
 
