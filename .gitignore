@@ -1,0 +1,13 @@
+# CMake build directory
+build/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# 编译产生的可执行文件（按需）
+*.o
+*.a
+*.so
