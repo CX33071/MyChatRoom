@@ -1,13 +1,11 @@
-# CMake build directory
+# Build directory
 build/
 
-# CMake generated files
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
+# Executable files
+bin/
 
-# 编译产生的可执行文件（按需）
-*.o
-*.a
-*.so
+# Notes
+note/
+
+# Runtime data
+sale_record.dat
