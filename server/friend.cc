@@ -29,7 +29,29 @@ Friend::Friend() {
     sql =
         "create table if not exists friendchat_history(id int auto_increment primary key,sender varchar(30),reciver varchar(30),content text,"
         "send_time datetime default current_timestamp);";
-    mysql_.createinfo(sql.c_str());
+    // mysql_.createinfo(sql.c_str());
+    // sql =
+    //     "create table if not exists friendname_info (id int increment primary "
+    //     "key,name varchar(100),friendname varchar(100));";
+    // mysql_.createinfo(sql.c_str());
+}
+std::string Friend::getname(std::string account){
+    auto fut = redis_.exists({account});
+    redis_.sync_commit();
+    if (!fut.get().as_integer()) {
+        std::string sql =
+            "select name from name_info where account ='" + account + "'";
+        std::string res = mysql_.selectstring(sql.c_str());
+        if (!res.empty()) {
+            redis_.set(account, res);
+            redis_.sync_commit();
+            return res;
+        }
+    }
+    auto fut1 = redis_.get(account);
+    redis_.sync_commit();
+    std::string name = fut1.get().as_string();
+    return name;
 }
 bool Friend::addapply(std::string applyaccount, std::string appliedaccount) {
     auto fut1 = redis_.exists({appliedaccount + "key"});
@@ -320,10 +342,14 @@ std::vector<std::string> Friend::onlinelist(std::string account) {
             redis_.sync_commit();
             status = fut4.get().as_string();
         }
-        if (status == "1")
-            list.push_back(friend_account + "    [在线]");
-        else
-            list.push_back(friend_account + "    [离线]");
+        if (status == "1"){
+            std::string name = getname(friend_account);
+            list.push_back(name + "[在线]");
+        }
+        else{
+            std::string name = getname(friend_account);
+            list.push_back(name + "[离线]");
+        }
     }
     return list;
 }

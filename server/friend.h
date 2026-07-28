@@ -30,6 +30,7 @@ class Friend {
     int isfriend(std::string account, std::string friendaccount) ;
     void delfriend1(std::string account, std::string target);
     int isblock(std::string applyaccount, std::string appliedaccount);
+    std::string getname(std::string account);
     void addfriend(std::string account, std::string target);
     void historyfriendchat(std::string account1,
                            std::string account2,

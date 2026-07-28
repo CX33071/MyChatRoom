@@ -19,6 +19,31 @@ Verifycode::Verifycode() {
         "create table if not exists account_online_info(id int auto_increment "
         "primary key,account varchar(30) not null,online int); ";
     mysql_.createinfo(sql.c_str());
+    sql =
+        "create table if not exists name_info (id int auto_increment primary "
+        "key,name varchar(100),account varchar(50));";
+    mysql_.createinfo(sql.c_str());
+    sql =
+        "create table if not exists onlinename_info (id int auto_increment primary "
+        "key,name varchar(100),online int);";
+    mysql_.createinfo(sql.c_str());
+}
+bool Verifycode::isexistsname(std::string name){
+    auto fut = redis_.exists({name});
+    redis_.sync_commit();
+    if(!fut.get().as_integer()){
+        std::string sql =
+            "select account from name_info where name ='" + name + "'";
+       std::string account= mysql_.selectstring(sql.c_str());
+       if(!account.empty()){
+           redis_.set(name, account);
+           redis_.sync_commit();
+           return true;
+       }else{
+           return false;
+       }
+    }
+    return true;
 }
 std::string Verifycode::code() {
     std::string code;
@@ -26,6 +51,41 @@ std::string Verifycode::code() {
         code += ('0' + rand() % 10);
     }
     return code;
+}
+std::string Verifycode::getaccount(std::string name){
+    auto fut = redis_.exists({name});
+    redis_.sync_commit();
+    if (!fut.get().as_integer()) {
+        std::string sql="select account from name_info where name ='"+name+"'";
+        std::string res = mysql_.selectstring(sql.c_str());
+        if(!res.empty()){
+            redis_.set(name, res);
+            redis_.sync_commit();
+            return res;
+        }
+    }
+   auto fut1= redis_.get(name);
+   redis_.sync_commit();
+   std::string account = fut1.get().as_string();
+   return account;
+}
+std::string Verifycode::getname(std::string account){
+    auto fut=redis_.exists({account});
+    redis_.sync_commit();
+    if(!fut.get().as_integer()){
+        std::string sql =
+            "select name from name_info where account ='" + account + "'";
+        std::string res = mysql_.selectstring(sql.c_str());
+        if(!res.empty()){
+            redis_.set(account, res);
+            redis_.sync_commit();
+            return res;
+        }
+    }
+    auto fut1=redis_.get(account);
+    redis_.sync_commit();
+    std::string name = fut1.get().as_string();
+    return name;
 }
 int Verifycode::isexists(std::string account){
     auto t = redis_.exists({account + "key"});
@@ -38,9 +98,11 @@ int Verifycode::isexists(std::string account){
             redis_.set(account + "key", password);
             redis_.sync_commit();
             return 1;
+        }else{
+            return 2;
         }
     }
-    return 2;
+    return 1;
 }
 bool Verifycode::addredis(
                           const std::string& account) {
@@ -64,7 +126,7 @@ bool Verifycode::addredis(
     sendcom( account, "验证码", "您的验证码是: " + s + " 5分钟内有效");
     return true;
 }
-bool Verifycode::signup(std::string account,std::string password) {
+bool Verifycode::signup(std::string account,std::string password,std::string name) {
     std::string sql = "select password from account_info where account='"+account+"'";
     std::string res = mysql_.selectstring(sql.c_str());
     if (!res.empty()) {
@@ -79,34 +141,61 @@ bool Verifycode::signup(std::string account,std::string password) {
     }
     redis_.set(account+"key", password);
     redis_.set("online" + account, "0");
+    redis_.set(name,account);
+    redis_.set(account, name);
+    redis_.set("onlinename" + name, "0");    
     redis_.sync_commit();
     std::string sql1 = "insert into account_info(account,password)values('" +
                        account + "','" + password + "')";
     std::string sql2 =
         "insert into account_online_info(account,online)values('" + account +
         "',0)";
+    std::string sql3 = "insert into name_info (name,account)values('" +
+                       name + "','" + account + "')";
+    std::string sql4 =
+        "insert into onlinename_info (name,online)values('" + name + "',1)";
     mysql_.addmsg(sql1.c_str());
     mysql_.addmsg(sql2.c_str());
-
+    mysql_.addmsg(sql3.c_str());
+    mysql_.addmsg(sql4.c_str());
     return true;
 }
 bool Verifycode::verify(std::string account,std::string code) {
     auto fut = redis_.get(account + "code");
+    std::string name = getname(account);
     redis_.sync_commit();
     if (fut.get().as_string() == code) {
         redis_.del({account + "code"});
         redis_.sync_commit();
         redis_.set("online" + account, "1");
+        redis_.set("onlinename" + name, "1");
         redis_.sync_commit();
         std::string sql =
             "update account_online_info set online=1 where account='" +
             account + "'";
         mysql_.changemsg(sql.c_str());
+        sql = "update onlinename_info set online =1 where name ='" + name + "'";
+        mysql_.changemsg(sql.c_str());
         return true;
     }
     return false;
 }
+bool Verifycode::is_online(std::string account) {
+    auto fut = redis_.exists({"online" + account});
+    redis_.sync_commit();
+    if (!fut.get().as_integer()) {
+        return false;
+    }
+  auto fut1 = redis_.get("online" + account);
+  redis_.sync_commit();
+  if (fut1.get().as_string() == "1") {
+      return true;
+  } else {
+      return false;
+  }
+}
 int Verifycode::loginwithkey(std::string account,std::string password) {
+    std::string name = getname(account);
     std::string sql =
         "select password from account_info where account='" + account + "'";
     std::string res = mysql_.selectstring(sql.c_str());
@@ -125,9 +214,12 @@ int Verifycode::loginwithkey(std::string account,std::string password) {
         return 2;
     }
     redis_.set("online" + account, "1");
+    redis_.set("onlinename" + name, "1");
     redis_.sync_commit();
     sql = "update account_online_info set online=1 where account='" + account +
           "'";
+    mysql_.changemsg(sql.c_str());
+    sql = "update onlinename_info set online =1 where name ='" + name + "'";
     mysql_.changemsg(sql.c_str());
     return 0;
 }
@@ -152,6 +244,7 @@ bool Verifycode::forgetkey(std::string account) {
     return true;
 }
 int Verifycode::destroy(std::string account,std::string password,Group&group,Friend&f) {
+    std::string name = getname(account);
     auto fut = redis_.exists({account + "key"});
     redis_.sync_commit();
     if (fut.get().as_integer() == 0) {
@@ -221,10 +314,16 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     mysql_.delmsg(sql.c_str());
     sql = "delete from friendchat_history where reciver ='" + account + "'";
     mysql_.delmsg(sql.c_str());
-    redis_.del({account + "key", account + "code", "online" + account,
-                "friend" + account, "block" + account, "blocked" + account,
-                "addfriend" + account, "addedfriend" + account,
-                "grouplist" + account, "disconnectmsg" + account});
+    sql="delete from onlinename_info where name ='"+name+"'";
+    mysql_.delmsg(sql.c_str());
+    sql = "delete from name_info where name ='" + name + "'";
+    mysql_.delmsg(sql.c_str());
+    std::cout << "name =" << name << std::endl;
+    redis_.del({account + "key", account + "code", "online" + account, account,
+                name, "onlinename" + name, "friend" + account,
+                "block" + account, "blocked" + account, "addfriend" + account,
+                "addedfriend" + account, "grouplist" + account,
+                "disconnectmsg" + account});
     redis_.sync_commit();
     return 0;
 }
@@ -234,6 +333,9 @@ void Verifycode::exitlogin(std::string account){
     std::string sql =
         "update account_online_info set online=0 where account='" + account +
         "'";
+    mysql_.changemsg(sql.c_str());
+    std::string name = getname(account);
+    sql = "update onlinename_info set online =0 where name ='" + name + "'";
     mysql_.changemsg(sql.c_str());
 }
 void Verifycode::sendcom(

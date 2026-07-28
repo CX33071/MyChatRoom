@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <future>
 #include <queue>
+#include <dirent.h>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
 #include "ChatClient.h"
@@ -35,12 +36,13 @@ class chatclient {
     std::atomic<bool> chatconnok=false;
     std::mutex active_mutex;
     std::unordered_map<std::string, std::promise<json>> active_requests;
-    std::atomic<bool> running=false;
     std::atomic<int> req_id=0;
     std::string id;
     EventLoop *loop_;
 
    public:
+    std::atomic<bool> running = false;
+    std::string name;
     FileClient* fileclient_;
     std::unordered_map<std::string, std::queue<json>> msg_map;
     TcpClient::TcpConnectionPtr chat_conn;
@@ -72,11 +74,14 @@ class chatclient {
     void sendheart();
     void setfileclient(FileClient* client);
     void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
+    bool is_online(std::string account);
     void messagecallback(const TcpClient::TcpConnectionPtr& conn,
                          Buffer* buf,
                          Timestamp);
     void main_menu();
     void friend_menu();
+    std::string getaccount(std::string name);
+    std::string getname(std::string account);
     void handle_signup();
     void handle_login_code();
     void handle_login_key();
@@ -90,9 +95,11 @@ class chatclient {
     void getgrouphistory(std::string groupname);
     void handle_friendlist();
     void handle_block();
+    std::vector<std::string> getlocalfile(std::string path);
     void handle_disblock();
     void handle_delmember();
     bool is_exists(std::string account);
+    bool is_existsname(std::string name);
     void handle_delfriend();
     void handle_creategroup();
     void handle_exitgroup();

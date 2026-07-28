@@ -33,6 +33,24 @@ Group::Group() {
         "datetime default current_timestamp);";
     mysql_.createinfo(sql5.c_str());
 }
+std::string Group::getname(std::string account) {
+    auto fut = redis_.exists({account});
+    redis_.sync_commit();
+    if (!fut.get().as_integer()) {
+        std::string sql =
+            "select name from name_info where account ='" + account + "'";
+        std::string res = mysql_.selectstring(sql.c_str());
+        if (!res.empty()) {
+            redis_.set(account, res);
+            redis_.sync_commit();
+            return res;
+        }
+    }
+    auto fut1 = redis_.get(account);
+    redis_.sync_commit();
+    std::string name = fut1.get().as_string();
+    return name;
+}
  std::string Group::creategroup(std::string account, std::string name){
 
      auto fut = redis_.exists({name+"owner:"});
@@ -221,7 +239,8 @@ std::vector<std::string> Group::
      redis_.sync_commit();
      auto reply1 = f4.get();
      for (auto it : reply1.as_array()) {
-         members.push_back("管理员:"+it.as_string());
+         std::string name = getname(it.as_string());
+         members.push_back("管理员:" + name);
      }
      auto s1 = redis_.exists({groupname + "members"});
      redis_.sync_commit();
@@ -236,8 +255,10 @@ std::vector<std::string> Group::
      auto f2 = redis_.smembers(groupname + "members");
      redis_.sync_commit();
      auto reply = f2.get();
-     for(auto it:reply.as_array()){
-         members.push_back(it.as_string());
+     std::string name;
+     for (auto it : reply.as_array()) {
+         name = getname(it.as_string());
+         members.push_back(name);
      }
      return members;
  }

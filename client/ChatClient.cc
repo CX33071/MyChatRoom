@@ -22,7 +22,7 @@ void chatclient::connectioncallback(const TcpClient::TcpConnectionPtr& conn){
         chat_conn.reset();
         chatconnok = false;
         chatis_login = false;
-        std::cout << "\n服务器断开连接\n";
+        // std::cout << "\nchatclientclose!\n";
     }
 }
 void chatclient::sendheart(){
@@ -135,19 +135,80 @@ void chatclient::friend_menu() {
               << RESET;
     std::cout << GREEN << "请选择:" << RESET;
 }
-
+std::string chatclient::getaccount(std::string name){
+    j["cmd"]="getaccount";
+    j["name"] = name;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    return res["data"];
+}
+std::string chatclient::getname(std::string account){
+    j["cmd"]="getname";
+    j["account"]=account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    return res["data"];
+}
+bool chatclient::is_existsname(std::string name){
+    j["cmd"]="isexistsname";
+    j["name"]=name;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    if(res["code"]=="1"){
+        return true;
+    } else {
+        return false;
+    }
+}
 void chatclient::handle_signup() {
     if (chatis_login) {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         std::cout << "请输入你的qq邮箱:";
         std::getline(std::cin >> std::ws, account);
-        std::cout << "请输入你的密码:";
+        bool b = is_exists(account);
+        if(b){
+            std::cout << PURPLE << "该账号已经存在，请登录!" << RESET
+                      << std::endl;
+            return;
+        }
+        std::cout<< PURPLE<< "请输入你的密码:";
         password = cinkey();
         std::cout << std::endl;
+        std::cout << PURPLE << "请输入你的昵称:" ;
+        std::getline(std::cin>>std::ws,name);
+        while(is_existsname(name)){
+            std::cout << PURPLE << "该昵称已被用户使用，请重新输入昵称:";
+            std::getline(std::cin >> std::ws, name);
+        }
         j["cmd"] = "signup";
         j["account"] = account;
         j["password"] = password;
+        j["name"] = name;
         id = gen_req_id();
         j["request_id"] = id;
         std::promise<json> p;
@@ -161,13 +222,43 @@ void chatclient::handle_signup() {
         std::cout << res["data"] << std::endl;
     }
 }
-
+bool chatclient::is_online(std::string account){
+    j["cmd"]="is_online";
+    j["account"]=account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    if(res["code"]=="1"){
+        return true;
+    }else{
+        return false;
+    }
+}
 void chatclient::handle_login_code() {
     if (chatis_login) {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         std::cout << "请先输入你的qq邮箱:";
         std::getline(std::cin >> std::ws, account);
+        bool b=is_exists(account);
+        if(!b){
+            std::cout << PURPLE << "该帐号并不存在，请先注册!" << RESET
+                      << std::endl;
+            return;
+        }else{
+            if(is_online(account)){
+                std::cout << PURPLE << "该账号正处于登录状态!" << RESET
+                          << std::endl;
+                return;
+            }
+        }
         j["cmd"] = "verifycode";
         j["account"] = account;
         id = gen_req_id();
@@ -206,6 +297,7 @@ void chatclient::handle_login_code() {
 
         if (cc == "1") {
             chatis_login = true;
+            name = getname(account);
         }
         std::cout << res["data"] << std::endl;
     }
@@ -216,6 +308,17 @@ void chatclient::handle_login_key() {
     } else {
         std::cout << PURPLE << "请先输入你的qq邮箱:" << RESET;
         std::getline(std::cin >> std::ws, account);
+        if(!is_exists(account)){
+            std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
+                      << std::endl;
+            return;
+        } else {
+            if (is_online(account)) {
+                std::cout << PURPLE << "该账号正处于登录状态!" << RESET
+                          << std::endl;
+                return;
+            }
+        }
         std::cout << PURPLE << "请输入您的密码:" << RESET;
         password = cinkey();
         j["cmd"] = "keysignin";
@@ -235,6 +338,7 @@ void chatclient::handle_login_key() {
 
         if (cc == "1") {
             chatis_login = true;
+            name = getname(account);
         }
         std::cout << res["data"] << std::endl;
     }
@@ -246,6 +350,11 @@ void chatclient::handle_forget_key() {
     } else {
         std::cout << "请输入你的qq邮箱: ";
         std::getline(std::cin >> std::ws, account);
+        if (!is_exists(account)) {
+            std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
+                      << std::endl;
+            return;
+        }
         j["cmd"] = "forgetkey";
         j["account"] = account;
         id = gen_req_id();
@@ -267,6 +376,11 @@ void chatclient::handle_destory() {
     } else {
         std::cout << PURPLE << "请先输入你的qq邮箱:" << RESET;
         std::getline(std::cin >> std::ws, account);
+        if (!is_exists(account)) {
+            std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
+                      << std::endl;
+            return;
+        }
         std::cout << PURPLE << "请输入您的密码:" << RESET;
         password = cinkey();
         j["cmd"] = "destory";
@@ -287,11 +401,19 @@ void chatclient::handle_destory() {
 }
 
 void chatclient::handle_exit() {
-    std::cout << "再见！" << std::endl;
+    std::cout << std::endl;
+    std::cout<<PURPLE << "再见！" <<RESET<< std::endl;
     running = false;
     msg_cv.notify_all();
     event_cv.notify_all();
     chatis_login = false;
+    if(chat_conn){
+        chat_conn->forceClose();
+    }
+    if(fileclient_->file_conn){
+        fileclient_->file_conn->forceClose();
+    }
+    loop_->quit();
 }
 void chatclient::handle_addfriend() {
     if (!chatis_login) {
@@ -408,8 +530,14 @@ int chatclient::is_friend(std::string friendaccount) {
     }
 }
 void chatclient::handle_friendchat() {
-    std::cout << "请输入要私聊的好友账号:";
-    std::getline(std::cin >> std::ws, current_chat);
+    std::cout << "请输入要私聊的好友名称:";
+    std::string friendname;
+    std::getline(std::cin >> std::ws, friendname);
+    if(!is_existsname(friendname)){
+        std::cout << PURPLE << "该用户并不存在!" << RESET << std::endl;
+        return;
+    }
+    current_chat = getaccount(friendname);
     friendhistory.clear();
     int is = is_friend(current_chat);
     if (is == 1) {
@@ -419,14 +547,17 @@ void chatclient::handle_friendchat() {
     } else {
         inchat = true;
         system("clear");
-        std::cout << GREEN << "进入与用户[" << current_chat << "]的聊天界面"
+        std::cout << GREEN << "进入与用户[" << friendname << "]的聊天界面"
                   << RESET << std::endl;
+        std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
+        std::cout << GREEN << "历史聊天" << RESET << std::endl;
         for (int i = 0; i < friendhistory.size(); i++) {
             std::cout << friendhistory[i] << std::endl;
         }
+        std::cout << GREEN << "开启新的聊天!" << RESET << std::endl;
         while (inchat) {
             std::string msg;
-            std::cout << GREEN "[" + account + "]:   " << RESET;
+            std::cout << GREEN<< "[" + name + "]:   " << RESET;
             std::getline(std::cin >> std::ws, msg);
             if (msg == "EXIT") {
                 inchat = false;
@@ -574,12 +705,15 @@ void chatclient::handle_setgroupmanager() {
         std::cin >> num;
         if (num == 1) {
             std::string count;
-            std::cout << "请输入要添加为管理员的用户帐号:";
-            std::getline(std::cin >> std::ws, count);
-            b = is_exists(count);
+            std::string friendname;
+            std::cout << "请输入要添加为管理员的用户:";
+            std::getline(std::cin >> std::ws, friendname);
+            b = is_existsname(friendname);
             if(!b){
-                std::cout << PURPLE << "该用账号并不存在" << RESET << std::endl;
+                std::cout << PURPLE << "该用户并不存在" << RESET << std::endl;
+                return;
             }
+            count = getaccount(friendname);
             b = is_groupmember(groupname, count);
             if (!b) {
                 std::cout << "该用户并不是该群成员，请先邀请该用户进群"
@@ -596,8 +730,14 @@ void chatclient::handle_setgroupmanager() {
             j["account"] = count;
         } else {
             std::string count;
-            std::cout << "请输入要删除的管理员帐号:";
-            std::getline(std::cin >> std::ws, count);
+            std::string friendname;
+            std::cout << "请输入要删除的管理员:";
+            std::getline(std::cin >> std::ws, friendname);
+            if(!is_existsname(friendname)){
+                std::cout << PURPLE << "该用户并不存在!" << RESET << std::endl;
+                return;
+            }
+            count = getaccount(friendname);
             b = is_groupmember(groupname, count);
             if (!b) {
                 std::cout << "该用户并不是该群成员，请先邀请该用户进群"
@@ -714,8 +854,14 @@ void chatclient::handle_block() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
-        std::cout << "请输入要拉黑的好友账号:";
-        std::getline(std::cin >> std::ws, frienduser);
+        std::cout << "请输入要拉黑的好友:";
+        std::string friendname;
+        std::getline(std::cin >> std::ws, friendname);
+        if(!is_existsname(friendname)){
+            std::cout << PURPLE << "该用户并不存在" << RESET << std::endl;
+            return;
+        }
+        frienduser = getaccount(friendname);
         int is = is_blockfriend(frienduser);
         if (is == 1) {
             std::cout << "该账号并不存在" << std::endl;
@@ -764,7 +910,7 @@ int chatclient::is_blockfriend(std::string friendaccount) {
 }
 bool chatclient::is_exists(std::string account){
     j["cmd"]="isexists";
-    j["account"] = "account";
+    j["account"] = account;
     id = gen_req_id();
     j["request_id"] = id;
     std::promise<json> p;
@@ -777,20 +923,22 @@ bool chatclient::is_exists(std::string account){
     json res = f.get();
     if(res["code"]=="1"){
         return true;
+    }else{
+        return false;
     }
-    return false;
 }
 void chatclient::handle_disblock() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
-        std::cout << "请输入要取消拉黑的好友账号:";
-        std::getline(std::cin >> std::ws, frienduser);
-        bool b = is_exists(frienduser);
-        if(!b){
-            std::cout << PURPLE << "该账号并不存在" << RESET << std::endl;
+        std::cout << "请输入要取消拉黑的好友:";
+        std::string friendname;
+        std::getline(std::cin >> std::ws, friendname);
+        if (!is_existsname(friendname)) {
+            std::cout << PURPLE << "该用户并不存在" << RESET << std::endl;
             return;
         }
+        frienduser = getaccount(friendname);
         int is = is_blockfriend(frienduser);
         if (is == 1) {
             std::cout << "该账号并不存在" << std::endl;
@@ -818,8 +966,14 @@ void chatclient::handle_delfriend() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
-        std::cout << PURPLE << "请输入要删除的好友账号:" << RESET;
-        std::getline(std::cin >> std::ws, frienduser);
+        std::cout << PURPLE << "请输入要删除的好友:" << RESET;
+        std::string friendname;
+        std::getline(std::cin >> std::ws, friendname);
+        if(!is_existsname(friendname)){
+            std::cout << PURPLE << "该用户并不存在" << RESET << std::endl;
+            return;
+        }
+        frienduser = getaccount(friendname);
         json s;
         s["cmd"] = "delfriend";
         s["account"] = account;
@@ -898,8 +1052,14 @@ void chatclient::handle_delmember() {
     printfmembers();
 
     std::cout << PURPLE << "请输入您要删除的成员:" << RESET;
+    std::string friendname;
     std::string count;
-    std::getline(std::cin >> std::ws, count);
+    std::getline(std::cin >> std::ws, friendname);
+    if(!is_existsname(friendname)){
+        std::cout << PURPLE << "该用户并不存在" << RESET << std::endl;
+        return;
+    }
+    count = getaccount(friendname);
     b = is_groupmember(groupname, count);
     if (!b) {
         std::cout << "该用户并不是群聊成员" << std::endl;
@@ -957,8 +1117,9 @@ void chatclient::handle_addfriendmsg() {
         }else{
             std::cout << "好友申请消息：" << std::endl;
             for (auto i = 0; i < addlist.size(); i++) {
+                std::string friendname = getname(addlist[i]["account"]);
                 std::cout << GREEN << "[" << i + 1
-                          << "]:" << addlist[i]["account"]
+                          << "]:" << friendname
                           << "消息时间:" << addlist[i]["time"] << RESET
                           << std::endl;
             }
@@ -1010,6 +1171,24 @@ void chatclient::handle_addfriendmsg() {
        
     }
 }
+std::vector<std::string> chatclient::getlocalfile(std::string path){
+    std::vector<std::string> list;
+    DIR*dir=opendir(path.c_str());
+    if(dir==nullptr){
+        perror("opendir");
+        return list;
+    }
+    struct dirent* entry;
+    while((entry=readdir(dir))!=nullptr){
+        std::string name = entry->d_name;
+        if (name == "."||name==".."){
+            continue;
+        }
+        list.push_back(name);
+    }
+    closedir(dir);
+    return list;
+}
 void chatclient::handle_sendedfile() {
     json reply;
     if (!chatis_login) {
@@ -1037,10 +1216,30 @@ void chatclient::handle_sendedfile() {
            std::getline(std::cin >> std::ws, filepath);
            std::cout << RESET << std::endl;
            std::string from = sendfilelist[num - 1]["from"];
-         
            filename = sendfilelist[num - 1]["filename"];
-           
-               reply["cmd"] = "recvfile";
+           std::vector<std::string> pathfile = getlocalfile(filepath);
+           for(auto t:pathfile){
+            if(t==filename){
+                std::cout << PURPLE << "你的本地路径" << filepath
+                          << "里已经存在文件" << t << ",要替换吗？" 
+                          << std::endl;
+                std::cout << "请输入替换y|Y,放弃n|N:";
+                std::string ss;
+                std::getline(std::cin >> std::ws, ss);
+                while(true){
+                    if (ss == "y" || ss == "Y") {
+                        break;
+                    } else if (ss == "n" || ss == "N") {
+                        return;
+                    } else {
+                        std::cout << PURPLE << "请输入替换y|Y,放弃n|N:";
+                        std::getline(std::cin >> std::ws, ss);
+                    }
+                }
+               
+            }
+           }
+           reply["cmd"] = "recvfile";
 
            reply["from"] = from;
            reply["ID"] = sendfilelist[num - 1]["ID"];
@@ -1087,12 +1286,13 @@ void chatclient::handle_applyjoinmsg() {
            }
            std::cout << std::endl;
            std::string g = applyjoinlist[num - 1]["groupname"];
-           std::string a = applyjoinlist[num - 1]["from"];
+           std::string a = getname(applyjoinlist[num - 1]["from"]);
            std::cout << "请处理来自用户:" << a << "加入群聊" << g
                      << "的消息:" << std::endl;
            std::cout << "请输入y 同意|n 拒绝:";
            std::string ss;
            std::getline(std::cin >> std::ws, ss);
+           std::string a1 = applyjoinlist[num - 1]["from"];
            applyjoinlist.erase(applyjoinlist.begin() + num - 1);
            while (true) {
                if (ss == "y" || ss == "Y") {
@@ -1106,7 +1306,7 @@ void chatclient::handle_applyjoinmsg() {
                    std::getline(std::cin >> std::ws, ss);
                }
            }
-           reply["account"] = a;
+           reply["account"] = a1;
            reply["groupname"] = g;
            id = gen_req_id();
            reply["request_id"] = id;
@@ -1181,7 +1381,7 @@ void chatclient::handle_groupchat() {
         }
         while (groupchat) {
             std::string msg;
-            std::cout << GREEN << "[" << account << "]:" << RESET;
+            std::cout << GREEN << "[" << name << "]:" << RESET;
             std::getline(std::cin >> std::ws, msg);
             if (msg == "EXIT") {
                 groupchat = false;
@@ -1201,8 +1401,10 @@ void chatclient::handle_sendfile() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
-        std::cout << "请输入您要发送文件的用户帐号:";
-        std::getline(std::cin >> std::ws, frienduser);
+        std::cout << "请输入您要发送文件的用户:";
+        std::string friendname;
+        std::getline(std::cin >> std::ws, friendname);
+        frienduser = getaccount(friendname);
         int b = is_friend(frienduser);
         if (b == 1) {
             std::cout << "该用户账号不存在" << std::endl;

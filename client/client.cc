@@ -6,23 +6,35 @@
 #include "ChatClient.h"
 #include "FileClient.h"
 #include <queue>
+#include <chrono>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
 #include "json.hpp"
+#include <signal.h>
 #define RESET "\033[0m"
 #define GREEN "\033[1;32m"
 #define BLUEC "\033[1;34m"
 #define BLUE "\033[34m"
 #define PURPLE "\033[1;35m"
 using json = nlohmann::json;
-std::string get_current_time(){
+std::atomic<bool> stop =false;
+EventLoop* L;
+chatclient* c;
+std::string get_current_time() {
     Timestamp now = Timestamp::now();
     return now.toFormattedString(true);
 }
+void handler(int) {
+    stop = true;
+    c->handle_exit();
+}
 void handle_message(chatclient*client) {
-    while (1) {
+    while (client->running) {
         std::unique_lock<std::mutex> lock(client->msg_mutex);
-        client->msg_cv.wait(lock, [&client] { return !client->msg_map.empty(); });
+        client->msg_cv.wait(lock, [&client] { return !client->msg_map.empty()||!client->running; });
+        if(!client->running){
+            break;
+        }
         for (auto it = client->msg_map.begin(); it != client->msg_map.end();) {
             std::string cmd = it->first;
             std::queue<json>& q = it->second;
@@ -42,14 +54,17 @@ void handle_message(chatclient*client) {
                     e.type = chatclient::Event::FRIENDCHAT;
                     std::string from = msg["account"];
                     std::string content = msg["message"];
-                    std::string q = "\n收到来自[" + from + "]的消息:" + content;
+                    std::string name1 = client->getname(from);
+                    std::string name2 = client->getname(client->account);
+                    std::string q =
+                        "\n收到来自[" + name1 + "]的消息:" + content;
                     e.data["data"]=q;
                     e.data["time"] = msg["time"];
                     if (client->inchat && client->current_chat == from) {
                         std::cout << "\r\33[2K";
-                        std::cout << "[" << from << "]:   " << content
+                        std::cout << "[" << name1 << "]:   " << content
                                   << std::endl;
-                        std::cout << GREEN << "[" << client->account
+                        std::cout << GREEN << "[" << name2
                                   << "]:    " << RESET;
                         std::cout.flush();
 
@@ -67,17 +82,18 @@ void handle_message(chatclient*client) {
                     chatclient::Event e;
                     e.type = chatclient::Event::GROUPCHAT;
                     std::string from = msg["account"];
+                    std::string name = client->getaccount(from);
                     std::string content = msg["message"];
                     std::string groupname = msg["groupname"];
-                   std::string content1 = "\n收到来自群聊[" + groupname + "]的成员:[" + from +
+                   std::string content1 = "\n收到来自群聊[" + groupname + "]的成员:[" + name +
                           "]的消息:" + content;
                     e.data["data"] = content1;
                     e.data["time"] = msg["time"];
                     if (client->groupchat) {
                         std::cout << "\r\33[2K";
-                        std::cout << "[" << from << "]:   " << content
+                        std::cout << "[" << name << "]:   " << content
                                   << std::endl;
-                        std::cout << GREEN << "[" << client->account
+                        std::cout << GREEN << "[" << client->name
                                   << "]:    " << RESET;
                         std::cout.flush();
                     } else {
@@ -177,10 +193,13 @@ void handle_message(chatclient*client) {
     }
 }
 void handle_event(chatclient*client) {
-    while (1) {
+    while (client->running) {
         std::unique_lock<std::mutex> lock(client->event_mutex);
         client->event_cv.wait(lock, [
-            &client] { return !client->event_queue.empty(); });
+            &client] { return !client->event_queue.empty()||!client->running; });
+        if(!client->running){
+            break;
+        }
         chatclient::Event e;
         e = client->event_queue.front();
         client->event_queue.pop();
@@ -222,7 +241,7 @@ void handle_event(chatclient*client) {
 }
 void mainfunction(chatclient*chatclient) {
     json res;
-    while (1) {
+    while (chatclient->running) {
         if (!chatclient->chatis_login) {
             chatclient->main_menu();
         } else { 
@@ -231,7 +250,7 @@ void mainfunction(chatclient*chatclient) {
         int choice;
         std::string sschoice;
         std::getline(std::cin >> std::ws, sschoice);
-        std::vector<std::string> nums={"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28"};
+        std::vector<std::string> nums={"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29"};
         for(auto t:nums){
             if(sschoice==t){
                 choice = std::stoi(sschoice);
@@ -252,8 +271,9 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_destory();
                         break;
                     case 0:
+                        chatclient->handle_exitlogin();
                         chatclient->handle_exit();
-                        exit(0);
+                        break;
                     case 6:
                         chatclient->handle_addfriend();
                         break;
@@ -289,6 +309,7 @@ void mainfunction(chatclient*chatclient) {
                         break;
                     case 17:
                         chatclient->handle_exitgroup();
+                        break;
                     case 18:
                         chatclient->handle_groupmember();
                         break;
@@ -324,35 +345,49 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->chatis_login = false;
                         break;
                     case 29:
+                        chatclient->handle_exitlogin();
                         chatclient->handle_exit();
-                        exit(0);
+                        break;
                     default:
                         std::cout << choice;
                         std::cout << "请输入有效选项!" << std::endl;
                         break;
                 };
             }else{
+               
             }
         }
-   
     }
 }
 int main(int argc, char* argv[]) {
+    signal(SIGINT, handler);
     EventLoop loop;
+    L = &loop;
     InetAddress chataddr(argv[1], 8888);
     InetAddress fileaddr(argv[1], 9999);
     chatclient chatclient(&loop, chataddr);
+    c = &chatclient;
     FileClient fileclient(&loop, fileaddr);
     chatclient.setfileclient(&fileclient);
     fileclient.setchatclient(&chatclient);
+    chatclient.running = true;
     std::thread t1(mainfunction, &chatclient);
     std::thread t2(handle_message,&chatclient);
     std::thread t3(handle_event,&chatclient);
     int timeout = -1;
     loop.loop(timeout);
-    chatclient.msg_cv.notify_all();
-    chatclient.event_cv.notify_all();
-    t2.join();
-    t3.join();
+    if (stop) {
+        _exit(0);
+    } else {
+        if (t1.joinable()) {
+            t1.join();
+        }
+        if (t2.joinable()) {
+            t2.join();
+        }
+        if (t3.joinable()) {
+            t3.join();
+        }
+    }
     return 0;
 }

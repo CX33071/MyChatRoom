@@ -24,12 +24,19 @@ class Verifycode {
     Verifycode();
     std::string code();
     bool addredis(const std::string& account);
-    bool signup(std::string account, std::string password);
+    bool signup(std::string account, std::string password,std::string name);
     bool verify(std::string account, std::string code);
     int loginwithkey(std::string account, std::string password);
     bool forgetkey(std::string account);
     int isexists(std::string account);
-    int destroy(std::string account, std::string password,Group&group,Friend&f);
+    bool is_online(std::string account);
+    bool isexistsname(std::string name);
+    std::string getaccount(std::string name);
+    std::string getname(std::string account);
+    int destroy(std::string account,
+                std::string password,
+                Group& group,
+                Friend& f);
     void exitlogin(std::string account);
     void sendcom(const std::string clientaccount,
                  const std::string& subject,

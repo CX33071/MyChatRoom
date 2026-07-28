@@ -23,8 +23,7 @@ void FileClient ::connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
         file_conn = conn;
         fileconnok = true;
     } else {
-        std::cout << "FileServer断开连接！" << std::endl;
-
+        // std::cout << "fileclientclose！" << std::endl;
         file_conn.reset();
         fileconnok = false;
     }

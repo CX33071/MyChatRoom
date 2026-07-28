@@ -34,6 +34,7 @@ class Group{
                      std::string groupname);
     std::vector<std::string> applyjoingroup(std::string account,std::string groupname);
     std::string findowner(std::string groupname);
+    std::string getname(std::string account);
     std::vector<std::string> grouplist(std::string account);
     int exitgroup(std::string account, std::string groupname);
     std::vector<std::string> groupmembers(std::string account,
