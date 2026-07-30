@@ -63,7 +63,7 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                     active_requests[id] = std::move(p);
                 }
                 chatclient_->chat_conn->send(j1.dump() + '\n');
-            } else if(cmd =="groupSTOR_ok"){
+            } else if (cmd == "groupSTOR_ok") {
                 std::string ID = j["ID"];
                 std::string filename = j["filename"];
                 json j1;
@@ -79,9 +79,10 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                     active_requests[id] = std::move(p);
                 }
                 chatclient_->chat_conn->send(j1.dump() + '\n');
-            }else if (cmd == "RETRres") {
+                // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
+            } else if (cmd == "RETRres") {
                 fc.state = FileState::RECV_FILE;
-            } else if (cmd == "sendfinishtofileclient"){
+            } else if (cmd == "sendfinishtofileclient") {
                 json j1;
                 std::string request_id = j.value("request_id", "");
                 if (!request_id.empty()) {

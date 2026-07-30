@@ -166,6 +166,10 @@ void chatclient::file_menu(){
     std::cout << GREEN << "0.          退出chatroom               \n" << RESET;
     std::cout << GREEN << "请选择:" << RESET;
 }
+bool chatclient::isQQemail(std::string email){
+    std::regex pattern("^[1-9][0-9]{4,10}@qq\\.com$");
+    return std::regex_match(email,pattern);
+}
 std::string chatclient::getaccount(std::string name){
     j["cmd"]="getaccount";
     j["name"] = name;
@@ -221,6 +225,11 @@ void chatclient::handle_signup() {
     } else {
         std::cout << "请输入你的qq邮箱:";
         std::getline(std::cin >> std::ws, account);
+        bool is_email = isQQemail(account);
+        if(!is_email){
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         bool b = is_exists(account);
         if(b){
             std::cout << PURPLE << "该账号已经存在，请登录!" << RESET
@@ -278,6 +287,11 @@ void chatclient::handle_login_code() {
     } else {
         std::cout << "请先输入你的qq邮箱:";
         std::getline(std::cin >> std::ws, account);
+        bool is_email = isQQemail(account);
+        if (!is_email) {
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         bool b=is_exists(account);
         if(!b){
             std::cout << PURPLE << "该帐号并不存在，请先注册!" << RESET
@@ -342,6 +356,11 @@ void chatclient::handle_login_key() {
     } else {
         std::cout << PURPLE << "请先输入你的qq邮箱:" << RESET;
         std::getline(std::cin >> std::ws, account);
+        bool is_email = isQQemail(account);
+        if (!is_email) {
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         if(!is_exists(account)){
             std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
                       << std::endl;
@@ -386,6 +405,11 @@ void chatclient::handle_forget_key() {
     } else {
         std::cout << "请输入你的qq邮箱: ";
         std::getline(std::cin >> std::ws, account);
+        bool is_email = isQQemail(account);
+        if (!is_email) {
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         if (!is_exists(account)) {
             std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
                       << std::endl;
@@ -412,6 +436,11 @@ void chatclient::handle_destory() {
     } else {
         std::cout << PURPLE << "请先输入你的qq邮箱:" << RESET;
         std::getline(std::cin >> std::ws, account);
+        bool is_email = isQQemail(account);
+        if (!is_email) {
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         if (!is_exists(account)) {
             std::cout << PURPLE << "该账号并不存在，请先注册!" << RESET
                       << std::endl;
@@ -457,6 +486,11 @@ void chatclient::handle_addfriend() {
     } else {
         std::cout << PURPLE << "请输入要添加好友的账号:" << RESET;
         std::getline(std::cin >> std::ws, frienduser);
+        bool is_email = isQQemail(frienduser);
+        if (!is_email) {
+            std::cout << PURPLE << "QQ邮箱格式不正确" << RESET << std::endl;
+            return;
+        }
         int is = is_friend(frienduser);
         if (is == 1) {
             std::cout << "该账号并不存在" << std::endl;
@@ -1175,27 +1209,34 @@ void chatclient::handle_addfriendmsg() {
                       << std::endl;
             return;
         }else{
-            std::cout << "好友申请消息：" << std::endl;
+            std::cout <<PURPLE<< "好友申请消息：" << std::endl;
             for (auto i = 0; i < addlist.size(); i++) {
                 std::string friendname = getname(addlist[i]["account"]);
                 std::cout << GREEN << "[" << i + 1
                           << "]:" << friendname
-                          << "消息时间:" << addlist[i]["time"] << RESET
+                          << "      消息时间:" << addlist[i]["time"] << RESET
                           << std::endl;
             }
-            std::cout << "请选择要处理的消息编号:";
+            std::cout<<PURPLE << "请选择要处理的消息编号:";
             int num;
             std::cin >> num;
+            while(std::cin.fail()){
+                std::cout << PURPLE << "请输入数字!" << GREEN
+                          << "请选择:" << RESET;
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                '\n');
+                std::cin >> num;
+            }
             int total = addlist.size();
-            while(num>total){
-                std::cout << PURPLE << "请输入正确消息编号哦!" << RESET
-                          << std::endl;
+            while(num>total||num<1){
+                std::cout << PURPLE << "请输入正确消息编号哦!"<<GREEN<<"请选择:" << RESET;
                 std::cin >> num;
             }
             frienduser = addlist[num - 1]["account"];
             std::string ss;
             std::cout << std::endl;
-            std::cout << "请输入y 同意|n 拒绝:";
+            std::cout<<PURPLE << "请输入y 同意|n 拒绝:";
             std::getline(std::cin >> std::ws, ss);
             num -= 1;
             while(true){
@@ -1267,9 +1308,16 @@ void chatclient::handle_sendedfile() {
            std::cout << GREEN << "请选择要处理的消息编号:";
            int num;
            std::cin >> num;
-           while (num > sendfilelist.size()) {
-               std::cout << PURPLE << "请输入正确消息编号" << RESET
-                         << std::endl;
+           while (std::cin.fail()) {
+               std::cout << PURPLE << "请输入数字!" << GREEN
+                         << "请选择:" << RESET;
+               std::cin.clear();
+               std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                               '\n');
+               std::cin >> num;
+           }
+           while (num > sendfilelist.size()||num<1) {
+               std::cout << PURPLE << "请输入正确消息编号!"<<GREEN<<"请选择:" << RESET;
                std::cin >> num;
            }
            std::cout << PURPLE << "请输入您要下载文件到本地的路径：" << RESET;
@@ -1332,22 +1380,30 @@ void chatclient::handle_applyjoinmsg() {
                      << std::endl;
            return;
        }else{
-           std::cout << "申请加入群聊消息：" << std::endl;
+           std::cout<<PURPLE << "申请加入群聊消息：" << std::endl;
            for (auto i = 0; i < applyjoinlist.size(); i++) {
                std::cout << GREEN << "[" << i + 1 << "]"
                          << applyjoinlist[i]["data"] << RESET << std::endl;
            }
-           std::cout << "请选择要处理的消息编号:";
+           std::cout<<PURPLE << "请选择要处理的消息编号:";
            int num;
            std::cin >> num;
-           while (num > applyjoinlist.size()) {
-               std::cout << PURPLE << "请输入正确的编号" << RESET << std::endl;
+           while (std::cin.fail()) {
+               std::cout << PURPLE << "请输入数字!" << GREEN
+                         << "请选择:" << RESET;
+               std::cin.clear();
+               std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                               '\n');
+               std::cin >> num;
+           }
+           while (num > applyjoinlist.size()||num<1) {
+               std::cout << PURPLE << "请输入正确的编号!"<<GREEN<<"请选择:" << RESET;
                std::cin >> num;
            }
            std::cout << std::endl;
            std::string g = applyjoinlist[num - 1]["groupname"];
            std::string a = getname(applyjoinlist[num - 1]["from"]);
-           std::cout << "请处理来自用户:" << a << "加入群聊" << g
+           std::cout<<PURPLE << "请处理来自用户:" << a << "加入群聊" << g
                      << "的消息:" << std::endl;
            std::cout << "请输入y 同意|n 拒绝:";
            std::string ss;
@@ -1362,7 +1418,7 @@ void chatclient::handle_applyjoinmsg() {
                    reply["cmd"] = "refusejoingroup";
                    break;
                } else {
-                   std::cout << "输入错误!请输入y 同意|n 拒绝:";
+                   std::cout<<PURPLE << "输入错误!请输入y 同意|n 拒绝:"<<RESET;
                    std::getline(std::cin >> std::ws, ss);
                }
            }
@@ -1465,18 +1521,18 @@ void chatclient::handle_sendfile() {
         std::cout << "请输入您要发送文件的用户:";
         std::string friendname;
         std::getline(std::cin >> std::ws, friendname);
-        bool b=is_existsname(friendname);
-        if(!b){
+        bool b = is_existsname(friendname);
+        if (!b) {
             std::cout <<PURPLE<< "该用户并不是您的好友" << RESET << std::endl;
             return;
         }
         frienduser = getaccount(friendname);
-        int b = is_friend(frienduser);
-        if (b == 1) {
+        int b1 = is_friend(frienduser);
+        if (b1 == 1) {
             std::cout << "该用户账号不存在" << std::endl;
             return;
         }
-        if (b == 0) {
+        if (b1 == 0) {
             std::cout << "该用户目前还不是您的好友，不能传文件" << std::endl;
             return;
         }

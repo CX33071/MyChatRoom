@@ -249,41 +249,39 @@ void mainfunction(chatclient*chatclient) {
         if (!chatclient->chatis_login) {
             chatclient->main_menu();
             int choice;
-            std::string sschoice;
-            std::getline(std::cin >> std::ws, sschoice);
-            std::vector<std::string> nums = {
-                "0",  "1",  "2",  "3",  "4",  "5"};
-            for (auto t : nums) {
-                if (sschoice == t) {
-                    choice = std::stoi(sschoice);
-                    switch (choice) {
-                        case 1:
-                            chatclient->handle_signup();
-                            break;
-                        case 2:
-                            chatclient->handle_login_code();
-                            break;
-                        case 3:
-                            chatclient->handle_login_key();
-                            break;
-                        case 4:
-                            chatclient->handle_forget_key();
-                            break;
-                        case 5:
-                            chatclient->handle_destory();
-                            break;
-                        case 0:
-                            chatclient->handle_exitlogin();
-                            chatclient->handle_exit();
-                            break;
-                        default:
-                            std::cout << choice;
-                            std::cout << "请输入有效选项!" << std::endl;
-                            break;
-                    };
-                } else {
-                }
+            std::cin >> choice;
+            while (std::cin.fail()) {
+                std::cout << PURPLE << "请输入数字!" << GREEN
+                          << "请选择:" << RESET;
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                '\n');
+                std::cin >> choice;
             }
+            switch (choice) {
+                case 1:
+                    chatclient->handle_signup();
+                    break;
+                case 2:
+                    chatclient->handle_login_code();
+                    break;
+                case 3:
+                    chatclient->handle_login_key();
+                    break;
+                case 4:
+                    chatclient->handle_forget_key();
+                    break;
+                case 5:
+                    chatclient->handle_destory();
+                    break;
+                case 0:
+                    chatclient->handle_exitlogin();
+                    chatclient->handle_exit();
+                    break;
+                default:
+                    std::cout<<PURPLE << "请输入有效选项!" <<RESET<< std::endl;
+                    break;
+            };
         } else {
             if(friendmenu){
                 chatclient->friend_menu();
@@ -291,15 +289,16 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->handle_blocklist();
                 std::cout << GREEN << "请选择:" << RESET;
                 int choice;
-                std::string sschoice;
-                std::getline(std::cin >> std::ws, sschoice);
-                std::vector<std::string> nums = {
-                    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
-                    "10","11"};
-                for (auto t : nums) {
-                    if (sschoice == t) {
-                        choice = std::stoi(sschoice);
-                        switch (choice) {
+                std::cin >> choice;
+                while (std::cin.fail()) {
+                    std::cout << PURPLE << "请输入数字!" << GREEN
+                              << "请选择:" << RESET;
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                    '\n');
+                    std::cin >> choice;
+                }
+                switch (choice) {
                             case 1:
                                 chatclient->handle_addfriend();
                                 break;
@@ -341,22 +340,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                                 break;
                             default:
-                                std::cout << choice;
-                                std::cout << "请输入有效选项!" << std::endl;
+                                std::cout << PURPLE << "请输入有效选项!"
+                                          << RESET << std::endl;
                                 break;
                         };
-                    } else {
-                    }
-                }
             } else if(msgmenu){
                 chatclient->msg_menu();
                 int choice;
-                std::string sschoice;
-                std::getline(std::cin >> std::ws, sschoice);
-                std::vector<std::string> nums = {"0", "1", "2",  "3","4", "5"};
-                for (auto t : nums) {
-                    if (sschoice == t) {
-                        choice = std::stoi(sschoice);
+                std::cin >> choice;
+                while (std::cin.fail()) {
+                    std::cout << PURPLE << "请输入数字!" << GREEN
+                              << "请选择:" << RESET;
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                    '\n');
+                    std::cin >> choice;
+                }
                         switch (choice) {
                             case 1:
                                 chatclient->handle_addfriendmsg();
@@ -381,27 +380,25 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exit();
                                 break;
                             default:
-                                std::cout << choice;
-                                std::cout << "请输入有效选项!" << std::endl;
+                                std::cout << PURPLE << "请输入有效选项!"
+                                          << RESET << std::endl;
                                 break;
                         };
-                    } else {
-                    }
-                }
             } else if (groupmenu) {
                 chatclient->group_menu();
                 chatclient->handle_ownergrouplist();
                 chatclient->handle_grouplist();
                 std::cout << GREEN << "请选择:" << RESET;
                 int choice;
-                std::string sschoice;
-                std::getline(std::cin >> std::ws, sschoice);
-                std::vector<std::string> nums = {
-                    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
-                    "10", "11","12"};
-                for (auto t : nums) {
-                    if (sschoice == t) {
-                        choice = std::stoi(sschoice);
+                std::cin >> choice;
+                while (std::cin.fail()) {
+                    std::cout << PURPLE << "请输入数字!" << GREEN
+                              << "请选择:" << RESET;
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                    '\n');
+                    std::cin >> choice;
+                }
                         switch (choice) {
                             case 1:
                                 chatclient->handle_creategroup();
@@ -447,23 +444,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                                 break;
                             default:
-                                std::cout << choice;
-                                std::cout << "请输入有效选项!" << std::endl;
+                                std::cout << PURPLE << "请输入有效选项!"
+                                          << RESET << std::endl;
                                 break;
                         };
-                    } else {
-                    }
-                }
             } else if (filemenu) {
                 chatclient->file_menu();
                 int choice;
-                std::string sschoice;
-                std::getline(std::cin >> std::ws, sschoice);
-                std::vector<std::string> nums = {
-                    "0",  "1",  "2",  "3",  "4","5"};
-                for (auto t : nums) {
-                    if (sschoice == t) {
-                        choice = std::stoi(sschoice);
+                std::cin >> choice;
+                while (std::cin.fail()) {
+                    std::cout << PURPLE << "请输入数字!" << GREEN
+                              << "请选择:" << RESET;
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                    '\n');
+                    std::cin >> choice;
+                }
                         switch (choice) {
                             case 1:
                                 chatclient->handle_sendfile();
@@ -488,23 +484,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                                 break;
                             default:
-                                std::cout << choice;
-                                std::cout << "请输入有效选项!" << std::endl;
+                                std::cout << PURPLE << "请输入有效选项!"
+                                          << RESET << std::endl;
                                 break;
                         };
-                    } else {
-                    }
-                }
             } else {
                 chatclient->select_menu();
                 int choice;
-                std::string sschoice;
-                std::getline(std::cin >> std::ws, sschoice);
-                std::vector<std::string> nums = {
-                    "0",  "1",  "2",  "3",  "4","5"};
-                for (auto t : nums) {
-                    if (sschoice == t) {
-                        choice = std::stoi(sschoice);
+                std::cin >> choice;
+                while (std::cin.fail()) {
+                    std::cout << PURPLE << "请输入数字!" << GREEN
+                              << "请选择:" << RESET;
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(),
+                                    '\n');
+                    std::cin >> choice;
+                }
                         switch (choice) {
                             case 1:
                                 friendmenu = true;
@@ -526,13 +521,10 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exit();
                                 break;
                             default:
-                                std::cout << choice;
-                                std::cout << "请输入有效选项!" << std::endl;
+                                std::cout << PURPLE << "请输入有效选项!"
+                                          << RESET << std::endl;
                                 break;
                         };
-                    } else {
-                    }
-                }
             }
         }
         

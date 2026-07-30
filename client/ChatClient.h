@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <future>
 #include <queue>
+#include <regex>
 #include <dirent.h>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
@@ -129,4 +130,5 @@ class chatclient {
     int is_blockfriend(std::string account);
     std::string gen_req_id();
     std::string cinkey();
+    bool isQQemail(std::string email);
 };
