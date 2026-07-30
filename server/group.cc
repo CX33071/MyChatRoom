@@ -83,6 +83,7 @@ std::string Group::getname(std::string account) {
      }
      redis_.set(name+"owner:",account);
      redis_.sadd("grouplist" + account, {name});
+     redis_.sadd("ownergrouplist" + account, {name});
      redis_.sadd(name + "members", {account});
      redis_.sync_commit();
      std::string sql1 = "insert into owner_info (groupname,owner)values('" +
@@ -169,14 +170,23 @@ std::string Group::getname(std::string account) {
  }
  int Group::exitgroup(std::string account, std::string groupname){
      auto f1 = redis_.exists({groupname + "owner:"});
+     std::string owner;
      redis_.sync_commit();
      int exists = f1.get().as_integer();
      if(!exists){
-        std::string sql="select * from owner_info where groupname ='"+groupname+"'";
-        bool b=mysql_.select(sql.c_str());
-        if(!b){
+        std::string sql="select owner from owner_info where groupname ='"+groupname+"'";
+         owner=mysql_.selectstring(sql.c_str());
+        if(owner.empty()){
             return 2;
         }
+     }else{
+         f1 = redis_.get(groupname + "owner:");
+         redis_.sync_commit();
+         owner = f1.get().as_string();
+     }
+     if(owner==account){
+         delgroup(groupname, account);
+         return 0;
      }
      auto f2 = redis_.sismember("grouplist" + account, {groupname});
      redis_.sync_commit();
@@ -192,6 +202,7 @@ std::string Group::getname(std::string account) {
      }
      redis_.srem("grouplist" + account, {groupname});
      redis_.srem(groupname + "members", {account});
+     redis_.srem(groupname + "managers", {account});
      redis_.sync_commit();
      std::string sql3 = "delete from groupmember_info where groupname = '" +
                         groupname + "'and account = '" + account + "'";
@@ -306,15 +317,25 @@ std::vector<std::string> Group::
      }
      return list;
  }
-
-int Group::delgroup(std::string groupname, std::string account,std::string password){
+std::vector<std::string> Group::ownergrouplist(std::string account){
+    std::vector<std::string> list;
+    auto futs = redis_.smembers("ownergrouplist" + account);
+    redis_.sync_commit();
+    auto reply = futs.get();
+    for (auto fut : reply.as_array()) {
+        list.push_back(fut.as_string());
+    }
+    return list;
+}
+int Group::delgroup(std::string groupname, std::string account){
     std::string owner = groupname + "owner:";
     auto fut1 = redis_.exists({owner});
     redis_.sync_commit();
-    if(!fut1.get().as_integer()){
+    std::string res;
+    if (!fut1.get().as_integer()) {
         std::string sql =
             "select owner from owner_info where groupname ='" + groupname + "'";
-        std::string res  = mysql_.selectstring(sql.c_str());
+         res  = mysql_.selectstring(sql.c_str());
         if(res.empty()){
             return 1;
         }else{
@@ -324,33 +345,25 @@ int Group::delgroup(std::string groupname, std::string account,std::string passw
     }
     auto fut2 = redis_.get(owner);
     redis_.sync_commit();
-    std::string s = fut2.get().as_string();
-    if(s!=account){
+    res = fut2.get().as_string();
+    if(res!=account){
         return 2;
     }
-    auto s1 = redis_.exists({account + "key"});
+    std::string member = groupname +  "members";
+    auto fut3 = redis_.smembers(member);
     redis_.sync_commit();
-    if (!s1.get().as_integer()){
-        std::string sql1 =
-            "select password from account_info where account ='" + account +
-            "'";
-        std::string password = mysql_.selectstring(sql1.c_str());
-        redis_.set(account + "key", password);
+    std::vector<std::string> m;
+    auto r = fut3.get();
+    for (auto f : r.as_array()) {
+        m.push_back(f.as_string());
+    }
+    for(auto m1:m){
+        redis_.srem("grouplist"+m1,{groupname});
         redis_.sync_commit();
     }
-        auto fut = redis_.get(account + "key");
-    redis_.sync_commit();
-    auto reply = fut.get();
-    std::string hashkey = reply.as_string();
-    std::cout << "hashkey=" << hashkey << std::endl;
-    std::cout << "password=" << password << std::endl;
-    if (password != hashkey) {
-        return 3;
-    }
-    std::string member = groupname +  "members";
-    redis_.del({owner,member});
-    redis_.srem("grouplist" + account, {groupname});
+    redis_.del({owner, member});
     redis_.del({"groupchat" + groupname});
+    redis_.srem("ownergrouplist"+account,{groupname});
     redis_.sync_commit();
     std::string sql2;
     sql2 = "delete from groupmember_info where groupname ='" + groupname + "'";

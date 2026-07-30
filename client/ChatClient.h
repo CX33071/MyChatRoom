@@ -80,6 +80,10 @@ class chatclient {
                          Timestamp);
     void main_menu();
     void friend_menu();
+    void group_menu();
+    void file_menu();
+    void select_menu();
+    void msg_menu();
     std::string getaccount(std::string name);
     std::string getname(std::string account);
     void handle_signup();
@@ -121,7 +125,7 @@ class chatclient {
     bool is_groupmember(std::string groupname, std::string count);
     int is_friend(std::string account);
     void printfmembers();
-
+    void handle_ownergrouplist();
     int is_blockfriend(std::string account);
     std::string gen_req_id();
     std::string cinkey();

@@ -18,6 +18,10 @@
 #define PURPLE "\033[1;35m"
 using json = nlohmann::json;
 std::atomic<bool> stop =false;
+std::atomic<bool> friendmenu=false;
+std::atomic<bool> groupmenu=false;
+std::atomic<bool> filemenu = false;
+std::atomic<bool> msgmenu = false;
 EventLoop* L;
 chatclient* c;
 std::string get_current_time() {
@@ -244,121 +248,296 @@ void mainfunction(chatclient*chatclient) {
     while (chatclient->running) {
         if (!chatclient->chatis_login) {
             chatclient->main_menu();
-        } else { 
-            chatclient->friend_menu();
-        }
-        int choice;
-        std::string sschoice;
-        std::getline(std::cin >> std::ws, sschoice);
-        std::vector<std::string> nums={"0","1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29"};
-        for(auto t:nums){
-            if(sschoice==t){
-                choice = std::stoi(sschoice);
-                switch (choice) {
-                    case 1:
-                        chatclient->handle_signup();
-                        break;
-                    case 2:
-                        chatclient->handle_login_code();
-                        break;
-                    case 3:
-                        chatclient->handle_login_key();
-                        break;
-                    case 4:
-                        chatclient->handle_forget_key();
-                        break;
-                    case 5:
-                        chatclient->handle_destory();
-                        break;
-                    case 0:
-                        chatclient->handle_exitlogin();
-                        chatclient->handle_exit();
-                        break;
-                    case 6:
-                        chatclient->handle_addfriend();
-                        break;
-                    case 7:
-                        chatclient->handle_delfriend();
-                        break;
-                    case 8:
-                        chatclient->handle_block();
-                        break;
-                    case 9:
-                        chatclient->handle_disblock();
-                        break;
-                    case 10:
-                        chatclient->handle_friendlist();
-                        break;
-                    case 11:
-                        chatclient->handle_blocklist();
-                        break;
-                    case 12:
-                        chatclient->handle_addfriendmsg();
-                        break;
-                    case 13:
-                        chatclient->handle_friendchat();
-                        break;
-                    case 14:
-                        chatclient->handle_onlinelist();
-                        break;
-                    case 15:
-                        chatclient->handle_creategroup();
-                        break;
-                    case 16:
-                        chatclient->handle_applyjoingroup();
-                        break;
-                    case 17:
-                        chatclient->handle_exitgroup();
-                        break;
-                    case 18:
-                        chatclient->handle_groupmember();
-                        break;
-                    case 19:
-                        chatclient->handle_setgroupmanager();
-                        break;
-                    case 20:
-                        chatclient->handle_delgroup();
-                        break;
-                    case 21:
-                        chatclient->handle_grouplist();
-                        break;
-                    case 22:
-                        chatclient->handle_delmember();
-                        break;
-                    case 23:
-                        chatclient->handle_groupchat();
-                        break;
-                    case 24:
-                        chatclient->handle_applyjoinmsg();
-                        break;
-                    case 25:
-                        chatclient->handle_sendfile();
-                        break;
-                    case 26:
-                        chatclient->handle_sendedfile();
-                        break;
-                    case 27:
-                        chatclient->handle_groupsendfile();
-                        break;
-                    case 28:
-                        chatclient->handle_exitlogin();
-                        chatclient->chatis_login = false;
-                        break;
-                    case 29:
-                        chatclient->handle_exitlogin();
-                        chatclient->handle_exit();
-                        break;
-                    default:
-                        std::cout << choice;
-                        std::cout << "请输入有效选项!" << std::endl;
-                        break;
-                };
-            }else{
-               
+            int choice;
+            std::string sschoice;
+            std::getline(std::cin >> std::ws, sschoice);
+            std::vector<std::string> nums = {
+                "0",  "1",  "2",  "3",  "4",  "5"};
+            for (auto t : nums) {
+                if (sschoice == t) {
+                    choice = std::stoi(sschoice);
+                    switch (choice) {
+                        case 1:
+                            chatclient->handle_signup();
+                            break;
+                        case 2:
+                            chatclient->handle_login_code();
+                            break;
+                        case 3:
+                            chatclient->handle_login_key();
+                            break;
+                        case 4:
+                            chatclient->handle_forget_key();
+                            break;
+                        case 5:
+                            chatclient->handle_destory();
+                            break;
+                        case 0:
+                            chatclient->handle_exitlogin();
+                            chatclient->handle_exit();
+                            break;
+                        default:
+                            std::cout << choice;
+                            std::cout << "请输入有效选项!" << std::endl;
+                            break;
+                    };
+                } else {
+                }
+            }
+        } else {
+            if(friendmenu){
+                chatclient->friend_menu();
+                chatclient->handle_onlinelist();
+                chatclient->handle_blocklist();
+                std::cout << GREEN << "请选择:" << RESET;
+                int choice;
+                std::string sschoice;
+                std::getline(std::cin >> std::ws, sschoice);
+                std::vector<std::string> nums = {
+                    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
+                    "10","11"};
+                for (auto t : nums) {
+                    if (sschoice == t) {
+                        choice = std::stoi(sschoice);
+                        switch (choice) {
+                            case 1:
+                                chatclient->handle_addfriend();
+                                break;
+                            case 2:
+                                chatclient->handle_delfriend();
+                                break;
+                            case 3:
+                                chatclient->handle_block();
+                                break;
+                            case 4:
+                                chatclient->handle_disblock();
+                                break;
+                            case 5:
+                                chatclient->handle_friendlist();
+                                break;
+                            case 0:
+                                chatclient->handle_exitlogin();
+                                chatclient->handle_exit();
+                                break;
+                            case 6:
+                                chatclient->handle_blocklist();
+                                break;
+                            case 7:
+                                chatclient->handle_addfriendmsg();
+                                break;
+                            case 8:
+                                chatclient->handle_friendchat();
+                                break;
+                            case 9:
+                                chatclient->handle_onlinelist();
+                                break;
+                            case 10:
+                                friendmenu = false;
+                                groupmenu = false;
+                                filemenu = false;
+                                msgmenu = false;
+                                break;
+                            case 11:
+                                chatclient->handle_exitlogin();
+                                break;
+                            default:
+                                std::cout << choice;
+                                std::cout << "请输入有效选项!" << std::endl;
+                                break;
+                        };
+                    } else {
+                    }
+                }
+            } else if(msgmenu){
+                chatclient->msg_menu();
+                int choice;
+                std::string sschoice;
+                std::getline(std::cin >> std::ws, sschoice);
+                std::vector<std::string> nums = {"0", "1", "2",  "3","4", "5"};
+                for (auto t : nums) {
+                    if (sschoice == t) {
+                        choice = std::stoi(sschoice);
+                        switch (choice) {
+                            case 1:
+                                chatclient->handle_addfriendmsg();
+                                break;
+                            case 2:
+                                chatclient->handle_applyjoinmsg();
+                                break;
+                            case 3:
+                                chatclient->handle_sendedfile();
+                                break;
+                            case 4:
+                                friendmenu = false;
+                                groupmenu = false;
+                                filemenu = false;
+                                msgmenu = false;
+                                break;
+                            case 5:
+                                chatclient->handle_exitlogin();
+                                break;
+                            case 0:
+                                chatclient->handle_exitlogin();
+                                chatclient->handle_exit();
+                                break;
+                            default:
+                                std::cout << choice;
+                                std::cout << "请输入有效选项!" << std::endl;
+                                break;
+                        };
+                    } else {
+                    }
+                }
+            } else if (groupmenu) {
+                chatclient->group_menu();
+                chatclient->handle_ownergrouplist();
+                chatclient->handle_grouplist();
+                std::cout << GREEN << "请选择:" << RESET;
+                int choice;
+                std::string sschoice;
+                std::getline(std::cin >> std::ws, sschoice);
+                std::vector<std::string> nums = {
+                    "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
+                    "10", "11","12"};
+                for (auto t : nums) {
+                    if (sschoice == t) {
+                        choice = std::stoi(sschoice);
+                        switch (choice) {
+                            case 1:
+                                chatclient->handle_creategroup();
+                                break;
+                            case 2:
+                                chatclient->handle_applyjoingroup();
+                                break;
+                            case 3:
+                                chatclient->handle_exitgroup();
+                                break;
+                            case 4:
+                                chatclient->handle_groupmember();
+                                break;
+                            case 5:
+                                chatclient->handle_setgroupmanager();
+                                break;
+                            case 0:
+                                chatclient->handle_exitlogin();
+                                chatclient->handle_exit();
+                                break;
+                            case 6:
+                                chatclient->handle_delgroup();
+                                break;
+                            case 7:
+                                chatclient->handle_grouplist();
+                                break;
+                            case 8:
+                                chatclient->handle_delmember();
+                                break;
+                            case 9:
+                                chatclient->handle_groupchat();
+                                break;
+                            case 10:
+                                chatclient->handle_applyjoinmsg();
+                                break;
+                            case 11:
+                                friendmenu = false;
+                                groupmenu = false;
+                                filemenu = false;
+                                msgmenu = false;
+                                break;
+                            case 12:
+                                chatclient->handle_exitlogin();
+                                break;
+                            default:
+                                std::cout << choice;
+                                std::cout << "请输入有效选项!" << std::endl;
+                                break;
+                        };
+                    } else {
+                    }
+                }
+            } else if (filemenu) {
+                chatclient->file_menu();
+                int choice;
+                std::string sschoice;
+                std::getline(std::cin >> std::ws, sschoice);
+                std::vector<std::string> nums = {
+                    "0",  "1",  "2",  "3",  "4","5"};
+                for (auto t : nums) {
+                    if (sschoice == t) {
+                        choice = std::stoi(sschoice);
+                        switch (choice) {
+                            case 1:
+                                chatclient->handle_sendfile();
+                                break;
+                            case 2:
+                                chatclient->handle_sendedfile();
+                                break;
+                            case 3:
+                                chatclient->handle_groupsendfile();
+                                break;
+                            case 4:
+                                friendmenu=false;
+                                groupmenu=false;
+                                filemenu = false;
+                                msgmenu = false;
+                                break;
+                            case 0:
+                                chatclient->handle_exitlogin();
+                                chatclient->handle_exit();
+                                break;
+                            case 5:
+                                chatclient->handle_exitlogin();
+                                break;
+                            default:
+                                std::cout << choice;
+                                std::cout << "请输入有效选项!" << std::endl;
+                                break;
+                        };
+                    } else {
+                    }
+                }
+            } else {
+                chatclient->select_menu();
+                int choice;
+                std::string sschoice;
+                std::getline(std::cin >> std::ws, sschoice);
+                std::vector<std::string> nums = {
+                    "0",  "1",  "2",  "3",  "4","5"};
+                for (auto t : nums) {
+                    if (sschoice == t) {
+                        choice = std::stoi(sschoice);
+                        switch (choice) {
+                            case 1:
+                                friendmenu = true;
+                                break;
+                            case 2:
+                                groupmenu = true;
+                                break;
+                            case 3:
+                                filemenu = true;
+                                break;
+                            case 4:
+                                msgmenu = true;
+                                break;
+                            case 5:
+                                chatclient->handle_exitlogin();
+                                break;
+                            case 0:
+                                chatclient->handle_exitlogin();
+                                chatclient->handle_exit();
+                                break;
+                            default:
+                                std::cout << choice;
+                                std::cout << "请输入有效选项!" << std::endl;
+                                break;
+                        };
+                    } else {
+                    }
+                }
             }
         }
+        
+        }
     }
-}
 int main(int argc, char* argv[]) {
     signal(SIGINT, handler);
     EventLoop loop;

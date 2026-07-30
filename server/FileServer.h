@@ -7,8 +7,6 @@
 #include "/home/cx33071/muduo-/base/logger.h"
 #include "/home/cx33071/muduo-/net/TcpServer.h"
 #include "FILEredis.h"
-#include "friend.h"
-#include "group.h"
 #include "json.hpp"
 using json = nlohmann::json;
 class FileServer{

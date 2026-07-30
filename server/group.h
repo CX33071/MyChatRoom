@@ -28,7 +28,7 @@ class Group{
      int invite(std::string account,
                  std::string invaccount,
                  std :: string name);
-     int delgroup(std::string groupname, std::string account,std::string password);
+     int delgroup(std::string groupname, std::string account);
      bool agreejoin(std::string account, std::string groupname);
      bool refusejoin(std::string account,
                      std::string groupname);
@@ -36,6 +36,7 @@ class Group{
     std::string findowner(std::string groupname);
     std::string getname(std::string account);
     std::vector<std::string> grouplist(std::string account);
+    std::vector<std::string> ownergrouplist(std::string account);
     int exitgroup(std::string account, std::string groupname);
     std::vector<std::string> groupmembers(std::string account,
                                           std::string groupname);

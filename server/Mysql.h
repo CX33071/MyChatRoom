@@ -10,12 +10,18 @@
 #include <ctime>
 #include <future>
 #include <iostream>
+#include <mutex>
 #include <string>
+#include <vector>
+
 class Mysql {
     private:
      MYSQL* mysql_;
+     std::mutex mutex_;
+
     public:
      Mysql();
+     ~Mysql();
      void createinfo(const char*sql_);
      void addmsg(const char* sql_);
      void delmsg(const char* sql_);

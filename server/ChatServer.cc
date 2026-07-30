@@ -1,6 +1,7 @@
 #include "ChatServer.h"
 ChatServer::ChatServer(EventLoop* loop, std::string name, const InetAddress& addr):server_(loop,name,addr),loop_(loop){
     server_.setThreadNum(4);
+    verifycode.resetatstus();
     server_.setConnectionCallback(
         [this](const TcpConnectionPtr& conn) { connectioncallback(conn); });
 
@@ -503,7 +504,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                     auto it = clientmap.find(target);
                     if (it != clientmap.end()) {
                         target_conn = it->second;
+                        std::cout << "对方在线" << std::endl;
                     } else {
+                        std::cout << "对方不在线" << std::endl;
                         G.disconnectmsg(target, j2);
                     }
                 }
@@ -620,6 +623,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::vector<std::string> res = F.friendlist(account);
             std::string list = "好友列表:\n";
+            if(res.size()==0){
+                list += "无";
+                list += "\n";
+            }
             for (int i = 0; i < res.size(); i++) {
                 std::string name = verifycode.getname(res[i]);
                 std::cout << "name =" << name << std::endl;
@@ -742,7 +749,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "grouplist") {
             std::string account = j["account"];
             std::vector<std::string> res = G.grouplist(account);
-            std::string list = "群聊列表:\n";
+            std::string list = "加入的群聊列表:\n";
             for (int i = 0; i < res.size(); i++) {
                 list += res[i];
                 list += "\n";
@@ -756,10 +763,31 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             conn->send(j1.dump() + '\n');
         }
+        if(cmd=="ownergrouplist"){
+            std::string account = j["account"];
+            std::vector<std::string> res = G.ownergrouplist(account);
+            std::string list = "你创建的群聊:\n";
+            for (int i = 0; i < res.size(); i++) {
+                list += res[i];
+                list += "\n";
+            }
+            json j1;
+            j1["cmd"] = "ownergrouplistres";
+            j1["data"] = list;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            conn->send(j1.dump() + '\n');
+        }
         if (cmd == "blocklist") {
             std::string account = j["account"];
             std::vector<std::string> res = F.blocklist(account);
             std::string list = "拉黑好友列表:\n";
+            if(res.size()==0){
+                list += "无";
+                list += "\n";
+            }
             for (int i = 0; i < res.size(); i++) {
                 std::string name=verifycode.getname(res[i]);
                 list += name;
@@ -778,6 +806,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::vector<std::string> res = F.onlinelist(account);
             std::string list = "好友在线情况:\n";
+            if(res.size()==0){
+                list+="当前无好友";
+                list += "\n";
+            }
             for (int i = 0; i < res.size(); i++) {
                 list += res[i];
                 list += "\n";
@@ -824,6 +856,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string target = j["to"];
             std::string account = j["from"];
             std::string msg = j["message"];
+            std::cout << "msg.size()=" << msg.size() << std::endl;
             json j2;
             j2["cmd"] = "chatedres";
             j2["account"] = account;
@@ -919,10 +952,12 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string target = j["target"];
             int res = F.delfriend(account, target);
+            std::cout << "account =" << account << "    target =" << target
+                      << "  res =" << res << std::endl;
             json j1;
             j1["cmd"] = "delfriendres";
             if (res == 1) {
-                j1["data"] = "目标用户根本不存在";
+                j1["data"] = "目标用户不存在";
             } else if (res == 2) {
                 j1["data"] = "目标用户还不是好友";
             } else {
@@ -1028,8 +1063,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "delgroup") {
             std::string account = j["account"];
             std::string groupname = j["groupname"];
-            std::string password = j["password"];
-            int res = G.delgroup(groupname, account, password);
+            int res = G.delgroup(groupname, account);
             json j1;
             j1["cmd"] = "delgroupres";
             if (res == 0) {

@@ -87,52 +87,83 @@ void chatclient::main_menu() {
     std::cout << GREEN << "3.            密码登录               \n" << RESET;
     std::cout << GREEN << "4.            忘记密码               \n" << RESET;
     std::cout << GREEN << "5.            注销账号               \n" << RESET;
-    std::cout << GREEN << "0.               退出               \n" << RESET;
+    std::cout << GREEN << "0.               退出chatroom               \n" << RESET;
+    std::cout << GREEN << "请选择:" << RESET;
+}
+void chatclient::select_menu(){
+    std::cout << GREEN << "1.            好友菜单               \n" << RESET;
+    std::cout << GREEN << "2.            群聊菜单               \n" << RESET;
+    std::cout << GREEN << "3.            文件菜单               \n" << RESET;
+    std::cout << GREEN << "4.            消息菜单               \n" << RESET;
+    std::cout << GREEN << "5.            退出登录\n";
+    std::cout << GREEN << "0.               退出chatroom               \n"
+              << RESET;
     std::cout << GREEN << "请选择:" << RESET;
 }
 void chatclient::friend_menu() {
-    std::cout << GREEN << "\n================好友功能================\n"
+    std::cout << GREEN << "\n================好友菜单================\n"
               << RESET;
-    std::cout << GREEN << "6.              添加好友               \n" << RESET;
-    std::cout << GREEN << "7.              删除好友               \n" << RESET;
-    std::cout << GREEN << "8.              拉黑好友               \n" << RESET;
-    std::cout << GREEN << "9.              取消拉黑               \n" << RESET;
-    std::cout << GREEN << "10.             好友列表               \n" << RESET;
-    std::cout << GREEN << "11.           拉黑好友列表               \n"
+    std::cout << GREEN << "1.              添加好友               \n" << RESET;
+    std::cout << GREEN << "2.              删除好友               \n" << RESET;
+    std::cout << GREEN << "3.              拉黑好友               \n" << RESET;
+    std::cout << GREEN << "4.              取消拉黑               \n" << RESET;
+    std::cout << GREEN << "5.             好友列表               \n" << RESET;
+    std::cout << GREEN << "6.           拉黑好友列表               \n"
               << RESET;
-    std::cout << GREEN << "12.          处理好友申请消息               \n"
+    std::cout << GREEN << "7.          处理好友申请消息               \n"
               << RESET;
-    std::cout << GREEN << "13.              私聊               \n" << RESET;
-    std::cout << GREEN << "14.          显示好友在线状态               \n"
+    std::cout << GREEN << "8.              私聊               \n" << RESET;
+    std::cout << GREEN << "9.          显示好友在线状态               \n"
               << RESET;
-    std::cout << GREEN << "\n================群聊功能================\n"
+    std::cout << GREEN << "10.          返回功能菜单\n" << RESET;
+    std::cout << GREEN << "11.          退出登录\n" << RESET;
+    std::cout << GREEN << "0.          退出chatroom\n" << RESET;
+}
+void chatclient::group_menu(){
+    std::cout << GREEN << "\n================群聊菜单================\n"
               << RESET;
-    std::cout << GREEN << "15.             创建群聊               \n"
+    std::cout << GREEN << "1.             创建群聊               \n" << RESET;
+    std::cout << GREEN << "2.           申请加入群聊               \n"
               << RESET;
-    std::cout << GREEN << "16.           申请加入群聊               \n"
+    std::cout << GREEN << "3.             退出群聊               \n" << RESET;
+    std::cout << GREEN << "4.            查看群聊成员               \n"
               << RESET;
-    std::cout << GREEN << "17.             退出群聊               \n" << RESET;
-    std::cout << GREEN << "18.            查看群聊成员               \n"
+    std::cout << GREEN << "5.           设置群聊管理员               \n"
               << RESET;
-    std::cout << GREEN << "19.           设置群聊管理员               \n"
+    std::cout << GREEN << "6.             解散群聊               \n" << RESET;
+    std::cout << GREEN << "7.             群聊列表               \n" << RESET;
+    std::cout << GREEN << "8.            移除群聊成员               \n"
               << RESET;
-    std::cout << GREEN << "20.             解散群聊               \n"
+    std::cout << GREEN << "9.             群聊天               \n" << RESET;
+    std::cout << GREEN << "10.           处理加群申请               \n"
               << RESET;
-    std::cout << GREEN << "21.             群聊列表               \n"
-              << RESET;
-    std::cout << GREEN << "22.            移除群聊成员               \n" << RESET;
-    std::cout << GREEN << "23.             群聊天               \n" << RESET;
-    std::cout << GREEN << "24.           处理加群申请               \n"
-              << RESET;
+    std::cout << GREEN << "11.          返回功能菜单\n" << RESET;
+    std::cout << GREEN << "12.          退出登录\n" << RESET;
+    std::cout << GREEN << "0.          退出chatroom\n" << RESET;
+}
+void chatclient::msg_menu(){
+    std::cout << GREEN
+              << "\n================消息菜单================\n"<< RESET;
+    std::cout << GREEN << "\n请选择要处理的消息类型编号:\n";
+    std::cout << GREEN << "1.             好友申请消息               \n" << RESET;
+    std::cout << GREEN << "2.           加群申请               \n" << RESET;
+    std::cout << GREEN << "3.             传文件消息               \n" << RESET;
+    std::cout << GREEN << "4.          返回功能菜单\n" << RESET;
+    std::cout << GREEN << "5.          退出登录\n" << RESET;
+    std::cout << GREEN << "0.          退出chatroom\n" << RESET;
+    std::cout << GREEN << "请选择:" << RESET;
+}
+void chatclient::file_menu(){
     std::cout << GREEN << "\n================文件功能================\n";
-    std::cout << GREEN << "25.           好友上传文件               \n" << RESET;
-    std::cout << GREEN << "26.           处理文件消息               \n" << RESET;
-    std::cout << GREEN << "27.           群聊上传文件               \n"
+    std::cout << GREEN << "1.           好友上传文件               \n"
               << RESET;
-    std::cout << GREEN << "28.            退出登录               \n"
+    std::cout << GREEN << "2.           处理文件消息               \n"
               << RESET;
-    std::cout << GREEN << "29.          退出chatroom               \n"
+    std::cout << GREEN << "3.           群聊上传文件               \n"
               << RESET;
+    std::cout << GREEN << "4.            返回功能菜单               \n" << RESET;
+    std::cout << GREEN << "5.          退出登录\n" << RESET;
+    std::cout << GREEN << "0.          退出chatroom               \n" << RESET;
     std::cout << GREEN << "请选择:" << RESET;
 }
 std::string chatclient::getaccount(std::string name){
@@ -298,8 +329,11 @@ void chatclient::handle_login_code() {
         if (cc == "1") {
             chatis_login = true;
             name = getname(account);
+            system("clear");
         }
-        std::cout << res["data"] << std::endl;
+        else{
+            std::cout << res["data"] << std::endl;
+        }
     }
 }
 void chatclient::handle_login_key() {
@@ -339,8 +373,10 @@ void chatclient::handle_login_key() {
         if (cc == "1") {
             chatis_login = true;
             name = getname(account);
+            system("clear");
+        }else{
+            std::cout << res["data"] << std::endl;
         }
-        std::cout << res["data"] << std::endl;
     }
 }
 
@@ -494,6 +530,7 @@ void chatclient::handle_exitlogin() {
         chat_conn->send(j1.dump() + '\n');
         json res = f.get();
         std::cout << PURPLE << res["data"] << RESET << std::endl;
+        chatis_login = false;
     }
 }
 int chatclient::is_friend(std::string friendaccount) {
@@ -594,6 +631,7 @@ void chatclient::handle_friendlist() {
             data.replace(pos, 2, "\n");
             pos += 1;
         }
+        std::cout << std::endl;
         std::cout << PURPLE << data << RESET << std::endl;
     }
 }
@@ -927,6 +965,31 @@ bool chatclient::is_exists(std::string account){
         return false;
     }
 }
+void chatclient::handle_ownergrouplist(){
+    if(!chatis_login){
+        std::cout << "请先登录!" << std::endl;
+    }else{
+        j["cmd"]="ownergrouplist";
+        j["account"]=account;
+        id = gen_req_id();
+        j["request_id"] = id;
+        std::promise<json> p;
+        std::future<json> f = p.get_future();
+        {
+            std::lock_guard<std::mutex> lock(active_mutex);
+            active_requests[id] = std::move(p);
+        }
+        chat_conn->send(j.dump() + '\n');
+        json res = f.get();
+        size_t pos = 0;
+        std::string data = res["data"];
+        while ((pos = data.find("\\n", pos)) != std::string::npos) {
+            data.replace(pos, 2, "\n");
+            pos += 1;
+        }
+        std::cout << PURPLE << data << RESET << std::endl;
+    }
+}
 void chatclient::handle_disblock() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
@@ -1086,12 +1149,9 @@ void chatclient::handle_delgroup() {
     } else {
         std::cout << "请输入要解散的群聊名称:";
         std::getline(std::cin >> std::ws, groupname);
-        std::cout << PURPLE << "请输入您的密码:" << RESET;
-        password = cinkey();
         j["cmd"] = "delgroup";
         j["account"] = account;
         j["groupname"] = groupname;
-        j["password"] = password;
         id = gen_req_id();
         j["request_id"] = id;
         std::promise<json> p;
@@ -1401,9 +1461,15 @@ void chatclient::handle_sendfile() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
+        handle_friendlist();
         std::cout << "请输入您要发送文件的用户:";
         std::string friendname;
         std::getline(std::cin >> std::ws, friendname);
+        bool b=is_existsname(friendname);
+        if(!b){
+            std::cout <<PURPLE<< "该用户并不是您的好友" << RESET << std::endl;
+            return;
+        }
         frienduser = getaccount(friendname);
         int b = is_friend(frienduser);
         if (b == 1) {
@@ -1454,7 +1520,8 @@ void chatclient::handle_sendfile() {
     }
 }
 void chatclient::handle_groupsendfile(){
-    std::cout<<PURPLE<<"请输入您要发送文件群聊名称:";
+    handle_grouplist();
+    std::cout << PURPLE << "请输入您要发送文件群聊名称:";
     std::string groupname;
     std::getline(std::cin>>std::ws,groupname);
     bool b= is_existsgroup(groupname);

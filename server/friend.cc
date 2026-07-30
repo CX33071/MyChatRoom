@@ -335,7 +335,6 @@ std::vector<std::string> Friend::onlinelist(std::string account) {
                 redis_.set("online" + friend_account, status);
                 redis_.sync_commit();
             } else {
-                status = "0";
             }
         } else {
             auto fut4 = redis_.get("online" + friend_account);
@@ -344,11 +343,11 @@ std::vector<std::string> Friend::onlinelist(std::string account) {
         }
         if (status == "1"){
             std::string name = getname(friend_account);
-            list.push_back(name + "[在线]");
+            list.push_back(name + "     [在线]");
         }
         else{
             std::string name = getname(friend_account);
-            list.push_back(name + "[离线]");
+            list.push_back(name + "     [离线]");
         }
     }
     return list;

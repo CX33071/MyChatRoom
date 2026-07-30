@@ -31,6 +31,7 @@ class Verifycode {
     int isexists(std::string account);
     bool is_online(std::string account);
     bool isexistsname(std::string name);
+    void resetatstus();
     std::string getaccount(std::string name);
     std::string getname(std::string account);
     int destroy(std::string account,
