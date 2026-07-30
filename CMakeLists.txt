@@ -132,7 +132,13 @@ set(SERVER_SRC
 )
 
 add_executable(server ${SERVER_SRC})
+find_package(glog REQUIRED)
 
+
+target_link_libraries(
+    server
+    glog::glog
+)
 # =========================================================
 # Client
 # =========================================================

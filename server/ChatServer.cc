@@ -16,6 +16,7 @@ ChatServer::ChatServer(EventLoop* loop, std::string name, const InetAddress& add
 void ChatServer::connectioncallback(const TcpConnectionPtr& conn) {
     if (conn->connected()) {
         LOG_INFO << "有一个chatclient客户端连接成功:" << conn->peerAddress().toIpPort();
+        LOG(INFO) << "GLog:chatclient连接成功!";
     } else {
         LOG_INFO << "有一个chatclient客户端下线了:" << conn->peerAddress().toIpPort();
         std::lock_guard<std::mutex> lock(g_mutex);

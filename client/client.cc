@@ -530,12 +530,39 @@ void mainfunction(chatclient*chatclient) {
         
         }
     }
+    int isport(char* s) {
+        char* end;
+        int port = std::strtol(s, &end, 10);
+        if (*end != '\0') {
+            return 1;
+        }
+        if (port <= 0 || port > 65535) {
+            return 2;
+        }
+        return 0;
+    }
+
 int main(int argc, char* argv[]) {
+    if(argc!=4){
+        std::cout << PURPLE << "请输入./client (ip) (chat_port) (file_port)"
+                  << RESET << std::endl;
+        return -1;
+    }
+    int res1 = isport(argv[2]);
+    int res2 = isport(argv[3]);
+    if (res1 == 1 || res2 == 1) {
+        std::cout << PURPLE << "port请输入数字!" << RESET << std::endl;
+        return -1;
+    }
+    if (res1 == 2 || res2 == 2) {
+        std::cout << PURPLE << "port范围为0~65535!" << RESET << std::endl;
+        return -1;
+    }
     signal(SIGINT, handler);
     EventLoop loop;
     L = &loop;
-    InetAddress chataddr(argv[1], 8888);
-    InetAddress fileaddr(argv[1], 9999);
+    InetAddress chataddr(argv[1], std::stoi(argv[2]));
+    InetAddress fileaddr(argv[1], std::stoi(argv[3]));
     chatclient chatclient(&loop, chataddr);
     c = &chatclient;
     FileClient fileclient(&loop, fileaddr);
