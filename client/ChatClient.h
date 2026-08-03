@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
 #include "ChatClient.h"
+#include <ncurses.h>
 #include "json.hpp" 
 #define RESET "\033[0m"
 #define GREEN "\033[1;32m"
@@ -95,6 +96,8 @@ class chatclient {
     void file_menu();
     void select_menu();
     void msg_menu();
+    int changenum(std::string s);
+    std::string readline();
     std::string getaccount(std::string name);
     std::string getname(std::string account);
     void handle_signup();
