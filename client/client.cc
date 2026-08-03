@@ -30,6 +30,7 @@ std::string get_current_time() {
 }
 void handler(int) {
     stop = true;
+    c->stop1 = true;
     c->handle_exit();
 }
 void handle_message(chatclient*client) {
@@ -59,11 +60,12 @@ void handle_message(chatclient*client) {
                     std::string from = msg["account"];
                     std::string content = msg["message"];
                     std::string name1 = client->getname(from);
-                    std::string name2 = client->getname(client->account);
+                    std::string name2 = client->name;
                     std::string q =
                         "\n收到来自[" + name1 + "]的消息:" + content;
                     e.data["data"]=q;
                     e.data["time"] = msg["time"];
+                    client->SQ.addfriendchat(name1, name2, content);
                     if (client->inchat && client->current_chat == from) {
                         std::cout << "\r\33[2K";
                         std::cout << "[" << name1 << "]:   " << content
@@ -80,7 +82,6 @@ void handle_message(chatclient*client) {
                                 client->event_cv.notify_one();
                             }
                         }
-                        
                     }
                 } else if (cmd == "groupchatedres") {
                     chatclient::Event e;
@@ -93,6 +94,7 @@ void handle_message(chatclient*client) {
                           "]的消息:" + content;
                     e.data["data"] = content1;
                     e.data["time"] = msg["time"];
+                    client->SQ.addgroupchat(groupname, name, content);
                     if (client->groupchat) {
                         std::cout << "\r\33[2K";
                         std::cout << "[" << name << "]:   " << content
@@ -575,6 +577,7 @@ int main(int argc, char* argv[]) {
     int timeout = -1;
     loop.loop(timeout);
     if (stop) {
+        chatclient.stop1 = true;
         _exit(0);
     } else {
         if (t1.joinable()) {

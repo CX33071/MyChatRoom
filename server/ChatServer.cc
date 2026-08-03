@@ -524,15 +524,18 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if (cmd == "getgrouphistory") {
             std::string groupname = j["groupname"];
-            std::vector<std::string> res = G.getgrouphistory(groupname);
-            json j1;
-            j1["cmd"] = "getgrouphistoryres";
-            std::string his;
-            for (int i = 0; i < res.size(); i++) {
-                his += res[i];
-                his += "\n";
+            std::vector<friendchatrecord> historymsg=G.getgrouphistory(groupname);
+            std::vector<json> hh;
+            for(auto t:historymsg){
+                json j2;
+                j2["sender"]=t.sender;
+                j2["reciver"]=t.reciver;
+                j2["content"] = t.content;
+                hh.push_back(j2);
             }
-            j1["data"] = his;
+            json j1;
+            j1["cmd"]="getgroupnamehistoryres";
+            j1["data"] = hh;
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
@@ -830,15 +833,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string friendaccount = j["friendaccount"];
             int res = F.isfriend(account, friendaccount);
-            j1["data"] = "";
-            std::vector<std::string> historymsg =
-                F.gethistoryfriendchat(account, friendaccount);
-            std::string his;
-            for (int i = 0; i < historymsg.size(); i++) {
-                his += historymsg[i];
-                his += "\n";
-                j1["data"] = his;
-            }
             if (res == 1) {
                 j1["code"] = "1";
             } else if (res == 2) {
@@ -846,6 +840,28 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "0";
             }
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            conn->send(j1.dump() + '\n');
+        }
+        if(cmd=="getfriendchathistory"){
+            json j1;
+            j1["cmd"] = "getfriendchathistoryres";
+            std::string account = j["account"];
+            std::string friendaccount = j["friendaccount"];
+            std::vector<friendchatrecord> historymsg =
+                F.gethistoryfriendchat(account, friendaccount);
+            std::vector<json> hh;
+            for (auto t : historymsg) {
+                json j2;
+                j2["sender"]=t.sender;
+                j2["reciver"]=t.reciver;
+                j2["content"]=t.content;
+                hh.push_back(j2);
+            }
+            j1["data"] = hh;
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
@@ -865,9 +881,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string t = get_current_time();
             j2["time"] = t;
             std::string name1 = verifycode.getname(account);
+            std::string name2 = verifycode.getname(target);
             F.historyfriendchat(
-                account, target,
-                "[" + name1 + "]:  " + msg + "         [" + t + "]");
+                account, target,name1,name2,msg+"   ["+t+"]");
             TcpConnectionPtr target_conn;
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
@@ -1096,8 +1112,8 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::cout << "时间" << t << std::endl;
             std::string name = verifycode.getname(account);
             G.historygroupchat(
-                account, groupname,
-                "[" + name + "]:  " + message + "         [" + t + "]");
+                account, groupname,name,
+                message + "         [" + t + "]");
             std::vector<std::string> res =
                 G.grouptargetmember(groupname, account);
             for (int i = 0; i < res.size(); i++) {

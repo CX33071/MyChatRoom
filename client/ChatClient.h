@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <future>
 #include <queue>
+#include "SQlite.h"
 #include <regex>
 #include <dirent.h>
 #include <unordered_map>
@@ -18,12 +19,18 @@
 #define BLUE "\033[34m"
 #define PURPLE "\033[1;35m"
 using json = nlohmann::json;
+struct chatrecord{
+    std::string sender;
+    std::string reciver;
+    std::string content;
+};
 class FileClient;
 class chatclient {
    private:
     TcpClient client_;
-    std::vector<std::string> friendhistory;
+    std::vector<chatrecord> friendhistory;
     std::vector<std::string> groupnamehistory;
+    std::vector<std::string> grouphistorysender;
     std::string filename;
     std::string filepath;
     std::string password;
@@ -40,8 +47,11 @@ class chatclient {
     std::atomic<int> req_id=0;
     std::string id;
     EventLoop *loop_;
+    chatrecord cr;
 
    public:
+    std::atomic<bool> stop1 = false;
+    SQlite SQ;
     std::atomic<bool> running = false;
     std::string name;
     FileClient* fileclient_;
@@ -98,6 +108,7 @@ class chatclient {
     void handle_applyjoingroup();
     void handle_friendchat();
     void getgrouphistory(std::string groupname);
+    void handle_getfriendchat(std::string friendaccount);
     void handle_friendlist();
     void handle_block();
     std::vector<std::string> getlocalfile(std::string path);

@@ -3,7 +3,9 @@
 
 chatclient::chatclient(EventLoop* loop, const InetAddress& addr):client_(loop,addr),loop_(loop){
     client_.setConnectionCallback(
-        [this](const TcpClient::TcpConnectionPtr& conn) { connectioncallback(conn); });
+        [this](const TcpClient::TcpConnectionPtr& conn) {
+            connectioncallback(conn);
+        });
 
     client_.setMessageCallback(
         [this](const TcpClient::TcpConnectionPtr& conn, Buffer* buf, Timestamp t) {
@@ -23,6 +25,9 @@ void chatclient::connectioncallback(const TcpClient::TcpConnectionPtr& conn){
         chat_conn.reset();
         chatconnok = false;
         chatis_login = false;
+        if(!stop1){
+            std::cout << PURPLE << "服务端断开连接" << std::endl;
+        }
         // std::cout << "\nchatclientclose!\n";
     }
 }
@@ -345,8 +350,8 @@ void chatclient::handle_login_code() {
             chatis_login = true;
             name = getname(account);
             system("clear");
-        }
-        else{
+            SQ.open(name);
+        } else {
             std::cout << res["data"] << std::endl;
         }
     }
@@ -394,7 +399,8 @@ void chatclient::handle_login_key() {
             chatis_login = true;
             name = getname(account);
             system("clear");
-        }else{
+            SQ.open(name);
+        } else {
             std::cout << res["data"] << std::endl;
         }
     }
@@ -582,23 +588,38 @@ int chatclient::is_friend(std::string friendaccount) {
     }
     chat_conn->send(j.dump() + '\n');
     json res = f.get();
-    std::string historystring = res["data"];
-    size_t start = 0;
-    size_t end = historystring.find('\n');
-    while (end != std::string ::npos) {
-        friendhistory.push_back(historystring.substr(start, end - start));
-        start = end + 1;
-        end = historystring.find('\n', start);
-    }
-    if (start < historystring.length()) {
-        friendhistory.push_back(historystring.substr(start));
-    }
     if (res["code"] == "1") {
         return 1;
     } else if (res["code"] == "2") {
         return 2;
     } else {
         return 0;
+    }
+}
+void chatclient::handle_getfriendchat(std::string friendaccount){
+    j["cmd"] = "getfriendchathistory";
+    j["account"]=account;
+    j["friendaccount"] = friendaccount;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::vector<json> data = res.value("data", std::vector<json>{});
+    if (data.size() != 0) {
+        for (auto t : data) {
+            std::string sender = t["sender"];
+            std::string reciver = t["reciver"];
+            std::string content = t["content"];
+            std::string s1 = getname(sender);
+            std::string s2 = getname(reciver);
+            SQ.addfriendchat(s1, s2, content);
+        }
     }
 }
 void chatclient::handle_friendchat() {
@@ -617,14 +638,48 @@ void chatclient::handle_friendchat() {
     } else if (is == 0) {
         std::cout << "对方目前还不是您的好友" << std::endl;
     } else {
+        std::cout << PURPLE << "请选择是否要查看所有历史聊天记录1/开启新聊天2:";
+        int N;
+        std::cin >> N;
+        while (std::cin.fail() || (N != 1 && N != 2)) {
+            std::cout << PURPLE << "请输入数字1-2!" << GREEN << "请选择:" << RESET;
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cin >> N;
+        }
         inchat = true;
         system("clear");
         std::cout << GREEN << "进入与用户[" << friendname << "]的聊天界面"
                   << RESET << std::endl;
         std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
-        std::cout << GREEN << "历史聊天" << RESET << std::endl;
-        for (int i = 0; i < friendhistory.size(); i++) {
-            std::cout << friendhistory[i] << std::endl;
+        if(N==1){
+            std::cout << GREEN << "所有聊天记录:" << RESET << std::endl;
+            std::vector<std::string> chat = SQ.getfriendchat(name, friendname);
+            if (chat.empty()) {
+                handle_getfriendchat(current_chat);
+                chat = SQ.getfriendchat(name, friendname);
+            }
+            for (int i = 0; i < chat.size(); i++) {
+                std::cout << chat[i] << std::endl;
+            }
+        } else {
+            std::cout << GREEN << "最近十条历史聊天:" << RESET << std::endl;
+            std::vector<std::string> chat = SQ.getfriendchat(name, friendname);
+            if (chat.empty()) {
+                handle_getfriendchat(current_chat);
+                chat = SQ.getfriendchat(name, friendname);
+            }
+            if (chat.size() <= 10) {
+                for (int i = 0; i < chat.size(); i++) {
+                    std::cout << chat[i] << std::endl;
+                }
+            } else {
+                int total = 0;
+                for (int i = chat.size() - 10; total < 10; i++) {
+                    std::cout << chat[i] << std::endl;
+                    total++;
+                }
+            }
         }
         std::cout << GREEN << "开启新的聊天!" << RESET << std::endl;
         while (inchat) {
@@ -635,6 +690,7 @@ void chatclient::handle_friendchat() {
                 inchat = false;
                 break;
             }
+            SQ.addfriendchat(name, friendname, msg);
             json chat;
             chat["cmd"] = "friendchat";
             chat["from"] = account;
@@ -1456,17 +1512,14 @@ void chatclient::getgrouphistory(std::string groupname) {
         }
         chat_conn->send(j.dump() + '\n');
         json res = f.get();
-        std::string historystring = res["data"];
-        size_t start = 0;
-        size_t end = historystring.find('\n');
-        while (end != std::string ::npos) {
-            groupnamehistory.push_back(
-                historystring.substr(start, end - start));
-            start = end + 1;
-            end = historystring.find('\n', start);
-        }
-        if (start < historystring.length()) {
-            groupnamehistory.push_back(historystring.substr(start));
+        std::vector<json> data = res.value("data", std::vector<json>{});
+        if(data.size()!=0){
+            for(auto t:data){
+                std::string sender = t["sender"];
+                std::string content=t["content"];
+                std::string n1 = getname(sender);
+                SQ.addgroupchat(groupname, n1, content);
+            }
         }
     }
 }
@@ -1487,33 +1540,70 @@ void chatclient::handle_groupchat() {
                       << std::endl;
             return;
         }
+        std::cout<<PURPLE<<"请选择是否要查看所有历史聊天记录1/开启新聊天2:";
+        int N;
+        std::cin >> N;
+        while(std::cin.fail()||(N!=1&&N!=2)){
+            std::cout << PURPLE << "请输入数字1-2!" << GREEN
+                      << "请选择:" << RESET;
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cin >> N;
+        }
         groupchat = true;
         system("clear");
         std::cout << GREEN << "欢迎进入群聊[" << groupname << "]的聊天界面"
                   << RESET << std::endl;
         std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
-        getgrouphistory(groupname);
-        for (int i = 0; i < groupnamehistory.size(); i++) {
-            std::cout << groupnamehistory[i] << std::endl;
-        }
-        while (groupchat) {
-            std::string msg;
-            std::cout << GREEN << "[" << name << "]:" << RESET;
-            std::getline(std::cin >> std::ws, msg);
-            if (msg == "EXIT") {
-                groupchat = false;
-                break;
+        if(N==1){
+            std::cout << GREEN << "所有聊天记录:" << RESET << std::endl;
+            std::vector<std::string> chat=SQ.getgroupchat(groupname);
+            if(chat.empty()){
+                getgrouphistory(groupname);
+                chat = SQ.getgroupchat(groupname);
             }
-            json chat;
-            chat["cmd"] = "groupchat";
-            chat["account"] = account;
-            chat["groupname"] = groupname;
-            chat["message"] = msg;
-            chat_conn->send(chat.dump() + '\n');
+            for (int i = 0; i < chat.size();i++){
+                std::cout << chat[i] << std::endl;
+            }
+        }else{
+            std::cout << GREEN << "最近十条历史聊天:" << RESET << std::endl;
+            std::vector<std::string> chat = SQ.getgroupchat(groupname);
+            if (chat.empty()) {
+                getgrouphistory(groupname);
+                chat = SQ.getgroupchat(groupname);
+        }
+        if(chat.size()<=10){
+            for(int i=0;i<chat.size();i++){
+                std::cout << chat[i] << std::endl;
+            }
+        }
+        else{
+            int total=0;
+            for(int i=chat.size()-10;total<10;i++){
+                std::cout << chat[i] << std::endl;
+                total++;
+            }
         }
     }
+    std::cout << GREEN << "开启新聊天!" << RESET << std::endl;
+    while (groupchat) {
+        std::string msg;
+        std::cout << GREEN << "[" << name << "]:" << RESET;
+        std::getline(std::cin >> std::ws, msg);
+        if (msg == "EXIT") {
+            groupchat = false;
+            break;
+        }
+        SQ.addgroupchat(groupname, name, msg);
+        json chat;
+        chat["cmd"] = "groupchat";
+        chat["account"] = account;
+        chat["groupname"] = groupname;
+        chat["message"] = msg;
+        chat_conn->send(chat.dump() + '\n');
+    }
 }
-
+}
 void chatclient::handle_sendfile() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;

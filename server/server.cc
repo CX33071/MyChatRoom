@@ -18,7 +18,13 @@
 #define BLUE "\033[34m"
 #define PURPLE "\033[1;35m"
 using json = nlohmann::json;
-int isport(char*s){
+EventLoop* L;
+std::atomic<bool> stop = false;
+void handler(int){
+    stop = true;
+    L->quit();
+}
+int isport(char* s) {
     char* end;
     int port = std::strtol(s, &end, 10);
     if(*end!='\0'){
@@ -45,6 +51,7 @@ int main(int argc,char*argv[]){
         std::cout << PURPLE << "port范围为0~65535!" << RESET << std::endl;
         return -1;
     }
+    signal(SIGINT, handler);
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "./GLog";
     LOG(INFO) << "ChatServer Start!";
@@ -52,6 +59,7 @@ int main(int argc,char*argv[]){
     Logger logger;
     logger.setLogLevel(Logger::INFO);
     EventLoop loop;
+    L = &loop;
     InetAddress chataddr(argv[1],std::stoi(argv[2]));
     InetAddress fileaddr(argv[1],std::stoi(argv[3]));
     ChatServer chatserver(&loop, "chatserver", chataddr);

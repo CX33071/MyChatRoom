@@ -363,7 +363,8 @@ int Group::delgroup(std::string groupname, std::string account){
     }
     redis_.del({owner, member});
     redis_.del({"groupchat" + groupname});
-    redis_.srem("ownergrouplist"+account,{groupname});
+    redis_.del({"groupchatsender" + groupname});
+    redis_.srem("ownergrouplist" + account, {groupname});
     redis_.sync_commit();
     std::string sql2;
     sql2 = "delete from groupmember_info where groupname ='" + groupname + "'";
@@ -486,26 +487,41 @@ void Group::delmember(std::string groupname,std::string account){
     mysql_.delmsg(sql7.c_str());
 }
 void Group::historygroupchat(std::string account,
-                      std::string groupname,
+                      std::string groupname,std::string name,
                       std::string content) {
-    redis_.rpush("groupchat" + groupname, {content});
+    json j;
+    j["sender"] = name;
+    j["content"] = content;
+    std::string s = j.dump();
+    redis_.rpush("groupchat" + groupname, {s});
     redis_.sync_commit();
     std::string sql =
         "insert into groupchat_history (sender,groupname,context)values('" +
         account + "','" + groupname + "','" + content+ "')";
     mysql_.addmsg(sql.c_str());
 }
-std::vector<std::string> Group::getgrouphistory(std::string groupname){
-    std::vector<std::string> res;
+std::vector<friendchatrecord> Group::getgrouphistory(std::string groupname){
+    std::vector<friendchatrecord> res;
     auto s = redis_.exists({"groupchat" + groupname});
     redis_.sync_commit();
     if (!s.get().as_integer()) {
-        std::string sql1 = "select sender, context from groupchat_history where groupname ='"+groupname+"'order by send_time";
-        std::vector<std::string> his = mysql_.selectmul2(sql1.c_str());
-        for (auto msg : his) {
-            redis_.rpush("groupchat" + groupname, {msg});
-            res.push_back(msg);
+        std::string sql1 = "select sender from groupchat_history where groupname ='"+groupname+"'order by send_time";
+        std::vector<std::string> his = mysql_.selectmul(sql1.c_str());
+        std::string sql2 =
+            "select content from groupchat_history where groupname ='" +
+            groupname + "' order by send_time";
+        std::vector<std::string> his1=mysql_.selectmul(sql2.c_str());
+        for (int i = 0; i < his.size();i++){
+            json j1;
+            j1["sender"] = his[i];
+            j1["content"] = his1[i];
+            friendchatrecord fr;
+            fr.sender = his[i];
+            fr.content=his1[i];
+            std::string s = j1.dump();
+            redis_.rpush("groupchat" + groupname, {s});
             redis_.sync_commit();
+            res.push_back(fr);
         }
         redis_.sync_commit();
         return res;
@@ -514,10 +530,13 @@ std::vector<std::string> Group::getgrouphistory(std::string groupname){
     redis_.sync_commit();
     auto reply = f.get();
     for(auto it:reply.as_array()){
-        res.push_back(it.as_string());
+        json j = json::parse(it.as_string());
+        friendchatrecord fr;
+        fr.sender=j["sender"];
+        fr.content = j["content"];
+        res.push_back(fr);
     }
     return res;
-    
 }
 void Group::disconnectmsg(std::string account,json j){
     redis_.sadd("disconnectmsg" + account, {j.dump()});

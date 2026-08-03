@@ -14,6 +14,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "Mysql.h"
+#include "friend.h"
 #include "json.hpp"
 using json = nlohmann::json;
 class Group{
@@ -48,9 +49,9 @@ class Group{
     void delmember(std::string groupname, std::string account);
     std::vector<std::string> grouptargetmember(std::string groupname,std::string account);
     void historygroupchat(std::string account,
-                          std::string groupname,
+                          std::string groupname,std::string name,
                           std::string content);
-    std::vector<std::string> getgrouphistory(std::string groupname);
+    std::vector<friendchatrecord> getgrouphistory(std::string groupname);
     void disconnectmsg(std::string account, json j);
     std::vector<std::string> getdisconnectmsg(std::string account);
     void destorydismsg(std::string account);

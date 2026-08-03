@@ -353,31 +353,60 @@ std::vector<std::string> Friend::onlinelist(std::string account) {
     return list;
 }
 void Friend::historyfriendchat(std::string account1,
-                               std::string account2,
+                               std::string account2,std::string sender,std::string reciver,
                                std::string content) {
-    redis_.rpush("friendchat" + account1 + account2, {content});
-    redis_.rpush("friendchat" + account2 + account1, {content});
+    nlohmann:: json j;
+    j["sender"] = sender;
+    j["reciver"] = reciver;
+    j["content"] = content;
+    std::string s = j.dump();
+    redis_.rpush("friendchat" + account1 + account2, {s});
+    redis_.rpush("friendchat" + account2 + account1, {s});
     redis_.sync_commit();
     std::string sql =
         "insert into friendchat_history(sender,reciver,content) values('" +
         account1 + "','" + account2 + "','" + content + "')";
     mysql_.addmsg(sql.c_str());
 }
-std::vector<std::string> Friend::gethistoryfriendchat(std::string account1,
+std::vector<friendchatrecord> Friend::gethistoryfriendchat(std::string account1,
                                                       std::string account2) {
-    std::vector<std::string> historymsg;
+    std::vector<friendchatrecord> historymsg;
     auto fut1 = redis_.exists({"friendchat" + account1 + account2});
     redis_.sync_commit();
     if (!fut1.get().as_integer()) {
         std::string sql =
-            "select sender,content from friendchat_history "
+            "select sender from friendchat_history "
             "where (sender='" +
             account1 + "' and reciver='" + account2 + "') or (sender='" +
             account2 + "' and reciver='" + account1 + "') order by send_time";
-        std::vector<std::string> msgs = mysql_.selectmul2(sql.c_str());
-        for (auto msg : msgs) {
-            redis_.rpush("friendchat" + account1 + account2, {msg});
-            historymsg.push_back(msg);
+        std::vector<std::string> msgs = mysql_.selectmul(sql.c_str());
+        std::string sql1 =
+            "select reciver from friendchat_history "
+            "where (sender='" +
+            account1 + "' and reciver='" + account2 + "') or (sender='" +
+            account2 + "' and reciver='" + account1 + "') order by send_time";
+        std::vector<std::string> msgs1 = mysql_.selectmul(sql1.c_str());
+        std::string sql2 =
+            "select content from friendchat_history "
+            "where (sender='" +
+            account1 + "' and reciver='" + account2 + "') or (sender='" +
+            account2 + "' and reciver='" + account1 + "') order by send_time";
+        std::vector<std::string> msgs2 = mysql_.selectmul(sql2.c_str());
+        std::cout << "msg.size=" << msgs.size() << "msgs1.size=" << msgs1.size()
+                  << "msgs2.size=" << msgs2.size() << std::endl;
+        for (int i = 0; i < msgs.size(); i++) {
+            nlohmann::json j;
+            j["sender"]= msgs[i];
+            j["reciver"]=msgs1[i];
+            j["content"] = msgs2[i];
+            friendchatrecord fr;
+            fr.sender = msgs[i];
+            fr.reciver=msgs1[i];
+            fr.content = msgs2[i];
+            std::string s = j.dump();
+            redis_.rpush("friendchat" + account1 + account2, {s});
+            redis_.rpush("friendchat" + account2 + account1, {s});
+            historymsg.push_back(fr);
             redis_.sync_commit();
         }
         redis_.sync_commit();
@@ -387,7 +416,12 @@ std::vector<std::string> Friend::gethistoryfriendchat(std::string account1,
     redis_.sync_commit();
     auto reply = fut2.get();
     for (auto it : reply.as_array()) {
-        historymsg.push_back(it.as_string());
+        nlohmann::json j=nlohmann::json::parse(it.as_string());
+        friendchatrecord fr;
+        fr.sender=j["sender"];
+        fr.reciver = j["reciver"];
+        fr.content = j["content"];
+        historymsg.push_back(fr);
     }
     return historymsg;
 }

@@ -13,15 +13,18 @@ set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -g -Wall -pthread")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g -O0")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+
+set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -fsanitize=address -g -O0")
+
+set(CMAKE_EXE_LINKER_FLAGS
+    "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 # =========================================================
 # Include
 # =========================================================
 
 include_directories(
-
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/client
     ${PROJECT_SOURCE_DIR}/server
@@ -37,6 +40,8 @@ include_directories(
 # =========================================================
 
 find_package(CURL REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(glog REQUIRED)
 
 # -------------------------
 # MySQL C API
@@ -86,7 +91,6 @@ find_library(TACOPIE_LIB
 # =========================================================
 
 set(MUDUO_BASE
-
     ../muduo-/base/CurrentThread.cc
     ../muduo-/base/logger.cc
     ../muduo-/base/logStream.cc
@@ -94,7 +98,6 @@ set(MUDUO_BASE
 )
 
 set(MUDUO_NET
-
     ../muduo-/net/Acceptor.cc
     ../muduo-/net/Buffer.cc
     ../muduo-/net/Channel.cc
@@ -132,13 +135,7 @@ set(SERVER_SRC
 )
 
 add_executable(server ${SERVER_SRC})
-find_package(glog REQUIRED)
 
-
-target_link_libraries(
-    server
-    glog::glog
-)
 # =========================================================
 # Client
 # =========================================================
@@ -149,6 +146,7 @@ set(CLIENT_SRC
 
     client/ChatClient.cc
     client/FileClient.cc
+    client/SQlite.cc
 
     ${MUDUO_BASE}
     ${MUDUO_NET}
@@ -167,6 +165,10 @@ target_link_libraries(server
     ${CURL_LIBRARIES}
 
     ${MYSQL_CLIENT_LIB}
+
+    SQLite::SQLite3
+
+    glog::glog
 )
 
 # =========================================================
@@ -178,6 +180,8 @@ target_link_libraries(client
     pthread
 
     ${CURL_LIBRARIES}
+
+    SQLite::SQLite3
 )
 
 # =========================================================

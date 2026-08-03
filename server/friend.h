@@ -11,8 +11,14 @@
 #include <ctime>
 #include <future>
 #include <iostream>
+#include <json.hpp>
 #include <string>
 #include "Mysql.h"
+struct friendchatrecord {
+    std::string sender;
+    std::string reciver;
+    std::string content;
+};
 bool sendn(int fd, char* data, ssize_t len) ;
 class Friend {
    private:
@@ -33,13 +39,10 @@ class Friend {
     std::string getname(std::string account);
     void addfriend(std::string account, std::string target);
     void historyfriendchat(std::string account1,
-                           std::string account2,
+                           std::string account2,std::string sender,std::string reciver,
                            std::string content);
-    std::vector<std::string> gethistoryfriendchat(std::string account1,
+    std::vector<friendchatrecord> gethistoryfriendchat(std::string account1,
                               std::string account2);
-    void historygroupchat(std::string groupname, std::string content);
-    std::vector<std::string> gethistroygroupchat(std::string account1,
-                                                 std::string account2);
     std::vector<std::string> friendlist(std::string account);
     std::vector<std::string> blocklist(std::string account);
     std::vector<std::string> onlinelist(std::string account);
