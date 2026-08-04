@@ -43,6 +43,9 @@ find_package(CURL REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(glog REQUIRED)
 
+# readline
+find_library(READLINE_LIB readline REQUIRED)
+
 # -------------------------
 # MySQL C API
 # -------------------------
@@ -118,13 +121,10 @@ set(MUDUO_NET
 # =========================================================
 
 set(SERVER_SRC
-
     server/server.cc
-
     server/account.cc
     server/friend.cc
     server/group.cc
-
     server/Mysql.cc
     server/ChatServer.cc
     server/FileServer.cc
@@ -141,9 +141,7 @@ add_executable(server ${SERVER_SRC})
 # =========================================================
 
 set(CLIENT_SRC
-
     client/client.cc
-
     client/ChatClient.cc
     client/FileClient.cc
     client/SQlite.cc
@@ -159,15 +157,10 @@ add_executable(client ${CLIENT_SRC})
 # =========================================================
 
 target_link_libraries(server
-
     pthread
-
     ${CURL_LIBRARIES}
-
     ${MYSQL_CLIENT_LIB}
-
     SQLite::SQLite3
-
     glog::glog
 )
 
@@ -176,12 +169,10 @@ target_link_libraries(server
 # =========================================================
 
 target_link_libraries(client
-
     pthread
-
     ${CURL_LIBRARIES}
-
     SQLite::SQLite3
+    ${READLINE_LIB}
 )
 
 # =========================================================
@@ -191,13 +182,11 @@ target_link_libraries(client
 if(CPP_REDIS_LIB AND TACOPIE_LIB)
 
     target_link_libraries(server
-
         ${CPP_REDIS_LIB}
         ${TACOPIE_LIB}
     )
 
     target_link_libraries(client
-
         ${CPP_REDIS_LIB}
         ${TACOPIE_LIB}
     )
@@ -205,13 +194,11 @@ if(CPP_REDIS_LIB AND TACOPIE_LIB)
 else()
 
     target_link_libraries(server
-
         /usr/local/lib/libcpp_redis.so
         /usr/local/lib/libtacopie.a
     )
 
     target_link_libraries(client
-
         /usr/local/lib/libcpp_redis.so
         /usr/local/lib/libtacopie.a
     )
@@ -223,13 +210,11 @@ endif()
 # =========================================================
 
 set_target_properties(server PROPERTIES
-
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "/usr/local/lib"
 )
 
 set_target_properties(client PROPERTIES
-
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "/usr/local/lib"
 )

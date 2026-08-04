@@ -253,7 +253,9 @@ void mainfunction(chatclient*chatclient) {
             chatclient->main_menu();
             int choice;
             std::string s;
-            s=chatclient->readline();
+            char* line = readline(GREEN "请选择:" RESET);
+            s = line;
+            free(line);
             if(s.size()!=1||s[0]<'0'||s[0]>'5'){
                 std::cout << PURPLE << "请输入数字0-5" << RESET << std::endl;
                 continue;
@@ -288,10 +290,11 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->friend_menu();
                 chatclient->handle_onlinelist();
                 chatclient->handle_blocklist();
-                std::cout << GREEN << "请选择:" << RESET << std::flush;
                 int choice;
                 std::string s;
-                s = chatclient->readline();
+                char* line = readline(GREEN "请选择:" RESET);
+                s = line;
+                free(line);
                 if (s.size() != 1 || s[0] < '0' || s[0] > '11') {
                     std::cout << PURPLE << "请输入数字0-11" << RESET
                               << std::endl;
@@ -348,7 +351,9 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->msg_menu();
                 int choice;
                 std::string s;
-                s = chatclient->readline();
+                char* line = readline(GREEN "请选择:" RESET);
+                s = line;
+                free(line);
                 if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
                     std::cout << PURPLE << "请输入数字0-5" << RESET
                               << std::endl;
@@ -387,10 +392,11 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->group_menu();
                 chatclient->handle_ownergrouplist();
                 chatclient->handle_grouplist();
-                std::cout << GREEN << "请选择:" << RESET << std::flush;
                 int choice;
                 std::string s;
-                s = chatclient->readline();
+                char* line = readline(GREEN "请选择:" RESET);
+                s = line;
+                free(line);
                 if (s.size() != 1 || s[0] < '0' || s[0] > '12') {
                     std::cout << PURPLE << "请输入数字0-5" << RESET
                               << std::endl;
@@ -450,7 +456,9 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->file_menu();
                 int choice;
                 std::string s;
-                s = chatclient->readline();
+                char* line = readline(GREEN "请选择:" RESET);
+                s = line;
+                free(line);
                 if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
                     std::cout << PURPLE << "请输入数字0-5" << RESET
                               << std::endl;
@@ -489,7 +497,9 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->select_menu();
                 int choice;
                 std::string s;
-                s = chatclient->readline();
+                char* line = readline(GREEN "请选择:" RESET);
+                s = line;
+                free(line);
                 if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
                     std::cout << PURPLE << "请输入数字0-5" << RESET
                               << std::endl;
@@ -537,15 +547,6 @@ void mainfunction(chatclient*chatclient) {
         }
         return 0;
     }
-    void initterminal() {
-        termios new_term;
-        tcgetattr(STDIN_FILENO, &old_term);
-        new_term = old_term;
-        new_term.c_lflag &= ~(ICANON | ECHO);
-        new_term.c_cc[VMIN] = 1;
-        new_term.c_cc[VTIME] = 0;
-        tcsetattr(STDIN_FILENO, TCSANOW, &new_term);
-    }
 int main(int argc, char* argv[]) {
     if(argc!=4){
         std::cout << PURPLE << "请输入./client (ip) (chat_port) (file_port)"
@@ -562,7 +563,7 @@ int main(int argc, char* argv[]) {
         std::cout << PURPLE << "port范围为0~65535!" << RESET << std::endl;
         return -1;
     }
-    initterminal();
+    rl_catch_signals = 0;
     signal(SIGINT, handler);
     EventLoop loop;
     L = &loop;
@@ -593,6 +594,5 @@ int main(int argc, char* argv[]) {
             t3.join();
         }
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_term);
     return 0;
 }

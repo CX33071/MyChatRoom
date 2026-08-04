@@ -8,6 +8,7 @@
 #include <queue>
 #include "SQlite.h"
 #include <regex>
+#include <readline/readline.h>
 #include <dirent.h>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
@@ -94,10 +95,10 @@ class chatclient {
     void friend_menu();
     void group_menu();
     void file_menu();
+   static int emptyfunction(int n1, int n2);
     void select_menu();
     void msg_menu();
     int changenum(std::string s);
-    std::string readline();
     std::string getaccount(std::string name);
     std::string getname(std::string account);
     void handle_signup();
