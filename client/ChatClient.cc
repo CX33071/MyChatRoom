@@ -80,8 +80,15 @@ void chatclient::messagecallback(const TcpClient::TcpConnectionPtr& conn,
     }
 }
 int chatclient::changenum(std::string s){
+    errno = 0;
+    if (s.empty()) {
+        return -1;
+    }
     char*end;
     int num=strtol(s.c_str(),&end,10);
+    if(errno==ERANGE){
+        return -2;
+    }
     if(*end!='\0'){
         return -1;
     }
@@ -95,6 +102,14 @@ std::string chatclient::cinkey() {
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     std::string key;
     char* line = readline(PURPLE"请输入密码:"RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
      key = line;
     free(line);
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
@@ -245,6 +260,14 @@ void chatclient::handle_signup() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入你的qq邮箱:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         account = line;
         free(line);
         bool is_email = isQQemail(account);
@@ -261,11 +284,27 @@ void chatclient::handle_signup() {
         password = cinkey();
         std::cout << std::endl;
         line = readline(PURPLE "请输入你的昵称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         name= line;
         free(line);
         while (is_existsname(name)) {
             line =
                 readline(PURPLE "该昵称已被用户使用，请重新输入昵称:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             name = line;
             free(line);
         }
@@ -310,6 +349,14 @@ void chatclient::handle_login_code() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请先输入你的qq邮箱:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         account = line;
         free(line);
         bool is_email = isQQemail(account);
@@ -348,6 +395,14 @@ void chatclient::handle_login_code() {
         }
         std::cout << "验证码已经发送到您的qq邮箱\n" << std::flush;
         line = readline(PURPLE "请输入验证码:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         verifycode = line;
         free(line);
         j["cmd"] = "verifycodesignin";
@@ -381,6 +436,14 @@ void chatclient::handle_login_key() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请先输入你的qq邮箱:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         account = line;
         free(line);
         bool is_email = isQQemail(account);
@@ -432,6 +495,14 @@ void chatclient::handle_forget_key() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请先输入你的qq邮箱:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         account = line;
         free(line);
         bool is_email = isQQemail(account);
@@ -464,6 +535,14 @@ void chatclient::handle_destory() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请先输入你的qq邮箱:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         account = line;
         free(line);
         bool is_email = isQQemail(account);
@@ -477,6 +556,14 @@ void chatclient::handle_destory() {
             return;
         }
         line = readline(PURPLE "请输入您的密码:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         password = line;
         free(line);
         j["cmd"] = "destory";
@@ -516,7 +603,15 @@ void chatclient::handle_addfriend() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要添加好友的账号:" RESET);
-        account = line;
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        frienduser = line;
         free(line);
         bool is_email = isQQemail(frienduser);
         if (!is_email) {
@@ -551,8 +646,20 @@ void chatclient::handle_applyjoingroup() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入你要加入群聊的名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
         free(line);
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         bool b = is_existsgroup(groupname);
         if (!b) {
             std::cout << "该群聊并不存在!" << std::endl;
@@ -650,6 +757,14 @@ void chatclient::handle_getfriendchat(std::string friendaccount){
 }
 void chatclient::handle_friendchat() {
     char* line = readline(PURPLE "请输入要私聊的好友名称:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
     std::string friendname = line;
     free(line);
     if (!is_existsname(friendname)) {
@@ -667,6 +782,14 @@ void chatclient::handle_friendchat() {
         int N;
         line = readline(
             PURPLE "请选择是否要查看所有历史聊天记录1/开启新聊天2:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         std::string reads = line;
         free(line);
         N=changenum(reads);
@@ -675,6 +798,14 @@ void chatclient::handle_friendchat() {
                 line = readline(PURPLE "非法输入，请重新输入:" RESET);
             }else{
                 line = readline(PURPLE "请输入数字1-2:" RESET);
+            }
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
             }
             std::string reads = line;
             free(line);
@@ -723,6 +854,14 @@ void chatclient::handle_friendchat() {
             s += "]:   ";
             s+=RESET;
             line = readline(s.c_str());
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             msg = line;
             free(line);
             if (msg == "EXIT") {
@@ -851,8 +990,20 @@ void chatclient::handle_setgroupmanager() {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要管理的群聊名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
         free(line);
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         bool b = is_existsgroup(groupname);
         if (!b) {
             std::cout << "该群聊并不存在" << std::endl;
@@ -872,6 +1023,14 @@ void chatclient::handle_setgroupmanager() {
         int num;
         line =
             readline(PURPLE "请输入要添加管理员1 / 删除管理员2:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         std::string reads = line;
         free(line);
         num = changenum(reads);
@@ -881,6 +1040,14 @@ void chatclient::handle_setgroupmanager() {
             } else {
                 line = readline(PURPLE "请输入数字1-2:" RESET);
             }
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             reads = line;
             free(line);
             num = changenum(reads);
@@ -889,6 +1056,14 @@ void chatclient::handle_setgroupmanager() {
             std::string count;
             std::string friendname;
             line = readline(PURPLE "请输入要添加为管理员的用户:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             friendname = line;
             free(line);
             b = is_existsname(friendname);
@@ -915,6 +1090,14 @@ void chatclient::handle_setgroupmanager() {
             std::string count;
             std::string friendname;
             line = readline(PURPLE "请输入要删除的管理员:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             friendname = line;
             free(line);
             if (!is_existsname(friendname)) {
@@ -955,7 +1138,19 @@ void chatclient::handle_groupmember() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要查看群成员的群聊名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         free(line);
         printfmembers();
     }
@@ -1041,6 +1236,14 @@ void chatclient::handle_block() {
     } else {
         std::string friendname;
         char* line = readline(PURPLE "请输入要拉黑的好友:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         friendname = line;
         free(line);
         if (!is_existsname(friendname)) {
@@ -1144,6 +1347,14 @@ void chatclient::handle_disblock() {
     } else {
         std::string friendname;
         char* line = readline(PURPLE "请输入要取消拉黑的好友:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         friendname = line;
         free(line);
         if (!is_existsname(friendname)) {
@@ -1180,6 +1391,14 @@ void chatclient::handle_delfriend() {
     } else {
         std::string friendname;
         char* line = readline(PURPLE "请输入要删除的好友:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         friendname = line;
         free(line);
         if (!is_existsname(friendname)) {
@@ -1209,7 +1428,19 @@ void chatclient::handle_creategroup() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要创建的群聊的名字:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         free(line);
         j["cmd"] = "creategroup";
         j["account"] = account;
@@ -1232,7 +1463,19 @@ void chatclient::handle_exitgroup() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要退出的群聊的名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         free(line);
         j["cmd"] = "exitgroup";
         j["account"] = account;
@@ -1252,7 +1495,19 @@ void chatclient::handle_exitgroup() {
 }
 void chatclient::handle_delmember() {
     char* line = readline(PURPLE "请输入您要删除成员的群聊名称:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
     groupname = line;
+    if (groupname.empty()) {
+        std::cout << PURPLE << "群名不能为空" << std::endl;
+        return;
+    }
     free(line);
     bool b = is_existsgroup(groupname);
     if (!b) {
@@ -1269,6 +1524,14 @@ void chatclient::handle_delmember() {
     std::string friendname;
     std::string count;
     line = readline(PURPLE "请输入您要删除的成员:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
     friendname = line;
     free(line);
     if (!is_existsname(friendname)) {
@@ -1301,7 +1564,19 @@ void chatclient::handle_delgroup() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要解散的群聊名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         free(line);
         j["cmd"] = "delgroup";
         j["account"] = account;
@@ -1339,11 +1614,27 @@ void chatclient::handle_addfriendmsg() {
             }
             int num;
             char* line = readline(PURPLE "请选择要处理的消息编号:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             std::string reads = line;
             free(line);
             num = changenum(reads);
             while(num==-1){
                 line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
                 reads = line;
                 free(line);
                 num = changenum(reads);
@@ -1351,11 +1642,26 @@ void chatclient::handle_addfriendmsg() {
             int total = addlist.size();
             while(num>total||num<1){
                 line = readline(PURPLE "请输入正确消息编号!请选择:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
                 reads = line;
                 free(line);
                 num=changenum(reads);
                 while (num == -1) {
                     line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();_exit(0);
+                    }
                     reads = line;
                     free(line);
                     num = changenum(reads);
@@ -1365,6 +1671,14 @@ void chatclient::handle_addfriendmsg() {
             std::string ss;
             std::cout << std::endl;
             line = readline(PURPLE "请输入y 同意|n 拒绝:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
             ss = line;
             free(line);
             num -= 1;
@@ -1379,6 +1693,14 @@ void chatclient::handle_addfriendmsg() {
                     break;
                 } else {
                     line = readline(PURPLE "请输入y 同意|n 拒绝:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
                     ss = line;
                     free(line);
                 }
@@ -1437,22 +1759,53 @@ void chatclient::handle_sendedfile() {
            }
            int num;
            char* line = readline(PURPLE "请选择要处理的消息编号:" RESET);
+           if (line == nullptr) {
+               stop1 = true;
+               if (chatis_login) {
+                   handle_exitlogin();
+               }
+               handle_exit();
+               _exit(0);
+           }
            std::string reads = line;
            free(line);
            num = changenum(reads);
            while (num == -1) {
                 line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
                reads = line;
                free(line);
                num = changenum(reads);
            }
            while (num > sendfilelist.size()||num<1) {
                 line = readline(PURPLE "请输入正确消息编号!请选择:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();_exit(0);
+                }
                reads = line;
                free(line);
                num = changenum(reads);
                while (num == -1) {
                     line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
                    reads = line;
                    free(line);
                    num = changenum(reads);
@@ -1460,6 +1813,14 @@ void chatclient::handle_sendedfile() {
            }
              line =
                readline(PURPLE "请输入您要下载文件到本地的路径：" RESET);
+             if (line == nullptr) {
+                 stop1 = true;
+                 if (chatis_login) {
+                     handle_exitlogin();
+                 }
+                 handle_exit();
+                 _exit(0);
+             }
            filepath = line;
            free(line);
            std::cout << RESET << std::endl;
@@ -1473,6 +1834,14 @@ void chatclient::handle_sendedfile() {
                           << std::endl;
                 std::string ss;
                  line = readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+                 if (line == nullptr) {
+                     stop1 = true;
+                     if (chatis_login) {
+                         handle_exitlogin();
+                     }
+                     handle_exit();
+                     _exit(0);
+                 }
                 ss = line;
                 free(line);
                 while(true){
@@ -1483,6 +1852,14 @@ void chatclient::handle_sendedfile() {
                     } else {
                           line =
                             readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+                          if (line == nullptr) {
+                              stop1 = true;
+                              if (chatis_login) {
+                                  handle_exitlogin();
+                              }
+                              handle_exit();
+                              _exit(0);
+                          }
                         ss = line;
                         free(line);
                     }
@@ -1529,22 +1906,54 @@ void chatclient::handle_applyjoinmsg() {
            }
            int num;
            char* line = readline(PURPLE "请选择要处理的消息编号:" RESET);
+           if (line == nullptr) {
+               stop1 = true;
+               if (chatis_login) {
+                   handle_exitlogin();
+               }
+               handle_exit();
+               _exit(0);
+           }
           std::string reads = line;
            free(line);
            num = changenum(reads);
            while (num == -1) {
                  line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                 if (line == nullptr) {
+                     stop1 = true;
+                     if (chatis_login) {
+                         handle_exitlogin();
+                     }
+                     handle_exit();
+                     _exit(0);
+                 }
                reads = line;
                free(line);
                num = changenum(reads);
            }
            while (num > applyjoinlist.size()||num<1) {
                 line = readline(PURPLE "请输入正确的编号!请选择:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
                reads = line;
                free(line);
                num = changenum(reads);
                while (num == -1) {
                     line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
                    reads = line;
                    free(line);
                    num = changenum(reads);
@@ -1557,6 +1966,13 @@ void chatclient::handle_applyjoinmsg() {
                      << "的消息:" << std::endl;
            std::string ss;
             line = readline(PURPLE "请输入y 同意|n 拒绝:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();_exit(0);
+            }
            ss = line;
            free(line);
            std::string a1 = applyjoinlist[num - 1]["from"];
@@ -1570,6 +1986,14 @@ void chatclient::handle_applyjoinmsg() {
                    break;
                } else {
                     line = readline(PURPLE "请输入y 同意|n 拒绝:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
                    ss = line;
                    free(line);
                }
@@ -1623,7 +2047,19 @@ void chatclient::handle_groupchat() {
         std::cout << "请先登录!" << std::endl;
     } else {
         char* line = readline(PURPLE "请输入要进行群聊的群聊名称:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         groupname = line;
+        if (groupname.empty()) {
+            std::cout << PURPLE << "群名不能为空" << std::endl;
+            return;
+        }
         free(line);
         bool b = is_existsgroup(groupname);
         if (!b) {
@@ -1639,6 +2075,14 @@ void chatclient::handle_groupchat() {
         int N;
          line = readline(
             PURPLE "请选择是否要查看所有历史聊天记录1/开启新聊天2:" RESET);
+         if (line == nullptr) {
+             stop1 = true;
+             if (chatis_login) {
+                 handle_exitlogin();
+             }
+             handle_exit();
+             _exit(0);
+         }
         std::string reads = line;
         free(line);
         N = changenum(reads);
@@ -1647,6 +2091,14 @@ void chatclient::handle_groupchat() {
                  line = readline(PURPLE "非法输入，请重新输入:" RESET);
             }else{
                  line = readline(PURPLE "请输入数字1-2:" RESET);
+            }
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
             }
             reads = line;
             free(line);
@@ -1693,6 +2145,14 @@ void chatclient::handle_groupchat() {
         std::string s = GREEN;
         s += "[" + name + "]" + RESET+":";
          line = readline(s.c_str());
+         if (line == nullptr) {
+             stop1 = true;
+             if (chatis_login) {
+                 handle_exitlogin();
+             }
+             handle_exit();
+             _exit(0);
+         }
         msg = line;
         free(line);
         if (msg == "EXIT") {
@@ -1716,6 +2176,14 @@ void chatclient::handle_sendfile() {
         handle_friendlist();
         std::string friendname;
         char* line = readline(PURPLE"请输入您要发送文件的用户:"GREEN);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         friendname= line;
         free(line);
         bool b = is_existsname(friendname);
@@ -1734,8 +2202,21 @@ void chatclient::handle_sendfile() {
             return;
         }
          line = readline(PURPLE "请输入您要上传的文件路径:" GREEN);
+         if (line == nullptr) {
+             stop1 = true;
+             if (chatis_login) {
+                 handle_exitlogin();
+             }
+             handle_exit();
+             _exit(0);
+         }
         filepath= line;
         free(line);
+        if(filepath.empty()){
+            std::cout << PURPLE << "上传文件路径为空，文件打开失败!" << RESET
+                      << std::endl;
+            return;
+        }
         int fd = open(filepath.c_str(), O_RDONLY);
         if (fd == -1) {
             std::cout << "文件打开失败" << std::endl;
@@ -1750,7 +2231,7 @@ void chatclient::handle_sendfile() {
 
         uint64_t filesize = st.st_size;
         close(fd);
-        char buf[256];
+        char buf[PATH_MAX];
         strcpy(buf, filepath.c_str());
         filename = basename(buf);
         json j;
@@ -1777,6 +2258,14 @@ void chatclient::handle_groupsendfile(){
     handle_grouplist();
     std::string groupname;
     char* line = readline(PURPLE "请输入您要发送文件群聊名称:" GREEN);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
     groupname= line;
     free(line);
     bool b= is_existsgroup(groupname);
@@ -1788,6 +2277,14 @@ void chatclient::handle_groupsendfile(){
         return;
     }else{
          line = readline(PURPLE "请输入你要上传文件的路径:" GREEN);
+         if (line == nullptr) {
+             stop1 = true;
+             if (chatis_login) {
+                 handle_exitlogin();
+             }
+             handle_exit();
+             _exit(0);
+         }
         filepath= line;
         free(line);
         int fd = open(filepath.c_str(), O_RDONLY);

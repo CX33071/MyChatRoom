@@ -254,13 +254,46 @@ void mainfunction(chatclient*chatclient) {
             int choice;
             std::string s;
             char* line = readline(GREEN "请选择:" RESET);
+            if(line==nullptr){
+                chatclient->stop1 = true;
+                if(chatclient->chatis_login){
+                    chatclient->handle_exitlogin();
+                }
+                chatclient->handle_exit();
+                break;
+            }
             s = line;
             free(line);
-            if(s.size()!=1||s[0]<'0'||s[0]>'5'){
-                std::cout << PURPLE << "请输入数字0-5" << RESET << std::endl;
-                continue;
+            choice=chatclient->changenum(s);
+            while(choice<0||choice>5){
+                if (choice == -1) {
+                    line = readline(GREEN "请输入数字:" RESET);
+                    if (line == nullptr) {
+                        chatclient->stop1 = true;
+                        if (chatclient->chatis_login) {
+                            chatclient->handle_exitlogin();
+                        }
+                        chatclient->handle_exit();
+                        break;
+                    }
+                    s = line;
+                    free(line);
+                    choice = chatclient->changenum(s);
+                }else{
+                    line = readline(GREEN "请输入数字0-5:" RESET);
+                    if (line == nullptr) {
+                        chatclient->stop1 = true;
+                        if (chatclient->chatis_login) {
+                            chatclient->handle_exitlogin();
+                        }
+                        chatclient->handle_exit();
+                        break;
+                    }
+                    s = line;
+                    free(line);
+                    choice = chatclient->changenum(s);
+                }
             }
-            choice = s[0] - '0';
             switch (choice) {
                 case 1:
                     chatclient->handle_signup();
@@ -293,14 +326,46 @@ void mainfunction(chatclient*chatclient) {
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
+                if (line == nullptr) {
+                    chatclient->stop1 = true;
+                    if (chatclient->chatis_login) {
+                        chatclient->handle_exitlogin();
+                    }
+                    chatclient->handle_exit();
+                    break;
+                }
                 s = line;
                 free(line);
-                if (s.size() != 1 || s[0] < '0' || s[0] > '11') {
-                    std::cout << PURPLE << "请输入数字0-11" << RESET
-                              << std::endl;
-                    continue;
+                choice = chatclient->changenum(s);
+                while (choice < 0 || choice > 11) {
+                    if (choice == -1) {
+                        line = readline(GREEN "请输入数字:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    } else {
+                        line = readline(GREEN "请输入数字0-11:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    }
                 }
-                choice = s[0] - '0';
                 switch (choice) {
                             case 1:
                                 chatclient->handle_addfriend();
@@ -352,14 +417,46 @@ void mainfunction(chatclient*chatclient) {
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
+                if (line == nullptr) {
+                    chatclient->stop1 = true;
+                    if (chatclient->chatis_login) {
+                        chatclient->handle_exitlogin();
+                    }
+                    chatclient->handle_exit();
+                    break;
+                }
                 s = line;
                 free(line);
-                if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
-                    std::cout << PURPLE << "请输入数字0-5" << RESET
-                              << std::endl;
-                    continue;
+                choice = chatclient->changenum(s);
+                while (choice < 0 || choice > 5) {
+                    if (choice == -1) {
+                        line = readline(GREEN "请输入数字:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    } else {
+                        line = readline(GREEN "请输入数字0-5:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    }
                 }
-                choice = s[0] - '0';
                 switch (choice) {
                     case 1:
                         chatclient->handle_addfriendmsg();
@@ -395,14 +492,46 @@ void mainfunction(chatclient*chatclient) {
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
+                if (line == nullptr) {
+                    chatclient->stop1 = true;
+                    if (chatclient->chatis_login) {
+                        chatclient->handle_exitlogin();
+                    }
+                    chatclient->handle_exit();
+                    break;
+                }
                 s = line;
                 free(line);
-                if (s.size() != 1 || s[0] < '0' || s[0] > '12') {
-                    std::cout << PURPLE << "请输入数字0-5" << RESET
-                              << std::endl;
-                    continue;
+                choice = chatclient->changenum(s);
+                while (choice < 0 || choice > 12) {
+                    if (choice == -1) {
+                        line = readline(GREEN "请输入数字:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    } else {
+                        line = readline(GREEN "请输入数字0-12:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    }
                 }
-                choice = s[0] - '0';
                 switch (choice) {
                     case 1:
                         chatclient->handle_creategroup();
@@ -457,14 +586,46 @@ void mainfunction(chatclient*chatclient) {
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
+                if (line == nullptr) {
+                    chatclient->stop1 = true;
+                    if (chatclient->chatis_login) {
+                        chatclient->handle_exitlogin();
+                    }
+                    chatclient->handle_exit();
+                    break;
+                }
                 s = line;
                 free(line);
-                if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
-                    std::cout << PURPLE << "请输入数字0-5" << RESET
-                              << std::endl;
-                    continue;
+                choice = chatclient->changenum(s);
+                while (choice < 0 || choice > 5) {
+                    if (choice == -1) {
+                        line = readline(GREEN "请输入数字:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    } else {
+                        line = readline(GREEN "请输入数字0-5:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    }
                 }
-                choice = s[0] - '0';
                 switch (choice) {
                     case 1:
                         chatclient->handle_sendfile();
@@ -498,14 +659,46 @@ void mainfunction(chatclient*chatclient) {
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
+                if (line == nullptr) {
+                    chatclient->stop1 = true;
+                    if (chatclient->chatis_login) {
+                        chatclient->handle_exitlogin();
+                    }
+                    chatclient->handle_exit();
+                    break;
+                }
                 s = line;
                 free(line);
-                if (s.size() != 1 || s[0] < '0' || s[0] > '5') {
-                    std::cout << PURPLE << "请输入数字0-5" << RESET
-                              << std::endl;
-                    continue;
+                choice = chatclient->changenum(s);
+                while (choice < 0 || choice > 5) {
+                    if (choice == -1) {
+                        line = readline(GREEN "请输入数字:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    } else {
+                        line = readline(GREEN "请输入数字0-5:" RESET);
+                        if (line == nullptr) {
+                            chatclient->stop1 = true;
+                            if (chatclient->chatis_login) {
+                                chatclient->handle_exitlogin();
+                            }
+                            chatclient->handle_exit();
+                            break;
+                        }
+                        s = line;
+                        free(line);
+                        choice = chatclient->changenum(s);
+                    }
                 }
-                choice = s[0] - '0';
                 switch (choice) {
                     case 1:
                         friendmenu = true;
@@ -536,15 +729,20 @@ void mainfunction(chatclient*chatclient) {
         
         }
     }
-    int isport(char* s) {
+    long isport(char* s) {
         char* end;
-        int port = std::strtol(s, &end, 10);
+        errno = 0;
+        long port = std::strtol(s, &end, 10);
+        if(errno==ERANGE){
+            return 2;
+        }
         if (*end != '\0') {
             return 1;
         }
         if (port <= 0 || port > 65535) {
             return 2;
         }
+        
         return 0;
     }
 int main(int argc, char* argv[]) {
@@ -553,18 +751,19 @@ int main(int argc, char* argv[]) {
                   << RESET << std::endl;
         return -1;
     }
-    int res1 = isport(argv[2]);
-    int res2 = isport(argv[3]);
+    long res1 = isport(argv[2]);
+    long res2 = isport(argv[3]);
     if (res1 == 1 || res2 == 1) {
         std::cout << PURPLE << "port请输入数字!" << RESET << std::endl;
         return -1;
     }
     if (res1 == 2 || res2 == 2) {
-        std::cout << PURPLE << "port范围为0~65535!" << RESET << std::endl;
+        std::cout << PURPLE << "port范围为1~65535!" << RESET << std::endl;
         return -1;
     }
     rl_catch_signals = 0;
     signal(SIGINT, handler);
+    signal(SIGTSTP, handler);
     EventLoop loop;
     L = &loop;
     InetAddress chataddr(argv[1], std::stoi(argv[2]));
