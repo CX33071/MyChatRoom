@@ -31,28 +31,30 @@ class FileClient {
     };
     TcpClient client_;
     FileContext fc;
-    
+    Timestamp begin1;
 
    public:
    chatclient* chatclient_;
-    TcpClient::TcpConnectionPtr file_conn;
-    FileClient(EventLoop* loop, const InetAddress& addr);
-    void setchatclient(chatclient* client);
-    void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
-    void messagecallback(const TcpClient::TcpConnectionPtr& conn,
-                         Buffer* buf,
-                         Timestamp);
-    void sendfile(std::string ID,
-                  std::string filepath,
-                  std::string filename,
-                  std::string filesize);
-    void groupsendfile(std::string ID,
-                  std::string filepath,
-                  std::string filename,
-                  std::string filesize);
-    void loadfile(std::string filename,
-                  std::string filesize,
-                  std::string ID,
-                  std::string filepath);
-    std::string gen_req_id();
+   std::string fileloadID;
+   TcpClient::TcpConnectionPtr file_conn;
+   FileClient(EventLoop* loop, const InetAddress& addr);
+   void setchatclient(chatclient* client);
+   void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
+   void messagecallback(const TcpClient::TcpConnectionPtr& conn,
+                        Buffer* buf,
+                        Timestamp);
+   void fileprogress(long long cur, long long filesize,Timestamp t);
+   void sendfile(std::string ID,
+                 std::string filepath,
+                 std::string filename,
+                 std::string filesize);
+   void groupsendfile(std::string ID,
+                      std::string filepath,
+                      std::string filename,
+                      std::string filesize);
+   int loadfile(std::string filename,
+                 std::string filesize,
+                 std::string ID,
+                 std::string filepath);
+   std::string gen_req_id();
 };

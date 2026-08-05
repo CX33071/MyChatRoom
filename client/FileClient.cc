@@ -15,6 +15,29 @@ FileClient ::FileClient(EventLoop* loop, const InetAddress& addr)
 void FileClient::setchatclient(chatclient*client){
     chatclient_ = client;
 }
+void FileClient::fileprogress(long long cur,long long filesize,Timestamp begin){
+    int total = 50;
+    double curpercent = (double)cur / filesize;
+    int pos = curpercent * total;
+    std::cout << GREEN << "\r[";
+    for (int i = 0; i < total;i++){
+        if(i<pos){
+            std::cout << "=";
+        }else{
+            std::cout << " ";
+        }
+    }
+    std::cout << "]";
+    std::cout<<(int)(curpercent*100)<<"%";
+    Timestamp now = Timestamp::now();
+    Timestamp t;
+    double speed = cur / 1000000.0 / t.timeDifference(now, begin);
+    double remain = (filesize - cur) / 1000000.0;
+    double res = remain / speed;
+    std::cout << std::fixed << std::setprecision(1) << speed << " MB/s ";
+    std::cout << "剩余" << std::setprecision(2) << res << " 秒";
+    std::cout << RESET << std::flush;
+}
 std::string FileClient::gen_req_id(){
     return std::to_string(++req_id);
 }
@@ -63,6 +86,8 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                     active_requests[id] = std::move(p);
                 }
                 chatclient_->chat_conn->send(j1.dump() + '\n');
+            }else if(cmd=="loadfileres"){
+               
             } else if (cmd == "groupSTOR_ok") {
                 std::string ID = j["ID"];
                 std::string filename = j["filename"];
@@ -103,6 +128,7 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
             write(fc.fd, buf->peek(), len);
             buf->retrieve(len);
             fc.recvsize += len;
+            fileprogress(fc.recvsize, fc.filesize,begin1);
             if (fc.recvsize == fc.filesize) {
                 close(fc.fd);
                 fc.state = FileState::PRASEJSON;
@@ -113,18 +139,11 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                 res["ID"] = fc.ID;
                 res["filename"] = fc.filename;
                 res["account"] = chatclient_->account;
-                // id =gen_req_id();
-                // res["request_id"] = id;
-                // std::promise<json> p;
-                // std::future<json> f = p.get_future();
-                // {
-                //     std::lock_guard<std::mutex> lock(active_mutex);
-                //     active_requests[id] = std::move(p);
-                // }
                 chatclient_->chat_conn->send(res.dump() + "\n");
-                fc.state = FileState::PRASEJSON;
-                // json res1 = f.get();
-                // std::cout << PURPLE << "文件下载完成!" << RESET << std::endl;
+                json j3;
+                j3["cmd"]="Load_finish";
+                j3["request_id"] = fileloadID;
+                file_conn->send(j3.dump()+'\n');
             }
         }
 }
@@ -155,10 +174,16 @@ void FileClient ::sendfile(std::string ID,
     char buf[4096];
     ssize_t n;
     size_t total = 0;
+    char* end;
+    long long num = strtoll(filesize.c_str(), &end, 10);
+    Timestamp begin = Timestamp::now();
     while ((n = read(fd, buf, sizeof(buf))) > 0) {
         file_conn->send(std::string(buf, n));
+        total+=n;
+        fileprogress(total, num,begin);
     }
     close(fd);
+    std::cout << std::endl;
     std::cout << PURPLE << "文件上传完成" << RESET << std::endl;
                            }
 void FileClient::groupsendfile(std::string ID,
@@ -194,10 +219,11 @@ void FileClient::groupsendfile(std::string ID,
     close(fd);
     std::cout << PURPLE << "文件上传完成" << RESET << std::endl;
                   }
-void FileClient ::loadfile(std::string filename,
+int FileClient ::loadfile(std::string filename,
                            std::string filesize,
                            std::string ID,
                            std::string filepath){
+
     fc.filename = filename;
     fc.filesize = std::stoi(filesize);
     filepath = filepath + "/" + filename;
@@ -206,7 +232,7 @@ void FileClient ::loadfile(std::string filename,
     fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fc.fd == -1) {
         std::cout << "文件创建失败" << std::endl;
-        return;
+        return -1;
     }
     json j;
     j["cmd"] = "RETR";
@@ -215,6 +241,7 @@ void FileClient ::loadfile(std::string filename,
     j["filesize"] = filesize;
     id = gen_req_id();
     j["request_id"] = id;
+    fileloadID = id;
     std::promise<json> p;
     std::future<json> f = p.get_future();
     {
@@ -222,6 +249,10 @@ void FileClient ::loadfile(std::string filename,
         active_requests[id] = std::move(p);
     }
     file_conn->send(j.dump() + '\n');
+    begin1 = Timestamp::now();
+    fc.state = FileState::RECV_FILE;
     json res = f.get();
-                           }
-
+    std::cout << std::endl;
+    std::cout << PURPLE << "文件下载成功!" << RESET << std::endl;
+    return 0;
+}

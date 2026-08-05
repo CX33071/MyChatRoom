@@ -283,9 +283,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string to = j["to"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            fileid++;
-            std::string docu_id = std::to_string(fileid);
-            file.begin(from, to, filename, filesize, docu_id);
+            std::string docu_id=file.begin(from, to, filename, filesize);
             json res;
             res["cmd"] = "sendfileres";
             res["ID"] = docu_id;
@@ -610,9 +608,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string groupname=j["groupname"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            fileid++;
-            std::string docu_id = std::to_string(fileid);
-            file.begin(from, groupname, filename, filesize, docu_id);
+            std::string docu_id=file.begin(from, groupname, filename, filesize);
             json res;
             res["cmd"] = "sendfileres";
             res["ID"] = docu_id;

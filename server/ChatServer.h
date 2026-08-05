@@ -20,7 +20,6 @@ class ChatServer {
     Group G;
     FILEredis file;
     std::unordered_map<std::string, std::unordered_set<std::string>> group_map;
-    std::atomic<long long> fileid{0};
     TcpServer server_;
     std::unordered_map<std::string, Timestamp> clientconntime;
     EventLoop* loop_;

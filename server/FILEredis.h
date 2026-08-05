@@ -23,11 +23,10 @@ class FILEredis{
 
     public:
      FILEredis();
-     void begin(std::string from,
+     std::string begin(std::string from,
                 std::string to,
                 std::string filename,
-                std::string filesize,
-                std::string ID);
+                std::string filesize);
      std::string finish(std::string ID);
      std::string getfrom(std::string ID);
      std::string getfilesize(std::string ID);

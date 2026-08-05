@@ -107,19 +107,11 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  std::string ID = j["ID"];
                  std::string filesize = j["filesize"];
                  std::string filename = j["filename"];
-                 json res;
-                 res["cmd"] = "RETRres";
-                 std::string request_id = j.value("request_id", "");
-                 if (!request_id.empty()) {
-                     res["request_id"] = request_id;
-                 }
                  std::string filepath = "./file/" + filename;
-                 std::cout << "filepath: " << filepath << std::endl;
                  int fd = open(filepath.c_str(), O_RDONLY);
                  if(fd==-1){
                      std::cout << "./file本地找不到文件" << std::endl;
                  }
-                 conn->send(res.dump() + "\n");
                  ssize_t n;
                  char buf[4096];
                  while ((n = read(fd, buf, sizeof(buf))) > 0) {
@@ -127,6 +119,15 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  }
                  close(fd);
                  std::cout << "文件上传给客户端完成" << std::endl;
+             }
+             if(cmd=="Load_finish"){
+                 json res;
+                 std::string request_id = j.value("request_id", "");
+                 if (!request_id.empty()) {
+                     res["request_id"] = request_id;
+                 }
+                 res["cmd"] = "loadfileres";
+                 conn->send(res.dump()+'\n');
              }
              if(cmd=="to_clientfinish"){
                  json res;

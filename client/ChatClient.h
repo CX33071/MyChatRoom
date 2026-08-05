@@ -52,6 +52,7 @@ class chatclient {
     chatrecord cr;
 
    public:
+    termios oldt;
     std::atomic<bool> stop1 = false;
     SQlite SQ;
     std::atomic<bool> running = false;

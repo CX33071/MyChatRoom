@@ -5,27 +5,30 @@ FILEredis::FILEredis(){
     std::string sql =
         "create table if not exists fileid_info (id int auto_increment "
         "primary key,sender varchar(30),reciver varchar(30),filename "
-        "varchar(30),filesize varchar(30),fileid varchar(30),status varchar(30));";
+        "varchar(300),filesize varchar(300),status varchar(30));";
     mysql_.createinfo(sql.c_str());
 }
-void FILEredis::begin(std::string from,
+std::string FILEredis::begin(std::string from,
            std::string to,
-           std::string filename,std::string filesize,
-           std::string ID){
-    redis_.hmset("file:"+ID, {{"from", from},
-                      {"to", to},
-                      {"filename", filename},
-                      {"filesize", filesize},{"status","uploading"}});
-    redis_.sync_commit();
+           std::string filename,std::string filesize){
     std::string sql =
         "insert into fileid_info "
-        "(sender,reciver,filename,filesize,fileid,status)values('" +
-        from + "','" + to + "','" + filename + "','" + filesize + "','" + ID +
+        "(sender,reciver,filename,filesize,status)values('" +
+        from + "','" + to + "','" + filename + "','" + filesize  +
         "','uploading')";
     mysql_.addmsg(sql.c_str());
+    sql = "select last_insert_id()";
+    std::string s=mysql_.selectstring(sql.c_str());
+    redis_.hmset("file:"+s, {{"from", from},
+                           {"to", to},
+                           {"filename", filename},
+                           {"filesize", filesize},
+                           {"status", "uploading"}});
+    redis_.sync_commit();
+    return s;
 }
 void FILEredis::setloadfinish(std::string ID){
-    redis_.hset("file:" + ID, "status", "loadfinished");
+    redis_.hset("file:"+ID, "status", "loadfinished");
     redis_.sync_commit();
     std::string sql =
         "update fileid_info set status = 'loadfinished' where fileid = '" + ID +

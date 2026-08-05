@@ -13,6 +13,7 @@ chatclient::chatclient(EventLoop* loop, const InetAddress& addr):client_(loop,ad
         });
     client_.connect();
     loop_->runEvery(30, [this]() { sendheart(); });
+    tcgetattr(STDIN_FILENO, &oldt);
     rl_bind_keyseq("\\e[15~", emptyfunction);
     rl_bind_keyseq("\\e[17~", emptyfunction);
     rl_bind_keyseq("\\e[18~", emptyfunction);
@@ -95,13 +96,12 @@ int chatclient::changenum(std::string s){
     return num;
 }
 std::string chatclient::cinkey() {
-    struct termios oldt, newt;
-    tcgetattr(STDIN_FILENO, &oldt);
+    std::string password;
+    termios newt;
     newt = oldt;
     newt.c_lflag &= ~ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    std::string key;
-    char* line = readline(PURPLE"请输入密码:"RESET);
+    char* line = readline(PURPLE "请输入密码:" RESET);
     if (line == nullptr) {
         stop1 = true;
         if (chatis_login) {
@@ -110,10 +110,11 @@ std::string chatclient::cinkey() {
         handle_exit();
         _exit(0);
     }
-     key = line;
+    password=line;
     free(line);
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return key;
+    std::cout << std::endl;
+    return password;
 }
 std::string chatclient::gen_req_id() {
     return std::to_string(++req_id);
@@ -282,6 +283,10 @@ void chatclient::handle_signup() {
             return;
         }
         password = cinkey();
+        if (password.empty()) {
+            std::cout << PURPLE << "密码不能为空" << RESET << std::endl;
+            return;
+        }
         std::cout << std::endl;
         line = readline(PURPLE "请输入你的昵称:" RESET);
         if (line == nullptr) {
@@ -462,8 +467,11 @@ void chatclient::handle_login_key() {
                 return;
             }
         }
-        std::cout << PURPLE << "请输入您的密码:" << RESET<<std::flush;
         password = cinkey();
+        if (password.empty()) {
+            std::cout << PURPLE << "密码不能为空" << RESET << std::endl;
+            return;
+        }
         j["cmd"] = "keysignin";
         j["account"] = account;
         j["password"] = password;
@@ -596,6 +604,7 @@ void chatclient::handle_exit() {
     if(fileclient_->file_conn){
         fileclient_->file_conn->forceClose();
     }
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     loop_->quit();
 }
 void chatclient::handle_addfriend() {
@@ -1881,11 +1890,12 @@ void chatclient::handle_sendedfile() {
                active_requests[id] = std::move(p);
            }
            chat_conn->send(reply.dump() + '\n');
-           sendfilelist.erase(sendfilelist.begin() + num - 1);
            json res = f.get();
            std::string filesize = res["filesize"];
-           fileclient_->loadfile(filename, filesize, ID, filepath);
-           std::cout << PURPLE << "文件下载完成" << RESET << std::endl;
+           int n=fileclient_->loadfile(filename, filesize, ID, filepath);
+           if(n!=-1){
+               sendfilelist.erase(sendfilelist.begin() + num - 1);
+           }
        }
     }
 }
