@@ -261,6 +261,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             reply["data"] = "[系统消息]:已经退出登录";
             conn->send(reply.dump() + '\n');
             std::cout << "exitlogin已回复" << std::endl;
+            clientmap.erase(account);
         }
         if (cmd == "forgetkey") {
             std::string account = j["account"];
@@ -361,8 +362,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 std::lock_guard<std::mutex> lock(g_mutex);
                 auto it = clientmap.find(to);
                 if (it != clientmap.end()) {
+                    std::cout << "用户当前在线" << to << std::endl;
                     target_conn = it->second;
                 } else {
+                    std::cout << "用户当前不在线" << std::endl;
                     G.disconnectmsg(to, j2);
                 }
             }
