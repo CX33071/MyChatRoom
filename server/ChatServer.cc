@@ -282,9 +282,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "sendfile") {
             std::string from = j["from"];
             std::string to = j["to"];
+            std::string filepath = j["filepath"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            std::string docu_id=file.begin(from, to, filename, filesize);
+            std::string docu_id=file.begin(from, to, filename, filesize,filepath);
             json res;
             res["cmd"] = "sendfileres";
             res["ID"] = docu_id;
@@ -294,6 +295,24 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 res["request_id"] = request_id;
             }
             conn->send(res.dump() + '\n');
+        }
+        if (cmd == "resendfile") {
+            std::string fileid=j["fileid"];
+            std::cout << "fileid=" << fileid << std::endl;
+            std::string uploaded = file.getuploaded(fileid);
+            std::string filepath = file.getfilepath(fileid);
+            std::string to = file.getto(fileid);
+            std::cout << "resendfile to=" << to << std::endl;
+            json j1;
+            j1["cmd"]="resendfileres";
+            j1["uploaded"] = uploaded;
+            j1["filepath"] = filepath;
+            j1["to"] = to;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            conn->send(j1.dump() + '\n');
         }
         if(cmd=="recvfile"){
             std::string from=j["from"];
@@ -311,6 +330,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if(cmd=="RETR_ok"){
             std::string ID = j["ID"];
+            std::cout << "RETR_ok ID=" << ID << std::endl;
             std::string filename = j["filename"];
             std::string from = file.getfrom(ID);
             std::string account = j["account"];
@@ -347,7 +367,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string filename=j["filename"];
             std::string to=file.finish(ID);
             std::string from = file.getfrom(ID);
-            std::cout << "to =" << to << std::endl;
             json j2;
             j2["cmd"]="sendedfile";
             std::string name = verifycode.getname(from);
@@ -378,6 +397,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if (cmd == "groupsendfile_finish") {
             std::string ID = j["ID"];
+            std::cout << "groupsendfile_finish ID=" << ID << std::endl;
             std::string filename = j["filename"];
             std::string groupname1 = file.finish(ID);
             std::string from = file.getfrom(ID);
@@ -387,7 +407,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["time"] = t;
             std::string name = verifycode.getname(from);
             j2["data"] = "您收到来自群聊" + groupname1 + "的用户" + name +
-                         "发送的文件:" + filename + "   文件ID:" + ID + t;
+                         "发送的文件:" + filename +"    " + t;
             j2["from"] = from;
             j2["filename"] = filename;
             j2["ID"] = ID;
@@ -543,6 +563,26 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             conn->send(j1.dump() + '\n');
         }
+        if (cmd == "uploadcheck") {
+            std::string account = j["account"];
+            json res;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                res["request_id"] = request_id;
+            }
+            std::vector<filestatusserver> ups = file.getuploading(account);
+            std::vector<json> hh;
+            for(auto t:ups){
+                json j2;
+                j2["sended"] = t.sended;
+                j2["filename"]=t.filename;
+                j2["total"]=t.total;
+                j2["fileid"] = t.id;
+                hh.push_back(j2);
+            }
+            res["data"] = hh;
+            conn->send(res.dump() + '\n');
+        }
         if (cmd == "agreefriend") {
             std::string account = j["account"];
             std::string friendaccount = j["friendaccount"];
@@ -608,10 +648,11 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if(cmd=="groupsendfile"){
             std::string from=j["from"];
-            std::string groupname=j["groupname"];
+            std::string filepath = j["filepath"];
+            std::string groupname = j["groupname"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            std::string docu_id=file.begin(from, groupname, filename, filesize);
+            std::string docu_id=file.begin(from, groupname, filename, filesize,filepath);
             json res;
             res["cmd"] = "sendfileres";
             res["ID"] = docu_id;

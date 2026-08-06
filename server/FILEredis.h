@@ -15,6 +15,7 @@
 #include <unordered_set>
 #include "json.hpp"
 #include "Mysql.h"
+#include "friend.h"
 using json = nlohmann::json;
 class FILEredis{
     private:
@@ -26,9 +27,13 @@ class FILEredis{
      std::string begin(std::string from,
                 std::string to,
                 std::string filename,
-                std::string filesize);
+                std::string filesize,std::string filepath);
      std::string finish(std::string ID);
      std::string getfrom(std::string ID);
+     std::string getto(std::string ID);
      std::string getfilesize(std::string ID);
+     std::string getuploaded(std::string fileid);
      void setloadfinish(std::string ID);
+     std::vector<filestatusserver> getuploading(std::string sender);
+     std::string getfilepath(std::string fileid);
 };

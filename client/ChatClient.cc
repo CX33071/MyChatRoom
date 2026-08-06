@@ -199,8 +199,10 @@ void chatclient::file_menu(){
               << RESET;
     std::cout << GREEN << "3.           群聊上传文件               \n"
               << RESET;
-    std::cout << GREEN << "4.            返回功能菜单               \n" << RESET;
-    std::cout << GREEN << "5.          退出登录\n" << RESET;
+    std::cout << GREEN << "4.            继续上传文件            \n" << RESET;
+    std::cout << GREEN << "5.            返回功能菜单               \n"
+              << RESET;
+    std::cout << GREEN << "6.          退出登录\n" << RESET;
     std::cout << GREEN << "0.          退出chatroom               \n" << RESET;
 }
 bool chatclient::isQQemail(std::string email){
@@ -492,12 +494,45 @@ void chatclient::handle_login_key() {
             name = getname(account);
             system("clear");
             SQ.open(name);
+            handle_uploadcheck();
         } else {
             std::cout << res["data"] << std::endl;
         }
     }
 }
-
+void chatclient::handle_uploadcheck(){
+    j["cmd"]="uploadcheck";
+    j["account"]=account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::vector<json> data=res.value("data",std::vector<json>{});
+    if(!data.empty()){
+        std::cout << PURPLE << "你有" << data.size() << "个文件上传失败"
+                  << std::endl;
+        for (int i = 0; i < data.size();i++){
+            double cur = std::stoll(data[i]["sended"].get<std::string>()) / 1000000.0;
+            double total = std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
+            std::cout <<std::fixed<<std::setprecision(1) << "[" << i + 1 << "] " << data[i]["filename"]
+                      << "    上传" << cur << "/"
+                      << total<<" MB" << std::endl;
+            filestatus f;
+            f.sended=data[i]["sended"];
+            f.total=data[i]["total"];
+            f.filename=data[i]["filename"];
+            f.id=data[i]["fileid"];
+            uploads.push_back(f);
+        }
+        std::cout << "请稍候在文件菜单中查看详细" << RESET<<std::endl;
+    }
+}
 void chatclient::handle_forget_key() {
     if (chatis_login) {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
@@ -2025,6 +2060,101 @@ void chatclient::handle_applyjoinmsg() {
        }
     }
 }
+void chatclient::handle_uploadingfile(){
+    if(uploads.empty()){
+        std::cout << PURPLE << "当前并没有上传失败文件" << RESET << std::endl;
+        return;
+    }
+    for (int i = 0; i < uploads.size();i++){
+        std::cout<<PURPLE << "[" << i + 1 << "]     " << uploads[i].filename
+                  << "   上传" << uploads[i].sended << "/" << uploads[i].total
+                  << std::endl;
+    }
+    char *line=readline(PURPLE"请选择你要处理的编号:"RESET);
+    int num;
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    int total=uploads.size();
+    while (num > total || num < 1) {
+        line = readline(PURPLE "请输入要继续上传的文件消息编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::string fileid = uploads[num - 1].id;
+    filename = uploads[num - 1].filename;
+    ;
+    std::string filesize = uploads[num - 1].total;
+    j["cmd"] = "resendfile";
+    j["fileid"]=fileid;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    bool b;
+    std::string to = res["to"];
+    if (!is_exists(to)){
+        b = true;
+    }else{
+        b = false;
+    }
+        std::string uploaded = res["uploaded"];
+    std::string filepath = res["filepath"];
+    fileclient_->uploadedsendfile(fileid, uploaded, filepath, filename,
+                                  filesize,b);
+    uploads.erase(uploads.begin() + num - 1);
+}
 void chatclient::getgrouphistory(std::string groupname) {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
@@ -2249,6 +2379,7 @@ void chatclient::handle_sendfile() {
         j["from"] = account;
         j["to"] = frienduser;
         j["filename"] = filename;
+        j["filepath"] = filepath;
         j["filesize"] = std::to_string(filesize);
         id = gen_req_id();
         j["request_id"] = id;
@@ -2319,6 +2450,7 @@ void chatclient::handle_groupsendfile(){
         j["from"] = account;
         j["groupname"] = groupname;
         j["filename"] = filename;
+        j["filepath"] = filepath;
         j["filesize"] = std::to_string(filesize);
         id = gen_req_id();
         j["request_id"] = id;

@@ -16,6 +16,8 @@ FileServer::FileServer(EventLoop* loop,
                        std::string name,
                        const InetAddress& addr)
     : server_(loop, name, addr) {
+    redis_.connect("127.0.0.1", 6379);
+    redis_.sync_commit();
     server_.setThreadNum(4);
     server_.setConnectionCallback(
         [this](const TcpConnectionPtr& conn) { connectioncallback(conn); });
@@ -75,6 +77,31 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  }
                  conn->send(res.dump() + "\n");
                  groupsend = false;
+             }
+             if(cmd=="uploadedSTOR"){
+                std::string filename=j["filename"];
+                std::string filesize = j["filesize"];
+                std::string recivesize = j["recivesize"];
+                std::string filepath = "./file/" + filename;
+                fc.ID = j["ID"];
+                fc.filename = filename;
+                fc.filesize = std::stoi(filesize);
+                fc.recvsize = std::stoi(recivesize);
+                fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY, 0644);
+                lseek(fc.fd, fc.recvsize, SEEK_SET);
+                fc.state = FileState::RECV_FILE;
+                json res;
+                res["cmd"] = "uploadedsendres";
+                std::string request_id = j.value("request_id", "");
+                if (!request_id.empty()) {
+                    res["request_id"] = request_id;
+                }
+                conn->send(res.dump() + "\n");
+            if(j["ok"]=="group"){
+                groupsend = true;
+            }else{
+                groupsend = false;
+            }
              }
              if(cmd=="groupSTOR"){
                  std::string filename = j["filename"];
@@ -143,16 +170,20 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
          if(len==0){
              return;
          }
-         size_t remain = fc.filesize - fc.recvsize;
-         if (len > remain) {
-             len = remain;
+         size_t uploaded = fc.filesize - fc.recvsize;
+         if (len > uploaded) {
+             len = uploaded;
          }
              write(fc.fd, buf->peek(), len);
              buf->retrieve(len);
              fc.recvsize += len;
-             if (fc.recvsize== fc.filesize) {
-                 close(fc.fd);
-                 fc.fd = -1;
+             redis_.hset("file:" + fc.ID, "uploadedsize",std::to_string(fc.recvsize));
+             redis_.sync_commit();
+             std::string sql = "update fileid_info set uploadedsize ='" +
+                               std::to_string(fc.recvsize) +
+                               "'where id = '" + fc.ID + "'";
+             mysql_.changemsg(sql.c_str());
+             if (fc.recvsize == fc.filesize) {
                  fc.state = FileState::PRASEJSON;
                  fc.recvsize = 0;
                  fc.filesize = 0;
@@ -167,6 +198,8 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  res["filename"] = fc.filename;
                  conn->send(res.dump() + "\n");
                  fc.recvsize = 0;
+                 close(fc.fd);
+                 fc.fd = -1;
              }
      } else {
      }

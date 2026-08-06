@@ -14,11 +14,11 @@ set(CMAKE_CXX_FLAGS
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -fsanitize=address -g -O0")
+# set(CMAKE_CXX_FLAGS
+#     "${CMAKE_CXX_FLAGS} -fsanitize=address -g -O0")
 
-set(CMAKE_EXE_LINKER_FLAGS
-    "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+# set(CMAKE_EXE_LINKER_FLAGS
+#     "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 # =========================================================
 # Include

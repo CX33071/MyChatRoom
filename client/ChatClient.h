@@ -26,6 +26,12 @@ struct chatrecord{
     std::string reciver;
     std::string content;
 };
+struct filestatus{
+    std::string sended;
+    std::string total;
+    std::string filename;
+    std::string id;
+};
 class FileClient;
 class chatclient {
    private:
@@ -53,6 +59,7 @@ class chatclient {
 
    public:
     termios oldt;
+    std::vector<filestatus> uploads;
     std::atomic<bool> stop1 = false;
     SQlite SQ;
     std::atomic<bool> running = false;
@@ -112,6 +119,7 @@ class chatclient {
     void handle_delgroup();
     void handle_applyjoingroup();
     void handle_friendchat();
+    void handle_uploadingfile();
     void getgrouphistory(std::string groupname);
     void handle_getfriendchat(std::string friendaccount);
     void handle_friendlist();
@@ -132,6 +140,7 @@ class chatclient {
     void handle_onlinelist();
     void handle_blocklist();
     void handle_grouplist();
+    void handle_uploadcheck();
     void handle_groupmember();
     void handle_setgroupmanager();
     void handle_sendedfile();

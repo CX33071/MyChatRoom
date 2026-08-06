@@ -19,7 +19,13 @@ struct friendchatrecord {
     std::string reciver;
     std::string content;
 };
-bool sendn(int fd, char* data, ssize_t len) ;
+struct filestatusserver{
+    std::string sended;
+    std::string total;
+    std::string filename;
+    std::string id;
+};
+bool sendn(int fd, char* data, ssize_t len);
 class Friend {
    private:
     cpp_redis::client redis_;

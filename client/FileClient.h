@@ -57,4 +57,5 @@ class FileClient {
                  std::string ID,
                  std::string filepath);
    std::string gen_req_id();
+   void uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b);
 };

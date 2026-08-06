@@ -597,7 +597,7 @@ void mainfunction(chatclient*chatclient) {
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 5) {
+                while (choice < 0 || choice > 6) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -612,7 +612,7 @@ void mainfunction(chatclient*chatclient) {
                         free(line);
                         choice = chatclient->changenum(s);
                     } else {
-                        line = readline(GREEN "请输入数字0-5:" RESET);
+                        line = readline(GREEN "请输入数字0-6:" RESET);
                         if (line == nullptr) {
                             chatclient->stop1 = true;
                             if (chatclient->chatis_login) {
@@ -636,7 +636,7 @@ void mainfunction(chatclient*chatclient) {
                     case 3:
                         chatclient->handle_groupsendfile();
                         break;
-                    case 4:
+                    case 5:
                         friendmenu = false;
                         groupmenu = false;
                         filemenu = false;
@@ -646,8 +646,11 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                         chatclient->handle_exit();
                         break;
-                    case 5:
+                    case 6:
                         chatclient->handle_exitlogin();
+                        break;
+                    case 4:
+                        chatclient->handle_uploadingfile();
                         break;
                     default:
                         std::cout << PURPLE << "请输入有效选项!" << RESET
