@@ -5,7 +5,7 @@ FILEredis::FILEredis(){
     std::string sql =
         "create table if not exists fileid_info (id int auto_increment "
         "primary key,sender varchar(30),reciver varchar(30),filename "
-        "varchar(300),filesize varchar(300),status varchar(30),uploadedsize varchar(300) default '0',filepath varchar(300));";
+        "varchar(300),filesize varchar(300),status varchar(30),uploadedsize varchar(300) default '0',filepath varchar(300),downfilepath varchar(300),downloadedsize varchar(300));";
     mysql_.createinfo(sql.c_str());
 }
 std::string FILEredis::begin(std::string from,
@@ -144,4 +144,67 @@ std::string FILEredis::getfilepath(std::string fileid){
     redis_.sync_commit();
     std::string filepath = f.get().as_string();
     return filepath;
+}
+void FILEredis::insertfilepath(std::string filepath,std::string ID){
+    std::string sql =
+        "update fileid_info set downfilepath ='" + filepath + "'where id ='"+ID+"'";
+    mysql_.changemsg(sql.c_str());
+    redis_.hset("file:"+ID,"downfilepath",filepath);
+    redis_.sync_commit();
+}
+std::string FILEredis::getdownfilepath(std::string fileid){
+    auto s = redis_.exists({"file:" + fileid});
+    redis_.sync_commit();
+    if (!s.get().as_integer()) {
+        std::string sql =
+            "select downfilepath from fileid_info where id ='" + fileid + "'";
+        std::string downfilepath = mysql_.selectstring(sql.c_str());
+        return downfilepath;
+    }
+    auto f = redis_.hget("file:" + fileid, "downfilepath");
+    redis_.sync_commit();
+    std::string downfilepath = f.get().as_string();
+    return downfilepath;
+}
+std::string FILEredis::getdownsize(std::string fileid){
+    auto s = redis_.exists({"file:" + fileid});
+    redis_.sync_commit();
+    if (!s.get().as_integer()) {
+        std::string sql =
+            "select downloadedsize from fileid_info where id ='" + fileid + "'";
+        std::string downsize = mysql_.selectstring(sql.c_str());
+        return downsize;
+    }
+    auto f = redis_.hget("file:" + fileid, "downsize");
+    redis_.sync_commit();
+    std::string downsize = f.get().as_string();
+    return downsize;
+}
+std::vector<filestatusserver> FILEredis::getdownloading(std::string account){
+    std::string sql = "select filename from fileid_info where reciver ='" +
+                      account + "'and status = 'downing'";
+    std::vector<std::string> filenameres = mysql_.selectmul(sql.c_str());
+    std::string sql1 = "select filesize from fileid_info where reciver ='" +
+                       account + "'and status = 'downing'";
+    std::vector<std::string> filesizeres = mysql_.selectmul(sql1.c_str());
+    std::string sql2 = "select id from fileid_info where reciver ='" + account +
+                       "'and status = 'downing'";
+    std::vector<std::string> fileidres = mysql_.selectmul(sql2.c_str());
+    std::string sql3 = "select downloadedsize from fileid_info where reciver ='" +
+                       account + "'and status = 'downing'";
+    std::vector<std::string> uploadedres = mysql_.selectmul(sql3.c_str());
+    std::string sql4 = "select sender from fileid_info where reciver ='" +
+                       account + "'and status ='downing'";
+    std::vector<std::string> fromres = mysql_.selectmul(sql4.c_str());
+    std::vector<filestatusserver> res;
+    for (int i = 0; i < filenameres.size(); i++) {
+        filestatusserver ff;
+        ff.filename = filenameres[i];
+        ff.total = filesizeres[i];
+        ff.id = fileidres[i];
+        ff.recived = uploadedres[i];
+        ff.from = fromres[i];
+        res.push_back(ff);
+    }
+    return res;
 }

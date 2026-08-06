@@ -54,96 +54,102 @@ void FileClient ::connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
 void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                                   Buffer* buf,
                                   Timestamp) {
-        if (fc.state == FileState::PRASEJSON) {
-            if (!buf->findn()) {
-                return;
+    if (fc.state == FileState::PRASEJSON) {
+        if (!buf->findn()) {
+            return;
+        }
+        std::string msg = buf->returnstring();
+        json j = json::parse(msg);
+        id = j.value("request_id", "");
+        if (!id.empty()) {
+            std::lock_guard<std::mutex> lock(active_mutex);
+            auto it = active_requests.find(id);
+            if (it != active_requests.end()) {
+                it->second.set_value(j);
+                active_requests.erase(it);
             }
-            std::string msg = buf->returnstring();
-            json j = json::parse(msg);
-            id = j.value("request_id", "");
-            if (!id.empty()) {
+        }
+        std::string cmd = j["cmd"];
+        if (cmd == "STOR_ok") {
+            std::string ID = j["ID"];
+            std::string filename = j["filename"];
+            json j1;
+            j1["cmd"] = "sendfile_finish";
+            j1["ID"] = ID;
+            j1["filename"] = filename;
+            id = gen_req_id();
+            j1["request_id"] = id;
+            std::promise<json> p;
+            std::future<json> f = p.get_future();
+            {
                 std::lock_guard<std::mutex> lock(active_mutex);
-                auto it = active_requests.find(id);
-                if (it != active_requests.end()) {
-                    it->second.set_value(j);
-                    active_requests.erase(it);
-                }
+                active_requests[id] = std::move(p);
             }
-            std::string cmd = j["cmd"];
-            if (cmd == "STOR_ok") {
-                std::string ID = j["ID"];
-                std::string filename = j["filename"];
-                json j1;
-                j1["cmd"] = "sendfile_finish";
-                j1["ID"] = ID;
-                j1["filename"] = filename;
-                id =gen_req_id();
-                j1["request_id"] = id;
-                std::promise<json> p;
-                std::future<json> f = p.get_future();
-                {
-                    std::lock_guard<std::mutex> lock(active_mutex);
-                    active_requests[id] = std::move(p);
-                }
-                chatclient_->chat_conn->send(j1.dump() + '\n');
-            }else if(cmd=="loadfileres"){
-               
-            } else if (cmd == "groupSTOR_ok") {
-                std::string ID = j["ID"];
-                std::string filename = j["filename"];
-                json j1;
-                j1["cmd"] = "groupsendfile_finish";
-                j1["ID"] = ID;
-                j1["filename"] = filename;
-                id = gen_req_id();
-                j1["request_id"] = id;
-                std::promise<json> p;
-                std::future<json> f = p.get_future();
-                {
-                    std::lock_guard<std::mutex> lock(active_mutex);
-                    active_requests[id] = std::move(p);
-                }
-                chatclient_->chat_conn->send(j1.dump() + '\n');
-                // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
-            } else if (cmd == "RETRres") {
-                fc.state = FileState::RECV_FILE;
-            } else if (cmd == "sendfinishtofileclient") {
-                json j1;
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                }
-                j1["cmd"] = "to_clientfinish";
-                file_conn->send(j1.dump() + '\n');
+            chatclient_->chat_conn->send(j1.dump() + '\n');
+        } else if (cmd == "loadfileres") {
+        } else if (cmd == "groupSTOR_ok") {
+            std::string ID = j["ID"];
+            std::string filename = j["filename"];
+            json j1;
+            j1["cmd"] = "groupsendfile_finish";
+            j1["ID"] = ID;
+            j1["filename"] = filename;
+            id = gen_req_id();
+            j1["request_id"] = id;
+            std::promise<json> p;
+            std::future<json> f = p.get_future();
+            {
+                std::lock_guard<std::mutex> lock(active_mutex);
+                active_requests[id] = std::move(p);
             }
+            chatclient_->chat_conn->send(j1.dump() + '\n');
+            // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
+        } else if (cmd == "RETRres") {
+            fc.state = FileState::RECV_FILE;
+        } else if (cmd == "sendfinishtofileclient") {
+            json j1;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            j1["cmd"] = "to_clientfinish";
+            file_conn->send(j1.dump() + '\n');
+        }
         } else if (fc.state == FileState::RECV_FILE) {
             size_t len = buf->readableBytes();
             if (len == 0) {
                 return;
             }
-            size_t uploaded = fc.filesize - fc.recvsize;
-            if (len > uploaded) {
-                len = uploaded;
+            size_t downloaded = fc.filesize - fc.downsize;
+            if (len > downloaded) {
+                len = downloaded;
             }
             write(fc.fd, buf->peek(), len);
             buf->retrieve(len);
+            fc.downsize += len;
             fc.recvsize += len;
-            fileprogress(fc.recvsize, fc.filesize,begin1);
+            json j1;
+            j1["cmd"] = "update_downsize";
+            j1["fileid"] = fc.ID;
+            j1["downsize"] = std::to_string(fc.downsize);
+            conn->send(j1.dump() + '\n');
+            fileprogress(fc.recvsize, fc.filesize, begin1);
             if (fc.recvsize == fc.filesize) {
                 close(fc.fd);
-                fc.state = FileState::PRASEJSON;
                 fc.recvsize = 0;
                 fc.filesize = 0;
+                fc.downsize = 0;
                 json res;
                 res["cmd"] = "RETR_ok";
                 res["ID"] = fc.ID;
                 res["filename"] = fc.filename;
                 res["account"] = chatclient_->account;
                 chatclient_->chat_conn->send(res.dump() + "\n");
+                fc.state = FileState::PRASEJSON;
                 json j3;
                 j3["cmd"]="Load_finish";
                 j3["request_id"] = fileloadID;
-                file_conn->send(j3.dump()+'\n');
+                file_conn->send(j3.dump() + '\n');
             }
         }
 }
@@ -336,3 +342,44 @@ void FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
     }
 }
+int FileClient::reloadfile(std::string filename,
+               std::string filesize,
+               std::string ID,
+               std::string filepath,
+               std::string downsize){
+    fc.filename = filename;
+    fc.filesize = std::stoi(filesize);
+    filepath = filepath + "/" + filename;
+    fc.ID = ID;
+    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY , 0644);
+    if (fc.fd == -1) {
+        std::cout << "文件创建失败" << std::endl;
+        return -1;
+    }
+    long long downsize1 = stoll(downsize);
+    fc.recvsize = downsize1;
+    fc.downsize = downsize1;
+    lseek(fc.fd, downsize1, SEEK_SET);
+    json j;
+    j["cmd"] = "reRETR";
+    j["ID"] = ID;
+    j["filename"] = filename;
+    j["filesize"] = filesize;
+    j["downsize"] = downsize;
+    id = gen_req_id();
+    j["request_id"] = id;
+    fileloadID = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    file_conn->send(j.dump() + '\n');
+    begin1 = Timestamp::now();
+    fc.state = FileState::RECV_FILE;
+    json res = f.get();
+    std::cout << std::endl;
+    std::cout << PURPLE << "文件下载成功!" << RESET << std::endl;
+    return 0;
+               }

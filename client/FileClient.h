@@ -27,6 +27,7 @@ class FileClient {
         std::string filename;
         uint64_t filesize = 0;
         uint64_t recvsize = 0;
+        uint64_t downsize = 0;
         std::string ID;
     };
     TcpClient client_;
@@ -56,6 +57,10 @@ class FileClient {
                  std::string filesize,
                  std::string ID,
                  std::string filepath);
+   int reloadfile(std::string filename,
+                  std::string filesize,
+                  std::string ID,
+                  std::string filepath,std::string downsize);
    std::string gen_req_id();
    void uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b);
 };

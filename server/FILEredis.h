@@ -36,4 +36,8 @@ class FILEredis{
      void setloadfinish(std::string ID);
      std::vector<filestatusserver> getuploading(std::string sender);
      std::string getfilepath(std::string fileid);
+     void insertfilepath(std::string filepath,std::string ID);
+     std::string getdownfilepath(std::string fileid);
+     std::vector<filestatusserver> getdownloading(std::string account);
+     std::string getdownsize(std::string fileid);
 };

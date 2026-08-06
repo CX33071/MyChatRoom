@@ -316,6 +316,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if(cmd=="recvfile"){
             std::string from=j["from"];
+            std::string filepath = j["filepath"];
             std::string filename = j["filename"];
             std::string ID = j["ID"];
             json j1;
@@ -325,8 +326,44 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["request_id"] = request_id;
             }
             std::string filesize = file.getfilesize(ID);
+            file.insertfilepath(filepath,ID);
             j1["filesize"] = filesize;
             conn->send(j1.dump() + '\n');
+        }
+        if(cmd=="redownloadfile"){
+            std::string fileid=j["fileid"];
+            std::string filepath=file.getdownfilepath(fileid);
+            std::string downsize = file.getdownsize(fileid);
+            json j1;
+            j1["cmd"]="redownloadfileres";
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            j1["filepath"]=filepath;
+            j1["downsize"] = downsize;
+            conn->send(j1.dump() + '\n');
+        }
+        if(cmd=="downloadcheck"){
+            std::string account=j["account"];
+            json res;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                res["request_id"] = request_id;
+            }
+            std::vector<filestatusserver> downs=file.getdownloading(account);
+            std::vector<json> hh;
+            for(auto t:downs){
+                json j2;
+                j2["recived"]=t.recived;
+                j2["filename"]=t.filename;
+                j2["total"]=t.total;
+                j2["from"]=t.from;
+                j2["fileid"] = t.id;
+                hh.push_back(j2);
+            }
+            res["data"] = hh;
+            conn->send(res.dump() + '\n');
         }
         if(cmd=="RETR_ok"){
             std::string ID = j["ID"];

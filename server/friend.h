@@ -23,6 +23,8 @@ struct filestatusserver{
     std::string sended;
     std::string total;
     std::string filename;
+    std::string from;
+    std::string recived;
     std::string id;
 };
 bool sendn(int fd, char* data, ssize_t len);

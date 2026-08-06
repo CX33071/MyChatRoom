@@ -636,7 +636,7 @@ void mainfunction(chatclient*chatclient) {
                     case 3:
                         chatclient->handle_groupsendfile();
                         break;
-                    case 5:
+                    case 6:
                         friendmenu = false;
                         groupmenu = false;
                         filemenu = false;
@@ -646,11 +646,14 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                         chatclient->handle_exit();
                         break;
-                    case 6:
+                    case 7:
                         chatclient->handle_exitlogin();
                         break;
                     case 4:
                         chatclient->handle_uploadingfile();
+                        break;
+                    case 5:
+                        chatclient->handle_downingfile();
                         break;
                     default:
                         std::cout << PURPLE << "请输入有效选项!" << RESET

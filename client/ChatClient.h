@@ -30,6 +30,8 @@ struct filestatus{
     std::string sended;
     std::string total;
     std::string filename;
+    std::string recived;
+    std::string from;
     std::string id;
 };
 class FileClient;
@@ -60,6 +62,7 @@ class chatclient {
    public:
     termios oldt;
     std::vector<filestatus> uploads;
+    std::vector<filestatus> downloads;
     std::atomic<bool> stop1 = false;
     SQlite SQ;
     std::atomic<bool> running = false;
@@ -120,6 +123,8 @@ class chatclient {
     void handle_applyjoingroup();
     void handle_friendchat();
     void handle_uploadingfile();
+    void handle_downingfile();
+    void handle_downloadcheck();
     void getgrouphistory(std::string groupname);
     void handle_getfriendchat(std::string friendaccount);
     void handle_friendlist();

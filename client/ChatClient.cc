@@ -200,9 +200,10 @@ void chatclient::file_menu(){
     std::cout << GREEN << "3.           群聊上传文件               \n"
               << RESET;
     std::cout << GREEN << "4.            继续上传文件            \n" << RESET;
-    std::cout << GREEN << "5.            返回功能菜单               \n"
+    std::cout << GREEN << "5.            继续下载文件\n";
+    std::cout << GREEN << "6.            返回功能菜单               \n"
               << RESET;
-    std::cout << GREEN << "6.          退出登录\n" << RESET;
+    std::cout << GREEN << "7.          退出登录\n" << RESET;
     std::cout << GREEN << "0.          退出chatroom               \n" << RESET;
 }
 bool chatclient::isQQemail(std::string email){
@@ -495,6 +496,7 @@ void chatclient::handle_login_key() {
             system("clear");
             SQ.open(name);
             handle_uploadcheck();
+            handle_downloadcheck();
         } else {
             std::cout << res["data"] << std::endl;
         }
@@ -531,6 +533,133 @@ void chatclient::handle_uploadcheck(){
             uploads.push_back(f);
         }
         std::cout << "请稍候在文件菜单中查看详细" << RESET<<std::endl;
+    }
+}
+void chatclient::handle_downingfile(){
+   if(downloads.empty()){
+       std::cout << PURPLE << "当前并没有下载失败文件" << RESET << std::endl;
+       return;
+   }
+   for (int i = 0; i < downloads.size();i++){
+       std::cout << PURPLE << "[" << i + 1 << "]    来自"<<downloads[i].from<<" " << downloads[i].filename
+                 << "  下载" << downloads[i].recived << "/"
+                 << downloads[i].total << std::endl;
+   }
+   char *line=readline(PURPLE"请选择你要处理的编号:"RESET);
+   int num;
+   if (line == nullptr) {
+       stop1 = true;
+       if (chatis_login) {
+           handle_exitlogin();
+       }
+       handle_exit();
+       _exit(0);
+   }
+   std::string reads = line;
+   free(line);
+   num = changenum(reads);
+   while (num == -1) {
+       line = readline(PURPLE "非法输入，请重新输入:" RESET);
+       if (line == nullptr) {
+           stop1 = true;
+           if (chatis_login) {
+               handle_exitlogin();
+           }
+           handle_exit();
+           _exit(0);
+       }
+       reads = line;
+       free(line);
+       num = changenum(reads);
+   }
+   int total = downloads.size();
+   while (num > total || num < 1) {
+       line = readline(PURPLE "请输入要继续上传的文件消息编号!请选择:" RESET);
+       if (line == nullptr) {
+           stop1 = true;
+           if (chatis_login) {
+               handle_exitlogin();
+           }
+           handle_exit();
+           _exit(0);
+       }
+       reads = line;
+       free(line);
+       num = changenum(reads);
+       while (num == -1) {
+           line = readline(PURPLE "非法输入，请重新输入:" RESET);
+           if (line == nullptr) {
+               stop1 = true;
+               if (chatis_login) {
+                   handle_exitlogin();
+               }
+               handle_exit();
+               _exit(0);
+           }
+           reads = line;
+           free(line);
+           num = changenum(reads);
+       }
+   }
+   std::string fileid = downloads[num - 1].id;
+   filename = downloads[num - 1].filename;
+   std::string from = downloads[num - 1].from;
+   std::string filesize = downloads[num - 1].total;
+   j["cmd"]="redownloadfile";
+   j["fileid"]=fileid;
+   j["from"] = from;
+   j["filename"] = filename;
+   id = gen_req_id();
+   j["request_id"] = id;
+   std::promise<json> p;
+   std::future<json> f = p.get_future();
+   {
+       std::lock_guard<std::mutex> lock(active_mutex);
+       active_requests[id] = std::move(p);
+   }
+   chat_conn->send(j.dump() + '\n');
+   json res = f.get();
+   std::string downfilepath = res["filepath"];
+   std::string downsize = res["downsize"];
+   int n = fileclient_->reloadfile(filename, filesize, fileid, downfilepath,downsize);
+   if(n!=-1){
+       downloads.erase(downloads.begin() + num - 1);
+   }
+}
+void chatclient::handle_downloadcheck(){
+    j["cmd"] = "downloadcheck";
+    j["account"] = account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::vector<json> data = res.value("data", std::vector<json>{});
+    if (!data.empty()) {
+        std::cout << PURPLE << "你有" << data.size() << "个文件下载失败"
+                  << std::endl;
+        for (int i = 0; i < data.size(); i++) {
+            double cur =
+                std::stoll(data[i]["recived"].get<std::string>()) / 1000000.0;
+            double total =
+                std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
+            std::cout << std::fixed << std::setprecision(1) << "[" << i + 1
+                      << "]     来自"<<data[i]["from"] <<"  "<< data[i]["filename"] << "  下载" << cur << "/"
+                      << total << " MB" << std::endl;
+            filestatus f;
+            f.recived = data[i]["recived"];
+            f.total = data[i]["total"];
+            f.filename = data[i]["filename"];
+            f.id = data[i]["fileid"];
+            f.from = data[i]["from"];
+            downloads.push_back(f);
+        }
+        std::cout << "请稍候再文件菜单中查看详细" << RESET << std::endl;
     }
 }
 void chatclient::handle_forget_key() {
@@ -1913,6 +2042,7 @@ void chatclient::handle_sendedfile() {
            }
            reply["cmd"] = "recvfile";
            reply["from"] = from;
+           reply["filepath"]=filepath;
            reply["ID"] = sendfilelist[num - 1]["ID"];
            std::string ID = sendfilelist[num - 1]["ID"];
            reply["filename"] = filename;
