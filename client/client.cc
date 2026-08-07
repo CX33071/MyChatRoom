@@ -768,8 +768,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     rl_catch_signals = 0;
-    signal(SIGINT, handler);
-    signal(SIGTSTP, handler);
+    // signal(SIGINT, handler);
+    // signal(SIGTSTP, handler);
     EventLoop loop;
     L = &loop;
     InetAddress chataddr(argv[1], std::stoi(argv[2]));

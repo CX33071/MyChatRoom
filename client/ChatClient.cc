@@ -1021,11 +1021,15 @@ void chatclient::handle_friendchat() {
         std::cout << GREEN << "开启新的聊天!" << RESET << std::endl;
         while (inchat) {
             std::string msg;
-            std::string s = PURPLE;
+            std::string s = "\001";
+            s+=GREEN;
+            s += "\002";
             s += "[";
             s += name;
             s += "]:   ";
-            s+=RESET;
+            s += "\001";
+            s += RESET;
+            s += "\002";
             line = readline(s.c_str());
             if (line == nullptr) {
                 stop1 = true;
@@ -2412,17 +2416,19 @@ void chatclient::handle_groupchat() {
     std::cout << GREEN << "开启新聊天!" << RESET << std::endl;
     while (groupchat) {
         std::string msg;
-        std::string s = GREEN;
-        s += "[" + name + "]" + RESET+":";
-         line = readline(s.c_str());
-         if (line == nullptr) {
-             stop1 = true;
-             if (chatis_login) {
-                 handle_exitlogin();
-             }
-             handle_exit();
-             _exit(0);
-         }
+        std::string s = "\001";
+        s+=GREEN;
+        s += "\002";
+        s += "[" + name + "]\001" + RESET + "\002:";
+        line = readline(s.c_str());
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
         msg = line;
         free(line);
         if (msg == "EXIT") {
