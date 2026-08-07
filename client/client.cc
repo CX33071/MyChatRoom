@@ -311,7 +311,6 @@ void mainfunction(chatclient*chatclient) {
                     chatclient->handle_destory();
                     break;
                 case 0:
-                    chatclient->handle_exitlogin();
                     chatclient->handle_exit();
                     break;
                 default:

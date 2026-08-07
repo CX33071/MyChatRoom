@@ -35,7 +35,7 @@ void chatclient::connectioncallback(const TcpClient::TcpConnectionPtr& conn){
         chat_conn.reset();
         chatconnok = false;
         chatis_login = false;
-        if(!stop1){
+        if(running){
             std::cout << PURPLE << "服务端断开连接" << std::endl;
         }
         // std::cout << "\nchatclientclose!\n";
