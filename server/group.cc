@@ -19,7 +19,7 @@ Group::Group() {
     std::string sql3 =
         "create table if not exists disconnectmsg_info (id int auto_increment "
         "primary "
-        "key,account varchar(30),msg text);";
+        "key,account varchar(30),msg longtext);";
     mysql_.createinfo(sql3.c_str());
     std::string sql4 =
         "create table if not exists apply_info (id int auto_increment primary "
@@ -29,7 +29,7 @@ Group::Group() {
     std::string sql5 =
         "create table if not exists groupchat_history (id int auto_increment "
         "primary "
-        "key,sender varchar(30),groupname varchar(30),context text,send_time "
+        "key,sender varchar(30),groupname varchar(30),context longtext,send_time "
         "datetime default current_timestamp);";
     mysql_.createinfo(sql5.c_str());
 }

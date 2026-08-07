@@ -27,9 +27,10 @@ Friend::Friend() {
         "varchar(30),blockfriend varchar(30));";
     mysql_.createinfo(sql.c_str());
     sql =
-        "create table if not exists friendchat_history(id int auto_increment primary key,sender varchar(30),reciver varchar(30),content text,"
+        "create table if not exists friendchat_history(id int auto_increment "
+        "primary key,sender varchar(30),reciver varchar(30),content longtext,"
         "send_time datetime default current_timestamp);";
-    // mysql_.createinfo(sql.c_str());
+    mysql_.createinfo(sql.c_str());
     // sql =
     //     "create table if not exists friendname_info (id int increment primary "
     //     "key,name varchar(100),friendname varchar(100));";
@@ -392,8 +393,6 @@ std::vector<friendchatrecord> Friend::gethistoryfriendchat(std::string account1,
             account1 + "' and reciver='" + account2 + "') or (sender='" +
             account2 + "' and reciver='" + account1 + "') order by send_time";
         std::vector<std::string> msgs2 = mysql_.selectmul(sql2.c_str());
-        std::cout << "msg.size=" << msgs.size() << "msgs1.size=" << msgs1.size()
-                  << "msgs2.size=" << msgs2.size() << std::endl;
         for (int i = 0; i < msgs.size(); i++) {
             nlohmann::json j;
             j["sender"]= msgs[i];
