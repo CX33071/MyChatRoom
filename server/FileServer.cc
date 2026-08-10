@@ -8,7 +8,7 @@
 #include "FILEredis.h"
 #include "friend.h"
 #include "group.h"
-#include "json.hpp"
+#include <nlohmann/json.hpp>
 #include <fcntl.h>
 #include "FileServer.h"
 using json = nlohmann::json;

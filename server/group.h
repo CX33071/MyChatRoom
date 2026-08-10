@@ -10,13 +10,13 @@
 #include <ctime>
 #include <future>
 #include <iostream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include "Mysql.h"
 #include "friend.h"
-#include "json.hpp"
-using json = nlohmann::json;
 class Group{
     private:
      cpp_redis::client redis_;

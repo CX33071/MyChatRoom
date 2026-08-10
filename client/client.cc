@@ -9,14 +9,12 @@
 #include <chrono>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
-#include "json.hpp"
 #include <signal.h>
 #define RESET "\033[0m"
 #define GREEN "\033[1;32m"
 #define BLUEC "\033[1;34m"
 #define BLUE "\033[34m"
 #define PURPLE "\033[1;35m"
-using json = nlohmann::json;
 std::atomic<bool> stop =false;
 std::atomic<bool> friendmenu=false;
 std::atomic<bool> groupmenu=false;
