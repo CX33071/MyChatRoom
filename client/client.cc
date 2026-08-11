@@ -3,8 +3,8 @@
 #include <wait.h>
 #include <condition_variable>
 #include <future>
-#include "ChatClient.h"
-#include "FileClient.h"
+#include "ChatClient/ChatClient.h"
+#include "FileClient/FileClient.h"
 #include <queue>
 #include <chrono>
 #include <unordered_map>

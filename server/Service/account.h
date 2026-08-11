@@ -11,9 +11,9 @@
 #include <iostream>
 #include <mysql/mysql.h>
 #include <string>
-#include <group.h>
+#include "group.h"
 #include "friend.h"
-#include "Mysql.h"
+#include "database/Mysql.h"
 size_t mail_payload(void* ptr, size_t size, size_t nmemb, void* userp) ;
 class Verifycode {
    private:

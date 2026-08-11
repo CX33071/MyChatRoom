@@ -15,7 +15,7 @@ using json = nlohmann::json;
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include "Mysql.h"
+#include "database/Mysql.h"
 #include "friend.h"
 class Group{
     private:

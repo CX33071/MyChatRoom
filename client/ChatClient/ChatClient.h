@@ -6,13 +6,12 @@
 #include <condition_variable>
 #include <future>
 #include <queue>
-#include "SQlite.h"
+#include "database/SQlite.h"
 #include <regex>
 #include <readline/readline.h>
 #include <dirent.h>
 #include <unordered_map>
 #include "/home/cx33071/muduo-/net/TcpClient.h"
-#include "ChatClient.h"
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 #define RESET "\033[0m"

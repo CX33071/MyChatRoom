@@ -5,9 +5,6 @@
 #include <unordered_set>
 #include "/home/cx33071/muduo-/base/logger.h"
 #include "/home/cx33071/muduo-/net/TcpServer.h"
-#include "FILEredis.h"
-#include "friend.h"
-#include "group.h"
 #include <nlohmann/json.hpp>
 #include <fcntl.h>
 #include "FileServer.h"

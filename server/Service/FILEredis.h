@@ -14,7 +14,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include "Mysql.h"
+#include "database/Mysql.h"
 #include "friend.h"
 using json = nlohmann::json;
 class FILEredis{
