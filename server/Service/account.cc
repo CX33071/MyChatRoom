@@ -57,11 +57,13 @@ void Verifycode::resetatstus(){
 bool Verifycode::isexistsname(std::string name){
     auto fut = redis_.exists({name});
     redis_.sync_commit();
-    if(!fut.get().as_integer()){
+    if (!fut.get().as_integer()) {
         std::string sql =
             "select account from name_info where name ='" + name + "'";
        std::string account= mysql_.selectstring(sql.c_str());
        if(!account.empty()){
+           std::cout << "name =" << name << "对应的account =" << account
+                     << std::endl;
            redis_.set(name, account);
            redis_.sync_commit();
            return true;
@@ -112,6 +114,26 @@ std::string Verifycode::getname(std::string account){
     redis_.sync_commit();
     std::string name = fut1.get().as_string();
     return name;
+}
+int Verifycode::modifyname(std::string account,std::string name){
+    auto fut=redis_.get(account);
+    redis_.sync_commit();
+    std::string oldname = fut.get().as_string();
+    if(oldname==name){
+        return 1;
+    }
+    redis_.set(name, account);
+    redis_.set(account, name);
+    redis_.set("onlinename" + name, "1");
+    redis_.del({"onlinename"+oldname});
+    redis_.sync_commit();
+    std::string sql = "update onlinename_info set name ='" + name +
+                      "' where name ='" + oldname + "'";
+    mysql_.changemsg(sql.c_str());
+    std::string sql1 = "update name_info set name ='" + name +
+                       "'where account ='" + account + "'";
+    mysql_.changemsg(sql1.c_str());
+    return 0;
 }
 int Verifycode::isexists(std::string account){
     auto t = redis_.exists({account + "key"});
@@ -177,7 +199,7 @@ bool Verifycode::signup(std::string account,std::string password,std::string nam
     std::string sql3 = "insert into name_info (name,account)values('" +
                        name + "','" + account + "')";
     std::string sql4 =
-        "insert into onlinename_info (name,online)values('" + name + "',1)";
+        "insert into onlinename_info (name,online)values('" + name + "',0)";
     mysql_.addmsg(sql1.c_str());
     mysql_.addmsg(sql2.c_str());
     mysql_.addmsg(sql3.c_str());

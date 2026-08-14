@@ -14,6 +14,7 @@ chatclient::chatclient(EventLoop* loop, const InetAddress& addr):client_(loop,ad
     client_.connect();
     loop_->runEvery(30, [this]() { sendheart(); });
     tcgetattr(STDIN_FILENO, &oldt);
+    oldt.c_iflag |= ICRNL;
     rl_bind_keyseq("\\e[15~", emptyfunction);
     rl_bind_keyseq("\\e[17~", emptyfunction);
     rl_bind_keyseq("\\e[18~", emptyfunction);
@@ -135,7 +136,8 @@ void chatclient::select_menu(){
     std::cout << GREEN << "2.            群聊菜单               \n" << RESET;
     std::cout << GREEN << "3.            文件菜单               \n" << RESET;
     std::cout << GREEN << "4.            消息菜单               \n" << RESET;
-    std::cout << GREEN << "5.            退出登录\n";
+    std::cout << GREEN << "5.            修改昵称\n";
+    std::cout << GREEN << "6.            退出登录\n";
     std::cout << GREEN << "0.               退出chatroom               \n"
               << RESET;
 }
@@ -176,8 +178,9 @@ void chatclient::group_menu(){
     std::cout << GREEN << "9.             群聊天               \n" << RESET;
     std::cout << GREEN << "10.           处理加群申请               \n"
               << RESET;
-    std::cout << GREEN << "11.          返回功能菜单\n" << RESET;
-    std::cout << GREEN << "12.          退出登录\n" << RESET;
+    std::cout << GREEN << "11.           转移群主\n" << RESET;
+    std::cout << GREEN << "12.          返回功能菜单\n" << RESET;
+    std::cout << GREEN << "13.          退出登录\n" << RESET;
     std::cout << GREEN << "0.          退出chatroom\n" << RESET;
 }
 void chatclient::msg_menu(){
@@ -240,9 +243,9 @@ std::string chatclient::getname(std::string account){
     json res = f.get();
     return res["data"];
 }
-bool chatclient::is_existsname(std::string name){
+bool chatclient::is_existsname(std::string name1){
     j["cmd"]="isexistsname";
-    j["name"]=name;
+    j["name"]=name1;
     id = gen_req_id();
     j["request_id"] = id;
     std::promise<json> p;
@@ -352,6 +355,51 @@ bool chatclient::is_online(std::string account){
         return false;
     }
 }
+void chatclient::handle_modifyname(){
+    char*line=readline(GREEN"请输入你的新昵称：");
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string newname=line;
+    free(line);
+    while (is_existsname(newname)) {
+        if(newname!=name){
+            line = readline(PURPLE "该昵称已被用户使用，请重新输入昵称:" RESET);
+        }else{
+            line = readline(PURPLE "新昵称不能和原昵称一样，请重新输入昵称:" RESET);
+        }
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        newname = line;
+        free(line);
+    }
+    j["cmd"]="modifyname";
+    j["account"]=account;
+    j["name"]=newname;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::cout << PURPLE << res["data"] << RESET << std::endl;
+    name = newname;
+}
 void chatclient::handle_login_code() {
     if (chatis_login) {
         std::cout << "请重新输入6-15之间数字!" << std::endl;
@@ -434,6 +482,8 @@ void chatclient::handle_login_code() {
             name = getname(account);
             system("clear");
             SQ.open(name);
+            handle_uploadcheck();
+            handle_downloadcheck();
         } else {
             std::cout << res["data"] << std::endl;
         }
@@ -878,6 +928,7 @@ void chatclient::handle_exitlogin() {
         json res = f.get();
         std::cout << PURPLE << res["data"] << RESET << std::endl;
         chatis_login = false;
+        system("clear");
     }
 }
 int chatclient::is_friend(std::string friendaccount) {
@@ -929,6 +980,7 @@ void chatclient::handle_getfriendchat(std::string friendaccount){
     }
 }
 void chatclient::handle_friendchat() {
+    bool shortchat = false;
     char* line = readline(PURPLE "请输入要私聊的好友名称:" RESET);
     if (line == nullptr) {
         stop1 = true;
@@ -947,10 +999,14 @@ void chatclient::handle_friendchat() {
     current_chat = getaccount(friendname);
     friendhistory.clear();
     int is = is_friend(current_chat);
+    bool b = is_blocked(current_chat);
     if (is == 1) {
         std::cout << "该账号并不存在" << std::endl;
     } else if (is == 0) {
         std::cout << "对方目前还不是您的好友" << std::endl;
+    }else if(b){
+        std::cout << PURPLE << "你已被该用户拉黑，无法私聊" << RESET
+                  << std::endl;
     } else {
         int N;
         line = readline(
@@ -988,8 +1044,7 @@ void chatclient::handle_friendchat() {
         system("clear");
         std::cout << GREEN << "进入与用户[" << friendname << "]的聊天界面"
                   << RESET << std::endl;
-        std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
-        if(N==1){
+        if (N == 1) {
             std::cout << GREEN << "所有聊天记录:" << RESET << std::endl;
             std::vector<std::string> chat = SQ.getfriendchat(name, friendname);
             if (chat.empty()) {
@@ -1019,31 +1074,177 @@ void chatclient::handle_friendchat() {
             }
         }
         std::cout << GREEN << "开启新的聊天!" << RESET << std::endl;
+        std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
+        std::cout << GREEN << "输入shortchat开启短文本聊天" << RESET
+                  << std::endl;
+        std::cout << GREEN << "输入longchat开启长文本聊天" << RESET
+                  << std::endl;
+        std::cout << GREEN << "输入sendfile开启上传文件功能" << RESET
+                  << std::endl;
+        std::cout << GREEN << "输入loadfile开启下载文件功能" << RESET
+                  << std::endl;
+        std::string s1 = GREEN;
+        s1 += "[" + name + "]:" + RESET;
+        std::string s = "\001";
+        s += GREEN;
+        s += "\002";
+        s += "[";
+        s += name;
+        s += "]:   ";
+        s += "\001";
+        s += RESET;
+        s += "\002";
         while (inchat) {
             std::string msg;
-            std::string s = "\001";
-            s+=GREEN;
-            s += "\002";
-            s += "[";
-            s += name;
-            s += "]:   ";
-            s += "\001";
-            s += RESET;
-            s += "\002";
-            line = readline(s.c_str());
-            if (line == nullptr) {
-                stop1 = true;
-                if (chatis_login) {
-                    handle_exitlogin();
+            if (shortchat) {
+                termios nt = oldt;
+                nt.c_lflag &= ~ECHO;
+                nt.c_lflag &= ~ICANON;
+                nt.c_cc[VMIN] = 1;
+                nt.c_cc[VTIME] = 0;
+                tcsetattr(STDIN_FILENO, TCSANOW, &nt);
+                std::cout << "\033[?2004h" << std::endl;
+                std::cout << s1 << std::flush;
+                msg.clear();
+                while (shortchat) {
+                    char c;
+                    read(STDIN_FILENO, &c, 1);
+                    if (c != '\033') {
+                        if (c == '\n') {
+                            std::cout << '\n' << std::flush;
+                            break;
+                        }
+                        msg += c;
+                        std::cout << c << std::flush;
+                        continue;
+                    } else {
+                        std::string ss;
+                        ss += c;
+                        char x;
+                        while (ss.size() < 6) {
+                            read(STDIN_FILENO, &x, 1);
+                            ss += x;
+                            if (x == '~') {
+                                break;
+                            }
+                        }
+                        if (ss == "\033[200~") {
+                            std::string ssend = "\033[201~";
+                            char c1;
+                            while (true) {
+                                read(STDIN_FILENO, &c1, 1);
+                                if (c1 == '\n') {
+                                    if (msg.empty()) {
+                                        continue;
+                                    }
+                                    std::cout << msg << std::endl;
+                                    std::cout << s1 << std::flush;
+                                    if (msg == "EXIT") {
+                                        inchat = false;
+                                        break;
+                                    }
+                                    b = is_blocked(current_chat);
+                                    if (b) {
+                                        std::cout << PURPLE
+                                                  << "你已被该用户拉黑，请输入E"
+                                                     "XIT退出聊天"
+                                                  << RESET << std::endl;
+                                        continue;
+                                    }
+                                    is = is_friend(current_chat);
+                                    if (is == 0) {
+                                        std::cout
+                                            << PURPLE
+                                            << "对方目前不是你的好友，不能开启"
+                                               "私聊，请输入EXIT结束聊天"
+                                            << RESET << std::endl;
+                                        continue;
+                                    }
+                                    if (msg == "shortchat") {
+                                        shortchat = true;
+                                        continue;
+                                    }
+                                    if (msg == "longchat") {
+                                        shortchat = false;
+                                        continue;
+                                    }
+                                    if (msg == "sendfile") {
+                                        handle_chatsendfile(current_chat);
+                                        continue;
+                                    }
+                                    if (msg == "loadfile") {
+                                        handle_chatloadfile(current_chat);
+                                        continue;
+                                    }
+                                    SQ.addfriendchat(name, friendname, msg);
+                                    json chat;
+                                    chat["cmd"] = "friendchat";
+                                    chat["from"] = account;
+                                    chat["to"] = current_chat;
+                                    chat["message"] = msg;
+                                    chat_conn->send(chat.dump() + '\n');
+                                    msg.clear();
+                                } else {
+                                    msg += c1;
+                                    size_t end_pos = msg.find(ssend);
+                                    if (end_pos != std::string::npos) {
+                                        msg.erase(end_pos);
+                                        std::cout << msg << std::endl;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                handle_exit();
-                _exit(0);
+                std::cout << "\033[?2004l" << std::flush;
+                tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+            } else {
+                line = readline(s.c_str());
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
+                msg = line;
+                free(line);
             }
-            msg = line;
-            free(line);
             if (msg == "EXIT") {
                 inchat = false;
                 break;
+            }
+            b = is_blocked(current_chat);
+            if (b) {
+                std::cout << PURPLE << "你已被该用户拉黑，请输入EXIT退出聊天"
+                          << RESET << std::endl;
+                continue;
+            }
+            is = is_friend(current_chat);
+            if (is == 0) {
+                std::cout
+                    << PURPLE
+                    << "对方目前不是你的好友，不能开启私聊，请输入EXIT结束聊天"
+                    << RESET << std::endl;
+                continue;
+            }
+            if(msg=="shortchat"){
+                shortchat = true;
+                continue;
+            }
+            if(msg=="longchat"){
+                shortchat=false;
+                continue;
+            }
+            if(msg=="sendfile"){
+                handle_chatsendfile(current_chat);
+                continue;
+            }
+            if(msg=="loadfile"){
+                handle_chatloadfile(current_chat);
+                continue;
             }
             SQ.addfriendchat(name, friendname, msg);
             json chat;
@@ -1054,6 +1255,170 @@ void chatclient::handle_friendchat() {
             chat_conn->send(chat.dump() + '\n');
         }
     }
+}
+void chatclient::handle_chatloadfile(std::string from){
+    if(chatfile[from].empty()){
+        std::cout << PURPLE << "当前没有好友发来文件要处理!" << RESET
+                  << std::endl;
+        return;
+    }
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < chatfile[from].size();i++){
+        std::cout << PURPLE << "[" << i + 1 << "] "
+                  << chatfile[from][i]["filename"] << std::endl;
+    }
+    int num;
+    char* line = readline(PURPLE "请选择要处理的消息编号:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    while (num > chatfile[from].size() || num < 1) {
+        line = readline(PURPLE "请输入正确的编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::cout << std::endl;
+     line = readline(PURPLE "请输入您要下载文件到本地的路径：" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    filepath = line;
+    free(line);
+    std::cout << RESET << std::endl;
+    filename = chatfile[from][num-1]["filename"];
+    std::vector<std::string> pathfile = getlocalfile(filepath);
+    for (auto t : pathfile) {
+        if (t == filename) {
+            std::cout << PURPLE << "你的本地路径" << filepath
+                      << "里已经存在文件" << t << ",要替换吗？" << std::endl;
+            std::string ss;
+            line = readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            ss = line;
+            free(line);
+            while (true) {
+                if (ss == "y" || ss == "Y") {
+                    break;
+                } else if (ss == "n" || ss == "N") {
+                    return;
+                } else {
+                    line = readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
+                    ss = line;
+                    free(line);
+                }
+            }
+        }
+    }
+    json reply;
+    reply["cmd"] = "recvfile";
+    reply["from"] = from;
+    reply["filepath"] = filepath;
+    reply["ID"] = chatfile[from][num-1]["ID"];
+    std::string ID = chatfile[from][num-1]["ID"];
+    reply["filename"] = filename;
+    id = gen_req_id();
+    reply["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(reply.dump() + '\n');
+    json res = f.get();
+    std::string filesize = res["filesize"];
+    int n = fileclient_->loadfile(filename, filesize, ID, filepath,true);
+    for (int i = 0; i < 75;i++){
+        std::cout<< "-";
+    }
+    std::cout << std::endl;
+    if (n == -1) {
+        return;
+    }
+    chatfile[from].erase(chatfile[from].begin() + num - 1);
+    json j;
+    j["cmd"] = "friendchat";
+    j["from"] = account;
+    j["to"] = from;
+    j["message"] = "我下载了文件" + filename;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p1;
+    std::future<json> f1 = p1.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p1);
+    }
+    chat_conn->send(j.dump() + '\n');
+    SQ.addfriendchat(name, getname(from), "我下载了文件" + filename);
 }
 void chatclient::handle_friendlist() {
     if (!chatis_login) {
@@ -1474,6 +1839,26 @@ int chatclient::is_blockfriend(std::string friendaccount) {
         return 0;
     }
 }
+bool chatclient::is_blocked(std::string frienduser){
+    j["cmd"]="is_blocked";
+    j["account"]=account;
+    j["friendacount"]=frienduser;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    if(res["code"]=="1"){
+        return true;
+    }else{
+        return false;
+    }
+}
 bool chatclient::is_exists(std::string account){
     j["cmd"]="isexists";
     j["account"] = account;
@@ -1517,6 +1902,87 @@ void chatclient::handle_ownergrouplist(){
         }
         std::cout << PURPLE << data << RESET << std::endl;
     }
+}
+bool chatclient::is_owner(std::string account,std::string groupname){
+    j["cmd"]="is_owner";
+    j["account"]=account;
+    j["groupname"]=groupname;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    if(res["code"]=="1"){
+        return true;
+    }else{
+        return false;
+    }
+}
+void chatclient::handle_changeowner(){
+    char *line=readline(PURPLE"请输入你要转移群组的群聊名称:"RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    groupname=line;
+    free(line);
+    bool b=is_existsgroup(groupname);
+    if(!b){
+        std::cout << PURPLE << "该群聊并不存在" << RESET << std::endl;
+        return;
+    }
+    b=is_owner(account,groupname);
+    if(!b){
+        std::cout<<PURPLE<<"你并不是该群群主，没有转移群主的权限!"<<RESET<<std::endl;
+        return;
+    }
+    line = readline(PURPLE "请输入你要转移群主权限的群成员:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string friendname = line;
+    free(line);
+    b=is_existsname(friendname);
+    if(!b){
+        std::cout << PURPLE << "该用户帐号并不存在" << RESET << std::endl;
+        return;
+    }
+    frienduser = getaccount(friendname);
+    b = is_groupmember(groupname, frienduser);
+    if(!b){
+        std::cout << PURPLE << "该用户并不是群成员,无法转移群聊" << RESET
+                  << std::endl;
+        return;
+    }
+    j["cmd"]="changeowner";
+    j["groupname"]=groupname;
+    j["owner"] = account;
+    j["friendaccount"] = frienduser;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::cout << GREEN << res["data"] << std::endl;
 }
 void chatclient::handle_disblock() {
     if (!chatis_login) {
@@ -2061,7 +2527,7 @@ void chatclient::handle_sendedfile() {
            chat_conn->send(reply.dump() + '\n');
            json res = f.get();
            std::string filesize = res["filesize"];
-           int n=fileclient_->loadfile(filename, filesize, ID, filepath);
+           int n=fileclient_->loadfile(filename, filesize, ID, filepath,false);
            if(n!=-1){
                sendfilelist.erase(sendfilelist.begin() + num - 1);
            }
@@ -2317,6 +2783,7 @@ void chatclient::getgrouphistory(std::string groupname) {
     }
 }
 void chatclient::handle_groupchat() {
+    bool shortchat = false;
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;
     } else {
@@ -2382,7 +2849,6 @@ void chatclient::handle_groupchat() {
         system("clear");
         std::cout << GREEN << "欢迎进入群聊[" << groupname << "]的聊天界面"
                   << RESET << std::endl;
-        std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
         if(N==1){
             std::cout << GREEN << "所有聊天记录:" << RESET << std::endl;
             std::vector<std::string> chat=SQ.getgroupchat(groupname);
@@ -2414,26 +2880,156 @@ void chatclient::handle_groupchat() {
         }
     }
     std::cout << GREEN << "开启新聊天!" << RESET << std::endl;
+    std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
+    std::cout << GREEN << "输入shortchat开启短文本聊天" << RESET << std::endl;
+    std::cout << GREEN << "输入longchat开启长文本聊天" << RESET << std::endl;
+    std::cout << GREEN << "输入sendfile开启上传文件功能" << RESET << std::endl;
+    std::cout << GREEN << "输入loadfile开启下载文件功能" << RESET << std::endl;
     while (groupchat) {
         std::string msg;
         std::string s = "\001";
         s+=GREEN;
         s += "\002";
         s += "[" + name + "]\001" + RESET + "\002:";
-        line = readline(s.c_str());
-        if (line == nullptr) {
-            stop1 = true;
-            if (chatis_login) {
-                handle_exitlogin();
+        std::string s1 = GREEN;
+        s1 += "[" + name + "]:" + RESET;
+        if (shortchat) {
+            termios nt = oldt;
+            nt.c_lflag &= ~ECHO;
+            nt.c_lflag &= ~ICANON;
+            nt.c_cc[VMIN] = 1;
+            nt.c_cc[VTIME] = 0;
+            tcsetattr(STDIN_FILENO, TCSANOW, &nt);
+            std::cout << "\033[?2004h" << std::endl;
+            std::cout << s1 << std::flush;
+            msg.clear();
+            while (shortchat) {
+                char c;
+                read(STDIN_FILENO, &c, 1);
+                if (c != '\033') {
+                    if (c == '\n') {
+                        std::cout << '\n' << std::flush;
+                        break;
+                    }
+                    msg += c;
+                    std::cout << c << std::flush;
+                    continue;
+                } else {
+                    std::string ss;
+                    ss += c;
+                    char x;
+                    while (ss.size() < 6) {
+                        read(STDIN_FILENO, &x, 1);
+                        ss += x;
+                        if (x == '~') {
+                            break;
+                        }
+                    }
+                    if (ss == "\033[200~") {
+                        std::string ssend = "\033[201~";
+                        char c1;
+                        while (true) {
+                            read(STDIN_FILENO, &c1, 1);
+                            if (c1 == '\n') {
+                                if (msg.empty()) {
+                                    continue;
+                                }
+                                std::cout << msg << std::endl;
+                                std::cout << s1 << std::flush;
+                                if (msg == "EXIT") {
+                                    groupchat = false;
+                                    break;
+                                }
+                                b = is_groupmember(groupname, account);
+                                if (!b) {
+                                    std::cout << PURPLE
+                                              << "你当前并不在该群聊里，不能进"
+                                                 "行聊天，请输入EXIT结束聊天"
+                                              << RESET << std::endl;
+                                    continue;
+                                }
+                                if (msg == "shortchat") {
+                                    shortchat = true;
+                                    continue;
+                                }
+                                if (msg == "longchat") {
+                                    shortchat = false;
+                                    continue;
+                                }
+                                if (msg == "sendfile") {
+                                    handle_chatgroupsendfile(groupname);
+                                    continue;
+                                }
+                                if (msg == "loadfile") {
+                                    handle_chatgrouploadfile(groupname);
+                                    continue;
+                                }
+                                SQ.addgroupchat(groupname, name, msg);
+                                json chat;
+                                chat["cmd"] = "groupchat";
+                                chat["account"] = account;
+                                chat["groupname"] = groupname;
+                                chat["message"] = msg;
+                                chat_conn->send(chat.dump() + '\n');
+                                msg.clear();
+                            } else {
+                                msg += c1;
+                                size_t end_pos = msg.find(ssend);
+                                if (end_pos != std::string::npos) {
+                                    msg.erase(end_pos);
+                                    std::cout << msg << std::endl;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            handle_exit();
-            _exit(0);
+            std::cout << "\033[?2004l" << std::flush;
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        } else {
+            line = readline(s.c_str());
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            msg = line;
+            free(line);
         }
-        msg = line;
-        free(line);
+        if(msg.empty()){
+            break;
+        }
         if (msg == "EXIT") {
             groupchat = false;
             break;
+        }
+        b = is_groupmember(groupname, account);
+        if (!b) {
+            std::cout
+                << PURPLE
+                << "你当前并不在该群聊里，不能进行聊天，请输入EXIT结束聊天"
+                << RESET << std::endl;
+            continue;
+        }
+        if(msg=="shortchat"){
+            shortchat = true;
+            continue;
+        }
+        if(msg=="longchat"){
+            shortchat = false;
+            continue;
+        }
+        if(msg=="sendfile"){
+            handle_chatgroupsendfile(groupname);
+            continue;
+        }
+        if(msg=="loadfile"){
+            handle_chatgrouploadfile(groupname);
+            continue;
         }
         SQ.addgroupchat(groupname, name, msg);
         json chat;
@@ -2443,7 +3039,229 @@ void chatclient::handle_groupchat() {
         chat["message"] = msg;
         chat_conn->send(chat.dump() + '\n');
     }
+    }
 }
+void chatclient::handle_chatgroupsendfile(std::string groupname1){
+   char* line = readline(PURPLE "请输入你要上传文件的路径:" GREEN);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    filepath = line;
+    free(line);
+    int fd = open(filepath.c_str(), O_RDONLY);
+    if (fd == -1) {
+        std::cout << "文件打开失败" << std::endl;
+        return;
+    }
+    struct stat st;
+
+    if (stat(filepath.c_str(), &st) == -1) {
+        std::cout << "文件不存在\n";
+        return;
+    }
+
+    uint64_t filesize = st.st_size;
+    close(fd);
+    char buf[256];
+    strcpy(buf, filepath.c_str());
+    filename = basename(buf);
+    json j;
+    j["cmd"] = "groupsendfile";
+    j["from"] = account;
+    j["groupname"] = groupname1;
+    j["filename"] = filename;
+    j["filepath"] = filepath;
+    j["filesize"] = std::to_string(filesize);
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::string ID = res["ID"];
+    fileclient_->groupsendfile(ID, filepath, filename,
+                               std::to_string(filesize),true);
+    json j1;
+    j1["cmd"]="groupchat";
+    j1["account"]=account;
+    j1["groupname"] = groupname1;
+    j1["message"] = "[上传文件]:" + filename;
+    chat_conn->send(j1.dump()+'\n');
+    SQ.addgroupchat(groupname1, name, "[上传文件]" + filename);
+}
+void chatclient::handle_chatgrouploadfile(std::string groupname2){
+    if(groupchatfile[groupname2].empty()){
+        std::cout << PURPLE << "当前并没有群聊文件需要处理!" << RESET
+                  << std::endl;
+        return;
+    }
+    for (int i = 0; i < 75; i++) {
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    for(int i=0;i<groupchatfile[groupname2].size();i++){
+        std::cout << PURPLE << "[" << i + 1
+                  << "]:    " << groupchatfile[groupname2][i]["filename"]
+                  << std::endl;
+    }
+    int num;
+    char* line = readline(PURPLE "请选择要处理的消息编号:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    while (num > groupchatfile[groupname2].size() || num < 1) {
+        line = readline(PURPLE "请输入正确的编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::cout << std::endl;
+    line = readline(PURPLE "请输入您要下载文件到本地的路径：" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    filepath = line;
+    free(line);
+    std::cout << RESET << std::endl;
+    filename = groupchatfile[groupname2][num - 1]["filename"];
+    std::vector<std::string> pathfile = getlocalfile(filepath);
+    for (auto t : pathfile) {
+        if (t == filename) {
+            std::cout << PURPLE << "你的本地路径" << filepath
+                      << "里已经存在文件" << t << ",要替换吗？" << std::endl;
+            std::string ss;
+            line = readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            ss = line;
+            free(line);
+            while (true) {
+                if (ss == "y" || ss == "Y") {
+                    break;
+                } else if (ss == "n" || ss == "N") {
+                    return;
+                } else {
+                    line = readline(PURPLE "请输入替换y|Y,放弃n|N:" RESET);
+                    if (line == nullptr) {
+                        stop1 = true;
+                        if (chatis_login) {
+                            handle_exitlogin();
+                        }
+                        handle_exit();
+                        _exit(0);
+                    }
+                    ss = line;
+                    free(line);
+                }
+            }
+        }
+    }
+    json reply;
+    reply["cmd"] = "recvfile";
+    reply["from"] = groupname2;
+    reply["filepath"] = filepath;
+    reply["ID"] = groupchatfile[groupname2][num - 1]["ID"];
+    std::string ID = groupchatfile[groupname2][num - 1]["ID"];
+    reply["filename"] = filename;
+    id = gen_req_id();
+    reply["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(reply.dump() + '\n');
+    json res = f.get();
+    std::string filesize = res["filesize"];
+    int n = fileclient_->loadfile(filename, filesize, ID, filepath, true);
+    for (int i = 0; i < 75; i++) {
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    if (n == -1) {
+        return;
+    }
+    groupchatfile[groupname2].erase(groupchatfile[groupname2].begin() + num - 1);
+    json j;
+    j["cmd"] = "groupchat";
+    j["account"] = account;
+    j["groupname"] = groupname2;
+    j["message"] = "我下载了文件" + filename;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p1;
+    std::future<json> f1 = p1.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p1);
+    }
+    chat_conn->send(j.dump() + '\n');
+    SQ.addgroupchat(groupname2,name, "我下载了文件" + filename);
 }
 void chatclient::handle_sendfile() {
     if (!chatis_login) {
@@ -2528,8 +3346,77 @@ void chatclient::handle_sendfile() {
         chat_conn->send(j.dump() + '\n');
         json res = f.get();
         std::string ID = res["ID"];
-        fileclient_->sendfile(ID, filepath, filename, std::to_string(filesize));
+        fileclient_->sendfile(ID, filepath, filename, std::to_string(filesize),false);
     }
+}
+void chatclient::handle_chatsendfile(std::string frienduser){
+    for (int i = 0; i < 75;i++){
+        std::cout  << "-";
+    }
+    std::cout << std::endl;
+    char* line = readline(PURPLE "请输入您要上传的文件路径:" GREEN);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    filepath = line;
+    free(line);
+    if (filepath.empty()) {
+        std::cout << PURPLE << "上传文件路径为空，文件打开失败!" << RESET
+                  << std::endl;
+        return;
+    }
+    int fd = open(filepath.c_str(), O_RDONLY);
+    if (fd == -1) {
+        std::cout << "文件打开失败" << std::endl;
+        return;
+    }
+    struct stat st;
+
+    if (stat(filepath.c_str(), &st) == -1) {
+        std::cout << "文件不存在\n";
+        return;
+    }
+
+    uint64_t filesize = st.st_size;
+    close(fd);
+    char buf[PATH_MAX];
+    strcpy(buf, filepath.c_str());
+    filename = basename(buf);
+    json j;
+    j["cmd"] = "sendfile";
+    j["from"] = account;
+    j["to"] = frienduser;
+    j["filename"] = filename;
+    j["filepath"] = filepath;
+    j["filesize"] = std::to_string(filesize);
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::string ID = res["ID"];
+    fileclient_->sendfile(ID, filepath, filename, std::to_string(filesize),true);
+    for (int i = 0;i<75;i++){
+        std::cout<< "-";
+    }
+    std::cout << std::endl;
+    json j1;
+    j1["cmd"]="friendchat";
+    j1["from"] = account;
+    j1["message"] = "[上传文件]:" + filename;
+    j1["to"] = frienduser;
+    SQ.addfriendchat(name, getname(frienduser), j1["message"]);
+    chat_conn->send(j1.dump() + '\n');
 }
 void chatclient::handle_groupsendfile(){
     handle_grouplist();
@@ -2599,9 +3486,10 @@ void chatclient::handle_groupsendfile(){
         chat_conn->send(j.dump() + '\n');
         json res = f.get();
         std::string ID = res["ID"];
-        fileclient_->groupsendfile(ID, filepath, filename, std::to_string(filesize));
+        fileclient_->groupsendfile(ID, filepath, filename, std::to_string(filesize),false);
     }
 }
+
 void chatclient::handle_loadfile() {
     if (!chatis_login) {
         std::cout << "请先登录!" << std::endl;

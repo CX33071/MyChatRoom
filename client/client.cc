@@ -8,7 +8,7 @@
 #include <queue>
 #include <chrono>
 #include <unordered_map>
-#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "muduo/net/TcpClient.h"
 #include <signal.h>
 #define RESET "\033[0m"
 #define GREEN "\033[1;32m"
@@ -37,7 +37,7 @@ void handle_message(chatclient*client) {
         std::unique_lock<std::mutex> lock(client->msg_mutex);
         client->msg_cv.wait(lock, [&client] { return !client->msg_map.empty()||!client->running; });
         if(!client->running){
-            break;
+             break;
         }
         for (auto it = client->msg_map.begin(); it != client->msg_map.end();) {
             std::string cmd = it->first;
@@ -45,7 +45,7 @@ void handle_message(chatclient*client) {
             while (!q.empty()) {
                 json msg = q.front();
                 q.pop();
-                if(cmd=="finish"){
+                if (cmd == "finish") {
                     json j1;
                     j1["cmd"] = "sendfinishtofileclient";
                     std::string request_id = msg.value("request_id1", "");
@@ -126,7 +126,14 @@ void handle_message(chatclient*client) {
                        }
                     }
                 } else if (cmd == "toRETRres") {
-                    std::cout << PURPLE << msg["data"] <<msg["time"]<< RESET << std::endl;
+                    std::string fromname1 = msg["from"];
+                    std::string from = client->getaccount(fromname1);
+                    std::string filename = msg["filename"];
+                    if(msg["chatload"]=="1"){
+                    }else{
+                        std::cout << PURPLE << msg["data"] << msg["time"]
+                                  << RESET << std::endl;
+                    }
                 } else if (cmd == "sendedfile") {
                     chatclient::Event e;
                     e.type = chatclient::Event::SENDFILE;
@@ -134,38 +141,56 @@ void handle_message(chatclient*client) {
                     std::string from = msg["from"];
                     json apply;
                     apply["from"] = from;
+                    std::string name1 = client->getname(from);
                     apply["filename"] = e.data["filename"];
                     apply["ID"] = e.data["ID"];
                     apply["data"] = e.data["data"];
-                    
-                    client->sendfilelist.push_back(apply);
-                    if (!client->is_blockfriend(from)) {
-                        {
-                            std::lock_guard<std::mutex> lock(client->event_mutex);
-                            client->event_queue.push(e);
-                            client->event_cv.notify_one();
+                    if(msg["chatsend"]=="1"){
+                        json jj;
+                        jj["from"] = from;
+                        jj["filename"] = e.data["filename"];
+                        jj["ID"] = e.data["ID"];
+                        jj["data"] = e.data["data"];
+                        client->chatfile[from].push_back(jj);
+                    } else {
+                        client->sendfilelist.push_back(apply);
+                        if (!client->is_blockfriend(from)) {
+                            {
+                                std::lock_guard<std::mutex> lock(
+                                    client->event_mutex);
+                                client->event_queue.push(e);
+                                client->event_cv.notify_one();
+                            }
                         }
                     }
-                }else if(cmd =="groupsendedfile"){
+                } else if (cmd == "groupsendedfile") {
                     chatclient::Event e;
                     e.type = chatclient::Event::SENDFILE;
                     e.data = msg;
                     std::string from = msg["from"];
                     json apply;
                     apply["from"] = from;
-                    
+                    std::string groupname=msg["groupname"];
                     apply["filename"] = e.data["filename"];
                     apply["ID"] = e.data["ID"];
                     apply["data"] = e.data["data"];
-                    client->sendfilelist.push_back(apply);
-                    if (!client->is_blockfriend(from)) {
-                        {
-                            std::lock_guard<std::mutex> lock(
-                                client->event_mutex);
-                            client->event_queue.push(e);
-                            client->event_cv.notify_one();
-                        }
-                    }
+                   if(msg["groupchat"]=="1"){
+                    json jj;
+                    jj["groupname"]=groupname;
+                    jj["filename"] = msg["filename"];
+                    jj["ID"] = msg["ID"];
+                    client->groupchatfile[groupname].push_back(jj);
+                   } else {
+                       client->sendfilelist.push_back(apply);
+                       if (!client->is_blockfriend(from)) {
+                           {
+                               std::lock_guard<std::mutex> lock(
+                                   client->event_mutex);
+                               client->event_queue.push(e);
+                               client->event_cv.notify_one();
+                           }
+                       }
+                   }
                 } else if (cmd == "appliedjoinres") {
                     chatclient::Event e;
                     e.type = chatclient::Event::APPLYJOINGROUP;
@@ -400,6 +425,7 @@ void mainfunction(chatclient*chatclient) {
                                 groupmenu = false;
                                 filemenu = false;
                                 msgmenu = false;
+                                system("clear");
                                 break;
                             case 11:
                                 chatclient->handle_exitlogin();
@@ -469,6 +495,7 @@ void mainfunction(chatclient*chatclient) {
                         groupmenu = false;
                         filemenu = false;
                         msgmenu = false;
+                        system("clear");
                         break;
                     case 5:
                         chatclient->handle_exitlogin();
@@ -500,7 +527,7 @@ void mainfunction(chatclient*chatclient) {
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 12) {
+                while (choice < 0 || choice > 13) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -515,7 +542,7 @@ void mainfunction(chatclient*chatclient) {
                         free(line);
                         choice = chatclient->changenum(s);
                     } else {
-                        line = readline(GREEN "请输入数字0-12:" RESET);
+                        line = readline(GREEN "请输入数字0-13:" RESET);
                         if (line == nullptr) {
                             chatclient->stop1 = true;
                             if (chatclient->chatis_login) {
@@ -565,12 +592,16 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_applyjoinmsg();
                         break;
                     case 11:
+                        chatclient->handle_changeowner();
+                        break;
+                    case 12:
                         friendmenu = false;
                         groupmenu = false;
                         filemenu = false;
                         msgmenu = false;
+                        system("clear");
                         break;
-                    case 12:
+                    case 13:
                         chatclient->handle_exitlogin();
                         break;
                     default:
@@ -638,6 +669,7 @@ void mainfunction(chatclient*chatclient) {
                         groupmenu = false;
                         filemenu = false;
                         msgmenu = false;
+                        system("clear");
                         break;
                     case 0:
                         chatclient->handle_exitlogin();
@@ -673,7 +705,7 @@ void mainfunction(chatclient*chatclient) {
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 5) {
+                while (choice < 0 || choice > 6) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -688,7 +720,7 @@ void mainfunction(chatclient*chatclient) {
                         free(line);
                         choice = chatclient->changenum(s);
                     } else {
-                        line = readline(GREEN "请输入数字0-5:" RESET);
+                        line = readline(GREEN "请输入数字0-6:" RESET);
                         if (line == nullptr) {
                             chatclient->stop1 = true;
                             if (chatclient->chatis_login) {
@@ -705,17 +737,24 @@ void mainfunction(chatclient*chatclient) {
                 switch (choice) {
                     case 1:
                         friendmenu = true;
+                        system("clear");
                         break;
                     case 2:
                         groupmenu = true;
+                        system("clear");
                         break;
                     case 3:
                         filemenu = true;
+                        system("clear");
                         break;
                     case 4:
                         msgmenu = true;
+                        system("clear");
                         break;
                     case 5:
+                        chatclient->handle_modifyname();
+                        break;
+                    case 6:
                         chatclient->handle_exitlogin();
                         break;
                     case 0:
@@ -732,36 +771,10 @@ void mainfunction(chatclient*chatclient) {
         
         }
     }
-    long isport(char* s) {
-        char* end;
-        errno = 0;
-        long port = std::strtol(s, &end, 10);
-        if(errno==ERANGE){
-            return 2;
-        }
-        if (*end != '\0') {
-            return 1;
-        }
-        if (port <= 0 || port > 65535) {
-            return 2;
-        }
-        
-        return 0;
-    }
 int main(int argc, char* argv[]) {
-    if(argc!=4){
-        std::cout << PURPLE << "请输入./client (ip) (chat_port) (file_port)"
+    if(argc!=2){
+        std::cout << PURPLE << "请输入./client (ip)"
                   << RESET << std::endl;
-        return -1;
-    }
-    long res1 = isport(argv[2]);
-    long res2 = isport(argv[3]);
-    if (res1 == 1 || res2 == 1) {
-        std::cout << PURPLE << "port请输入数字!" << RESET << std::endl;
-        return -1;
-    }
-    if (res1 == 2 || res2 == 2) {
-        std::cout << PURPLE << "port范围为1~65535!" << RESET << std::endl;
         return -1;
     }
     rl_catch_signals = 0;
@@ -769,8 +782,8 @@ int main(int argc, char* argv[]) {
     // signal(SIGTSTP, handler);
     EventLoop loop;
     L = &loop;
-    InetAddress chataddr(argv[1], std::stoi(argv[2]));
-    InetAddress fileaddr(argv[1], std::stoi(argv[3]));
+    InetAddress chataddr(argv[1], 8888);
+    InetAddress fileaddr(argv[1], 9999);
     chatclient chatclient(&loop, chataddr);
     c = &chatclient;
     FileClient fileclient(&loop, fileaddr);

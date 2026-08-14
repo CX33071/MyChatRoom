@@ -6,7 +6,7 @@
 #include <future>
 #include <queue>
 #include <unordered_map>
-#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "muduo/net/TcpClient.h"
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 class chatclient;
@@ -35,6 +35,10 @@ class FileClient {
     Timestamp begin1;
 
    public:
+   bool groupchatsend=false;
+   bool groupchatload = false;
+   bool ischatload = false;
+   bool ischatsend = false;
    chatclient* chatclient_;
    std::string fileloadID;
    TcpClient::TcpConnectionPtr file_conn;
@@ -44,23 +48,32 @@ class FileClient {
    void messagecallback(const TcpClient::TcpConnectionPtr& conn,
                         Buffer* buf,
                         Timestamp);
-   void fileprogress(long long cur, long long filesize,Timestamp t);
+   void fileprogress(long long cur, long long filesize, Timestamp t);
    void sendfile(std::string ID,
                  std::string filepath,
                  std::string filename,
-                 std::string filesize);
+                 std::string filesize,
+                 bool ischatsend);
    void groupsendfile(std::string ID,
                       std::string filepath,
                       std::string filename,
-                      std::string filesize);
+                      std::string filesize,
+                      bool groupchatsend);
    int loadfile(std::string filename,
-                 std::string filesize,
-                 std::string ID,
-                 std::string filepath);
+                std::string filesize,
+                std::string ID,
+                std::string filepath,
+                bool ischatload);
    int reloadfile(std::string filename,
                   std::string filesize,
                   std::string ID,
-                  std::string filepath,std::string downsize);
+                  std::string filepath,
+                  std::string downsize);
    std::string gen_req_id();
-   void uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b);
+   void uploadedsendfile(std::string fileid,
+                         std::string uploaded,
+                         std::string filepath,
+                         std::string filename,
+                         std::string filesize,
+                         bool b);
 };

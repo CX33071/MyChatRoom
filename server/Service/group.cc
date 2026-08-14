@@ -209,6 +209,41 @@ std::string Group::getname(std::string account) {
      mysql_.delmsg(sql3.c_str());
      return 0;
  }
+void Group::changeowner(std::string groupname,std::string owner,std::string friendaccount){
+    redis_.set(groupname + "owner:", friendaccount);
+    auto fut = redis_.sadd("ownergrouplist" + friendaccount, {groupname});
+    std::cout << "sadd的key=" << "ownergrouplist" << friendaccount << std::endl;
+    std::cout << friendaccount << "创建的群聊增加" << groupname << std::endl;
+    redis_.sync_commit();
+    redis_.srem("ownergrouplist" + owner, {groupname});
+    redis_.sync_commit();
+    std::string sql = "update owner_info set owner ='" + friendaccount +
+                      "' where groupname ='" + groupname + "'";
+    mysql_.changemsg(sql.c_str());
+    return;
+}
+bool Group::is_owner(std::string account,std::string groupname){
+    std::string res;
+    auto fut1 = redis_.exists({groupname + "owner:"});
+    redis_.sync_commit();
+    if (!fut1.get().as_integer()) {
+        std::string sql =
+            "select owner from owner_info where groupname ='" + groupname + "'";
+        res = mysql_.selectstring(sql.c_str());
+        if(!res.empty()){
+            redis_.set(groupname + "owner:", res);
+            redis_.sync_commit();
+        }
+    }
+    auto fut = redis_.get(groupname + "owner:");
+    redis_.sync_commit();
+    res = fut.get().as_string();
+    if(res!=account){
+        return false;
+    }else{
+        return true;
+    }
+}
 std::vector<std::string> Group::
      groupmembers(std::string account, std::string groupname) {
      std::vector<std::string> members;
@@ -318,14 +353,11 @@ std::vector<std::string> Group::
      return list;
  }
 std::vector<std::string> Group::ownergrouplist(std::string account){
-    std::vector<std::string> list;
-    auto futs = redis_.smembers("ownergrouplist" + account);
-    redis_.sync_commit();
-    auto reply = futs.get();
-    for (auto fut : reply.as_array()) {
-        list.push_back(fut.as_string());
-    }
-    return list;
+    std::vector<std::string> res;
+    std::string sql =
+        "select groupname from owner_info where owner ='" + account + "'";
+    res = mysql_.selectmul(sql.c_str());
+    return res;
 }
 int Group::delgroup(std::string groupname, std::string account){
     std::string owner = groupname + "owner:";

@@ -11,7 +11,7 @@
 #include <readline/readline.h>
 #include <dirent.h>
 #include <unordered_map>
-#include "/home/cx33071/muduo-/net/TcpClient.h"
+#include "muduo/net/TcpClient.h"
 #include <ncurses.h>
 #include <nlohmann/json.hpp>
 #define RESET "\033[0m"
@@ -33,6 +33,12 @@ struct filestatus{
     std::string from;
     std::string id;
 };
+struct loadfile{
+    std::string from;
+    std::string filename;
+    std::string ID;
+    bool has=false;
+};
 class FileClient;
 class chatclient {
    private:
@@ -51,14 +57,17 @@ class chatclient {
     std::mutex chat_mutex;
 
     std::atomic<bool> chatconnok=false;
-    std::mutex active_mutex;
-    std::unordered_map<std::string, std::promise<json>> active_requests;
     std::atomic<int> req_id=0;
-    std::string id;
     EventLoop *loop_;
     chatrecord cr;
 
    public:
+    std::map<std::string, std::vector<json>> chatfile;
+    std::map<std::string, std::vector<json>> groupchatfile;
+    std::mutex active_mutex;
+    std::unordered_map<std::string, std::promise<json>> active_requests;
+    std::string id;
+    loadfile lf;
     termios oldt;
     std::vector<filestatus> uploads;
     std::vector<filestatus> downloads;
@@ -124,6 +133,8 @@ class chatclient {
     void handle_uploadingfile();
     void handle_downingfile();
     void handle_downloadcheck();
+    void handle_modifyname();
+    void handle_changeowner();
     void getgrouphistory(std::string groupname);
     void handle_getfriendchat(std::string friendaccount);
     void handle_friendlist();
@@ -133,15 +144,20 @@ class chatclient {
     void handle_delmember();
     bool is_exists(std::string account);
     bool is_existsname(std::string name);
+    bool is_blocked(std::string frienduser);
     void handle_delfriend();
     void handle_creategroup();
     void handle_exitgroup();
     void handle_groupsendfile();
+    void handle_chatgroupsendfile(std::string groupname);
+    void handle_chatgrouploadfile(std::string friendaccount);
     void handle_exitlogin();
     void handle_addfriendmsg();
     void handle_applyjoinmsg();
     void handle_groupchat();
     void handle_onlinelist();
+    bool is_owner(std::string account, std::string groupname);
+    void handle_chatsendfile(std::string frienduser);
     void handle_blocklist();
     void handle_grouplist();
     void handle_uploadcheck();
@@ -153,6 +169,7 @@ class chatclient {
     bool is_existsgroup(std::string groupname);
     bool is_manager(std::string groupname, std::string count);
     bool is_groupmember(std::string groupname, std::string count);
+    void handle_chatloadfile(std::string from);
     int is_friend(std::string account);
     void printfmembers();
     void handle_ownergrouplist();

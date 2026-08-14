@@ -46,6 +46,9 @@ class Group{
     int is_manager(std::string groupname, std::string account);
     void addmanager(std::string groupname, std::string account);
     void delmanager(std::string groupname, std::string account);
+    void changeowner(std::string groupname,
+                     std::string owner,
+                     std::string account);
     void delmember(std::string groupname, std::string account);
     std::vector<std::string> grouptargetmember(std::string groupname,std::string account);
     void historygroupchat(std::string account,
@@ -54,5 +57,6 @@ class Group{
     std::vector<friendchatrecord> getgrouphistory(std::string groupname);
     void disconnectmsg(std::string account, json j);
     std::vector<std::string> getdisconnectmsg(std::string account);
+    bool is_owner(std::string account, std::string groupname);
     void destorydismsg(std::string account);
 };

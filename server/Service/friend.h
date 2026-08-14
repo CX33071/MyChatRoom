@@ -39,7 +39,8 @@ class Friend {
     bool agreeapply(std::string applyaccount, std::string appliedaccount) ;
     bool refuseapply(std::string applyaccount, std::string appliedaccount) ;
     bool block(std::string applyaccount, std::string appliedaccount) ;
-    int cancleblock(std::string applyaccount, std::string appliedaccount) ;
+    bool isblocked(std::string account, std::string friendaccount);
+    int cancleblock(std::string applyaccount, std::string appliedaccount);
     int delfriend(std::string applyaccount, std::string appliedaccount) ;
     int isfriend(std::string account, std::string friendaccount) ;
     void delfriend1(std::string account, std::string target);

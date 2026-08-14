@@ -77,6 +77,11 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
             j1["cmd"] = "sendfile_finish";
             j1["ID"] = ID;
             j1["filename"] = filename;
+            if (ischatsend) {
+                j1["chatsend"] = "1";
+            }else{
+                j1["chatsend"] = "2";
+            }
             id = gen_req_id();
             j1["request_id"] = id;
             std::promise<json> p;
@@ -92,6 +97,11 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
             std::string filename = j["filename"];
             json j1;
             j1["cmd"] = "groupsendfile_finish";
+            if(groupchatsend){
+                j1["groupchat"] = "1";
+            }else{
+                j1["groupchat"] = "2";
+            }
             j1["ID"] = ID;
             j1["filename"] = filename;
             id = gen_req_id();
@@ -142,6 +152,11 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                 json res;
                 res["cmd"] = "RETR_ok";
                 res["ID"] = fc.ID;
+                if(ischatload){
+                    res["chatload"] = "1";
+                }else{
+                    res["chatload"] = "2";
+                }
                 res["filename"] = fc.filename;
                 res["account"] = chatclient_->account;
                 chatclient_->chat_conn->send(res.dump() + "\n");
@@ -156,7 +171,10 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
 void FileClient ::sendfile(std::string ID,
                            std::string filepath,
                            std::string filename,
-                           std::string filesize){
+                           std::string filesize,bool ischatsend1){
+    if(ischatsend1){
+        ischatsend = true;
+    }
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         perror("open");
@@ -206,7 +224,8 @@ void FileClient ::sendfile(std::string ID,
 void FileClient::groupsendfile(std::string ID,
                   std::string filepath,
                   std::string filename,
-                  std::string filesize){
+                  std::string filesize,bool groupchat){
+    groupchatsend = groupchat;
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         perror("open");
@@ -256,8 +275,10 @@ void FileClient::groupsendfile(std::string ID,
 int FileClient ::loadfile(std::string filename,
                            std::string filesize,
                            std::string ID,
-                           std::string filepath){
-
+                           std::string filepath,bool ischatload1){
+    if(ischatload1){
+        ischatload = true;
+    }
     fc.filename = filename;
     fc.filesize = std::stoi(filesize);
     filepath = filepath + "/" + filename;

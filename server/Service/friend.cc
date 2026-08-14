@@ -224,12 +224,29 @@ int Friend::isfriend(std::string account, std::string friendaccount) {
     }
     return 0;
 }
+bool Friend::isblocked(std::string account,std::string friendaccount){
+    auto fut = redis_.sismember("blocked" + account, friendaccount);
+    redis_.sync_commit();
+    int num = fut.get().as_integer();
+    if(!num){
+        std::string sql="select * from block_info where account ='"+friendaccount+"'and blockfriend ='"+account+"'";
+        bool b = mysql_.select(sql.c_str());
+        if(b){
+            redis_.sadd("blocked" + account, {friendaccount});
+            redis_.sync_commit();
+            return true;
+        }else{
+            return false;
+        }
+    }
+    return true;
+}
 int Friend::isblock(std::string applyaccount, std::string appliedaccount) {
     auto fut1 = redis_.exists({appliedaccount + "key"});
     redis_.sync_commit();
     int exists = fut1.get().as_integer();
     if (!exists) {
-        std::string sql = "select password from block_info where account='" +
+        std::string sql = "select password from account_info where account='" +
                           appliedaccount + "'";
         std::string res = mysql_.selectstring(sql.c_str());
         if (res.empty()) {

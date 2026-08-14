@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -g -Wall -pthread"
 )
 
+# 最终可执行文件统一放到项目根目录的 bin/
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
     ${CMAKE_BINARY_DIR}
 )
@@ -36,8 +37,9 @@ set(PROJECT_DIR
     ${PROJECT_SOURCE_DIR}
 )
 
+# Muduo 现在已经放到了 MyChatRoom/muduo/
 set(MUDUO_DIR
-    ${PROJECT_SOURCE_DIR}/../muduo-
+    ${PROJECT_SOURCE_DIR}/muduo
 )
 
 
@@ -132,6 +134,7 @@ if(NOT MYSQL_CLIENT_LIB)
     message(FATAL_ERROR "mysqlclient library not found!")
 endif()
 
+
 include_directories(
     ${MYSQL_INCLUDE_DIR}
 )
@@ -150,6 +153,11 @@ find_library(
         /usr/lib
 )
 
+if(NOT CPP_REDIS_LIB)
+    message(FATAL_ERROR "cpp_redis library not found!")
+endif()
+
+
 find_library(
     TACOPIE_LIB
     NAMES tacopie libtacopie
@@ -157,10 +165,6 @@ find_library(
         /usr/local/lib
         /usr/lib
 )
-
-if(NOT CPP_REDIS_LIB)
-    message(FATAL_ERROR "cpp_redis library not found!")
-endif()
 
 if(NOT TACOPIE_LIB)
     message(FATAL_ERROR "tacopie library not found!")
@@ -172,6 +176,7 @@ endif()
 # =========================================================
 
 set(MUDUO_BASE
+
     ${MUDUO_DIR}/base/CurrentThread.cc
     ${MUDUO_DIR}/base/logger.cc
     ${MUDUO_DIR}/base/logStream.cc
@@ -184,6 +189,7 @@ set(MUDUO_BASE
 # =========================================================
 
 set(MUDUO_NET
+
     ${MUDUO_DIR}/net/Acceptor.cc
     ${MUDUO_DIR}/net/Buffer.cc
     ${MUDUO_DIR}/net/Channel.cc
@@ -224,8 +230,10 @@ set(SERVER_SRC
     # 数据库
     server/database/Mysql.cc
 
-    # Muduo
+    # Muduo Base
     ${MUDUO_BASE}
+
+    # Muduo Net
     ${MUDUO_NET}
 )
 
@@ -254,8 +262,10 @@ set(CLIENT_SRC
     # SQLite
     client/database/SQlite.cc
 
-    # Muduo
+    # Muduo Base
     ${MUDUO_BASE}
+
+    # Muduo Net
     ${MUDUO_NET}
 )
 
@@ -273,6 +283,7 @@ add_executable(
 target_link_libraries(
     server
 
+    # pthread
     pthread
 
     # CURL
@@ -300,6 +311,7 @@ target_link_libraries(
 target_link_libraries(
     client
 
+    # pthread
     pthread
 
     # CURL
@@ -328,7 +340,6 @@ set_target_properties(
     INSTALL_RPATH "/usr/local/lib"
 )
 
-
 set_target_properties(
     client
     PROPERTIES
@@ -344,7 +355,10 @@ set_target_properties(
 message(STATUS "========================================")
 message(STATUS "Project      : ${PROJECT_NAME}")
 message(STATUS "C++ Standard : C++${CMAKE_CXX_STANDARD}")
+message(STATUS "Project Dir  : ${PROJECT_DIR}")
 message(STATUS "Muduo        : ${MUDUO_DIR}")
+message(STATUS "Build Dir    : ${CMAKE_BINARY_DIR}")
+message(STATUS "Binary Dir   : ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 message(STATUS "MySQL        : ${MYSQL_CLIENT_LIB}")
 message(STATUS "Redis        : ${CPP_REDIS_LIB}")
 message(STATUS "Tacopie      : ${TACOPIE_LIB}")
