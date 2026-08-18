@@ -397,6 +397,7 @@ int Group::delgroup(std::string groupname, std::string account){
     redis_.del({"groupchat" + groupname});
     redis_.del({"groupchatsender" + groupname});
     redis_.srem("ownergrouplist" + account, {groupname});
+    redis_.del({groupname + "managers"});
     redis_.sync_commit();
     std::string sql2;
     sql2 = "delete from groupmember_info where groupname ='" + groupname + "'";

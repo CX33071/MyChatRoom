@@ -478,6 +478,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
                 auto it = clientmap.find(reciver);
+                std::cout << "reciver = " << reciver << std::endl;
                 // std::cout << "目标用户to=" << to << std::endl;
                 if (it != clientmap.end()) {
                     std::cout << "用户当前在线" << reciver << std::endl;
