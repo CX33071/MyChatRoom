@@ -32,6 +32,7 @@ struct filestatus{
     std::string recived;
     std::string from;
     std::string id;
+    std::string to;
 };
 struct loadfile{
     std::string from;
@@ -71,6 +72,8 @@ class chatclient {
     termios oldt;
     std::vector<filestatus> uploads;
     std::vector<filestatus> downloads;
+    std::map<std::string, std::vector<json>> chatuploads;
+    std::map<std::string, std::vector<json>> chatdownloads;
     std::atomic<bool> stop1 = false;
     SQlite SQ;
     std::atomic<bool> running = false;
@@ -151,6 +154,12 @@ class chatclient {
     void handle_groupsendfile();
     void handle_chatgroupsendfile(std::string groupname);
     void handle_chatgrouploadfile(std::string friendaccount);
+    void handle_chatuploadcheck();
+    void handle_chatdownloadcheck();
+    void handle_rechatsendfile(std::string toaccount);
+    void handle_rechatloadfile(std::string fromaccount);
+    void handle_regroupchatsendfile(std::string groupname);
+    void handle_regroupchatloadfile(std::string groupname);
     void handle_exitlogin();
     void handle_addfriendmsg();
     void handle_applyjoinmsg();

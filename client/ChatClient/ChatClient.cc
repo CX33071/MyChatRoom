@@ -547,6 +547,8 @@ void chatclient::handle_login_key() {
             SQ.open(name);
             handle_uploadcheck();
             handle_downloadcheck();
+            handle_chatuploadcheck();
+            handle_chatdownloadcheck();
         } else {
             std::cout << res["data"] << std::endl;
         }
@@ -570,19 +572,100 @@ void chatclient::handle_uploadcheck(){
         std::cout << PURPLE << "你有" << data.size() << "个文件上传失败"
                   << std::endl;
         for (int i = 0; i < data.size();i++){
-            double cur = std::stoll(data[i]["sended"].get<std::string>()) / 1000000.0;
+            double cur = std::stoll(data[i]["upsize"].get<std::string>()) / 1000000.0;
             double total = std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
             std::cout <<std::fixed<<std::setprecision(1) << "[" << i + 1 << "] " << data[i]["filename"]
                       << "    上传" << cur << "/"
                       << total<<" MB" << std::endl;
             filestatus f;
-            f.sended=data[i]["sended"];
+            f.sended=data[i]["upsize"];
             f.total=data[i]["total"];
             f.filename=data[i]["filename"];
             f.id=data[i]["fileid"];
+            f.to = data[i]["reciver"];
             uploads.push_back(f);
         }
         std::cout << "请稍候在文件菜单中查看详细" << RESET<<std::endl;
+    }
+}
+void chatclient::handle_chatuploadcheck(){
+    j["cmd"]="chatuploadcheck";
+    j["account"]=account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::vector<json> data = res.value("data", std::vector<json>{});
+    if(!data.empty()){
+        std::cout<<"你有"<<data.size()<<"个聊天文件上传失败"<<std::endl;
+        for(int i=0;i<data.size();i++){
+            double cur =
+                std::stoll(data[i]["upsize"].get<std::string>()) / 1000000.0;
+            double total =
+                std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
+            std::string toname;
+            if(!is_exists(data[i]["reciver"])){
+                toname = data[i]["reciver"];
+            }else{
+                toname = getname(data[i]["reciver"]);
+            }
+            std::cout<<std::fixed<<std::setprecision(1)<<"["<<i+1<<"]   发给"<<toname<<"的"<<data[i]["filename"]<<"  上传"<<cur<<"/"<<total<<"   MB"<<std::endl;
+            json jj;
+            jj["ID"]=data[i]["fileid"];
+            jj["sended"] = data[i]["upsize"];
+            jj["total"]=data[i]["total"];
+            jj["filename"]=data[i]["filename"];
+            chatuploads[toname].push_back(jj);
+        }
+        std::cout << "请稍候进入用户聊天界面查看详细" << RESET << std::endl;
+    }
+}
+void chatclient::handle_chatdownloadcheck(){
+    j["cmd"]="chatdownloadcheck";
+    j["account"]=account;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::vector<json> data = res.value("data", std::vector<json>{});
+    if(!data.empty()){
+        std::cout << PURPLE << "你有" << data.size() << "个聊天文件下载失败"
+                  << std::endl;
+        for (int i = 0; i < data.size(); i++) {
+            double cur =
+                std::stoll(data[i]["recived"].get<std::string>()) / 1000000.0;
+            double total =
+                std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
+            std::string fromname;
+            if(!is_exists(data[i]["from"])){
+                fromname=data[i]["from"];
+            }else{
+                fromname = getname(data[i]["from"]);
+            }
+            std::cout << std::fixed << std::setprecision(1) << "[" << i + 1
+                      << "]   " << fromname
+                      << "的文件:" << data[i]["filename"] << "    下载" << cur
+                      << "/" << total << " MB" << std::endl;
+            json jj;
+            jj["recived"]=data[i]["recived"];
+            jj["total"] = data[i]["total"];
+            jj["filename"]=data[i]["filename"];
+            jj["ID"] = data[i]["fileid"];
+            chatdownloads[fromname].push_back(jj);
+        }
+        std::cout << "请稍候进入用户聊天界面查看详细" << RESET << std::endl;
     }
 }
 void chatclient::handle_downingfile(){
@@ -671,7 +754,7 @@ void chatclient::handle_downingfile(){
    json res = f.get();
    std::string downfilepath = res["filepath"];
    std::string downsize = res["downsize"];
-   int n = fileclient_->reloadfile(filename, filesize, fileid, downfilepath,downsize);
+   int n = fileclient_->reloadfile(filename, filesize, fileid, downfilepath,downsize,false);
    if(n!=-1){
        downloads.erase(downloads.begin() + num - 1);
    }
@@ -695,18 +778,18 @@ void chatclient::handle_downloadcheck(){
                   << std::endl;
         for (int i = 0; i < data.size(); i++) {
             double cur =
-                std::stoll(data[i]["recived"].get<std::string>()) / 1000000.0;
+                std::stoll(data[i]["downsize"].get<std::string>()) / 1000000.0;
             double total =
-                std::stoll(data[i]["total"].get<std::string>()) / 1000000.0;
+                std::stoll(data[i]["filesize"].get<std::string>()) / 1000000.0;
             std::cout << std::fixed << std::setprecision(1) << "[" << i + 1
-                      << "]     来自"<<data[i]["from"] <<"  "<< data[i]["filename"] << "  下载" << cur << "/"
+                      << "]     来自"<<data[i]["sender"] <<"  "<< data[i]["filename"] << "  下载" << cur << "/"
                       << total << " MB" << std::endl;
             filestatus f;
-            f.recived = data[i]["recived"];
-            f.total = data[i]["total"];
+            f.recived = data[i]["downsize"];
+            f.total = data[i]["filesize"];
             f.filename = data[i]["filename"];
             f.id = data[i]["fileid"];
-            f.from = data[i]["from"];
+            f.from = data[i]["sender"];
             downloads.push_back(f);
         }
         std::cout << "请稍候再文件菜单中查看详细" << RESET << std::endl;
@@ -1074,6 +1157,14 @@ void chatclient::handle_friendchat() {
             }
         }
         std::cout << GREEN << "开启新的聊天!" << RESET << std::endl;
+        if(!chatuploads[friendname].empty()){
+            std::cout << PURPLE << chatuploads[friendname].size()
+                      << "个文件上传失败，输入resendfile继续上传" << std::endl;
+        }
+        if(!chatdownloads[friendname].empty()){
+            std::cout << PURPLE << chatdownloads[friendname].size()
+                      << "个文件下载失败，输入reloadfile继续下载" << std::endl;
+        }
         std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
         std::cout << GREEN << "输入shortchat开启短文本聊天" << RESET
                   << std::endl;
@@ -1082,6 +1173,10 @@ void chatclient::handle_friendchat() {
         std::cout << GREEN << "输入sendfile开启上传文件功能" << RESET
                   << std::endl;
         std::cout << GREEN << "输入loadfile开启下载文件功能" << RESET
+                  << std::endl;
+        std::cout << GREEN << "输入resendfile继续上传文件" << RESET
+                  << std::endl;
+        std::cout << GREEN << "输入reloadfile继续下载文件" << RESET
                   << std::endl;
         std::string s1 = GREEN;
         s1 += "[" + name + "]:" + RESET;
@@ -1176,6 +1271,14 @@ void chatclient::handle_friendchat() {
                                         handle_chatloadfile(current_chat);
                                         continue;
                                     }
+                                    if(msg=="resendfile"){
+                                        handle_rechatsendfile(current_chat);
+                                        continue;
+                                    }
+                                    if(msg=="reloadfile"){
+                                        handle_rechatloadfile(current_chat);
+                                        continue;
+                                    }
                                     SQ.addfriendchat(name, friendname, msg);
                                     json chat;
                                     chat["cmd"] = "friendchat";
@@ -1244,6 +1347,14 @@ void chatclient::handle_friendchat() {
             }
             if(msg=="loadfile"){
                 handle_chatloadfile(current_chat);
+                continue;
+            }
+            if (msg == "resendfile") {
+                handle_rechatsendfile(current_chat);
+                continue;
+            }
+            if (msg == "reloadfile") {
+                handle_rechatloadfile(current_chat);
                 continue;
             }
             SQ.addfriendchat(name, friendname, msg);
@@ -1380,6 +1491,8 @@ void chatclient::handle_chatloadfile(std::string from){
     json reply;
     reply["cmd"] = "recvfile";
     reply["from"] = from;
+    reply["ischat"] = "1";
+    reply["account"] = account;
     reply["filepath"] = filepath;
     reply["ID"] = chatfile[from][num-1]["ID"];
     std::string ID = chatfile[from][num-1]["ID"];
@@ -1419,6 +1532,468 @@ void chatclient::handle_chatloadfile(std::string from){
     }
     chat_conn->send(j.dump() + '\n');
     SQ.addfriendchat(name, getname(from), "我下载了文件" + filename);
+}
+void chatclient::handle_rechatsendfile(std::string toaccount){
+    std::string toname = getname(toaccount);
+    if(chatuploads[toname].empty()){
+        std::cout << PURPLE << "当前没有上传失败的文件" << RESET << std::endl;
+        return;
+    }
+    for (int i = 0; i < 75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < chatuploads[toname].size(); i++) {
+        double cur =
+            std::stoll(chatuploads[toname][i]["sended"].get<std::string>()) /
+            1000000.0;
+        double total =
+            std::stoll(chatuploads[toname][i]["total"].get<std::string>()) /
+            1000000.0;
+        std::cout << std::fixed << std::setprecision(1) <<PURPLE<< "[" << i + 1
+                  << "]   " << chatuploads[toname][i]["filename"] << "  上传"
+                  << cur << "/" << total << "   MB" << std::endl;
+    }
+        int num;
+        char* line = readline(PURPLE "请输入要继续上传文件的编号:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        std::string reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+        while (num > chatuploads[toname].size() || num < 1) {
+            line = readline(PURPLE "请输入正确的编号!请选择:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+            while (num == -1) {
+                line = readline(PURPLE "非法输入，请重新输入:" RESET);
+                if (line == nullptr) {
+                    stop1 = true;
+                    if (chatis_login) {
+                        handle_exitlogin();
+                    }
+                    handle_exit();
+                    _exit(0);
+                }
+                reads = line;
+                free(line);
+                num = changenum(reads);
+            }
+        }
+        std::cout << std::endl;
+        std::string ID = chatuploads[toname][num - 1]["ID"];
+        std::string filename1=chatuploads[toname][num-1]["filename"];
+        std::string filesize = chatuploads[toname][num - 1]["total"];
+        j["cmd"] = "resendfile";
+        j["fileid"]=ID;
+        id = gen_req_id();
+        j["request_id"] = id;
+        std::promise<json> p;
+        std::future<json> f = p.get_future();
+        {
+            std::lock_guard<std::mutex> lock(active_mutex);
+            active_requests[id] = std::move(p);
+        }
+        chat_conn->send(j.dump() + '\n');
+        json res = f.get();
+        std::string uploaded = res["uploaded"];
+        std::string filepath = res["filepath"];
+        int nn=fileclient_->uploadedsendfile(ID, uploaded, filepath, filename1,
+                                      filesize, false,true,false);
+        for (int i = 0; i < 75;i++){
+            std::cout << "-";
+        }
+        if(nn==-1){
+
+        }else{
+            chatuploads[toname].erase(chatuploads[toname].begin() + num - 1);
+        }
+        std::cout << std::endl;
+        json j1;
+        j1["cmd"] = "friendchat";
+        j1["from"] = account;
+        j1["message"] = "[上传文件]:" + filename1;
+        j1["to"] = toaccount;
+        SQ.addfriendchat(name, getname(toaccount), j1["message"]);
+        chat_conn->send(j1.dump() + '\n');
+}
+void chatclient::handle_rechatloadfile(std::string from1){
+    std::string fromname = getname(from1);
+    if (chatdownloads[fromname].empty()) {
+        std::cout<<PURPLE<<"当前并没有下载失败的文件"<<RESET<<std::endl;
+        return;
+    }
+    for(int i=0;i<chatdownloads[fromname].size();i++){
+        double cur =
+            std::stoll(chatdownloads[fromname][i]["recived"].get<std::string>()) /
+            1000000.0;
+        double total =
+            std::stoll(chatdownloads[fromname][i]["total"].get<std::string>()) /
+            1000000.0;
+        std::cout << std::fixed << std::setprecision(1) << PURPLE << "["
+                  << i + 1 << "] " << chatdownloads[fromname][i]["filename"]
+                  << "    下载" << cur << "/" << total << " MB" << RESET
+                  << std::endl;
+    }
+    char* line = readline(PURPLE "请选择你要处理的编号:" RESET);
+    int num;
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    int total = chatdownloads[fromname].size();
+    while (num > total || num < 1) {
+        line = readline(PURPLE "请输入要继续上传的文件消息编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::string fileid=chatdownloads[fromname][num-1]["ID"];
+    std::string filename1 = chatdownloads[fromname][num - 1]["filename"];
+    std::string filesize=chatdownloads[fromname][num-1]["total"];
+    j["cmd"] = "redownloadfile";
+    j["fileid"]=fileid;
+    j["from"]=from1;
+    j["filename"]=filename1;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::string downfilepath = res["filepath"];
+    std::string downsize = res["downsize"];
+    int n = fileclient_->reloadfile(filename1, filesize, fileid, downfilepath,
+                                    downsize,true);
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+        if (n != -1) {
+            chatdownloads[fromname].erase(chatdownloads[fromname].begin() +
+                                          num - 1);
+        }
+    j["cmd"] = "friendchat";
+    j["from"] = account;
+    j["to"] = from1;
+    j["message"] = "我下载了文件" + filename1;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p1;
+    std::future<json> f1 = p1.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p1);
+    }
+    chat_conn->send(j.dump() + '\n');
+    SQ.addfriendchat(name, fromname, "我下载了文件" + filename);
+}
+void chatclient::handle_regroupchatsendfile(std::string groupname1){
+    if(chatuploads[groupname1].empty()){
+        std::cout << PURPLE << "当前没有上传失败的文件" << RESET << std::endl;
+        return;
+    }
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    for (int i = 0; i < chatuploads[groupname1].size(); i++) {
+        double cur =
+            std::stoll(chatuploads[groupname1][i]["sended"].get<std::string>()) /
+            1000000.0;
+        double total =
+            std::stoll(chatuploads[groupname1][i]["total"].get<std::string>()) /
+            1000000.0;
+        std::cout << std::fixed << std::setprecision(1) << "[" << i + 1
+                  << "]   " << chatuploads[groupname1][i]["filename"]
+                  << "   上传" << cur << "/" << total << " MB" << std::endl;
+    }
+    int num;
+    char* line = readline(PURPLE "请输入要继续上传文件的编号:" RESET);
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    while (num > chatuploads[groupname1].size() || num < 1) {
+        line = readline(PURPLE "请输入正确的编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::cout << std::endl;
+    std::string ID=chatuploads[groupname1][num-1]["ID"];
+    std::string filename1=chatuploads[groupname1][num-1]["filename"];
+    std::string filesize=chatuploads[groupname1][num-1]["total"];
+    j["cmd"] = "resendfile";
+    j["fileid"] = ID;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::string uploaded = res["uploaded"];
+    std::string filepath = res["filepath"];
+    fileclient_->uploadedsendfile(ID, uploaded, filepath, filename1, filesize, true,
+                                  false,true);
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    chatuploads[groupname1].erase(
+        chatuploads[groupname1].begin() + num - 1);
+    json j1;
+    j1["cmd"] = "groupchat";
+    j1["account"] = account;
+    j1["groupname"] = groupname1;
+    j1["message"] = "[上传文件]:" + filename1;
+    chat_conn->send(j1.dump() + '\n');
+    SQ.addgroupchat(groupname1, name, "[上传文件]" + filename1);
+}
+void chatclient::handle_regroupchatloadfile(std::string groupname1){
+    if(chatdownloads[groupname1].empty()){
+        std::cout << PURPLE << "当前并没有下载失败的文件" << RESET << std::endl;
+        return;
+    }
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout<<std::endl;
+    for(int i=0;i<chatdownloads[groupname1].size();i++){
+        double cur =
+            std::stoll(
+                chatdownloads[groupname1][i]["recived"].get<std::string>()) /
+            1000000.0;
+        double total =
+            std::stoll(chatdownloads[groupname1][i]["total"].get<std::string>()) /
+            1000000.0;
+        std::cout << std::fixed << std::setprecision(1) << PURPLE << "["
+                  << i + 1 << "]    "
+                  << chatdownloads[groupname1][i]["filename"] << " 下载" << cur
+                  << "/" << total << "   MB" << std::endl;
+    }
+    char* line = readline(PURPLE "请选择你要处理的编号:" RESET);
+    int num;
+    if (line == nullptr) {
+        stop1 = true;
+        if (chatis_login) {
+            handle_exitlogin();
+        }
+        handle_exit();
+        _exit(0);
+    }
+    std::string reads = line;
+    free(line);
+    num = changenum(reads);
+    while (num == -1) {
+        line = readline(PURPLE "非法输入，请重新输入:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+    }
+    int total = chatdownloads[groupname1].size();
+    while (num > total || num < 1) {
+        line = readline(PURPLE "请输入要继续上传的文件消息编号!请选择:" RESET);
+        if (line == nullptr) {
+            stop1 = true;
+            if (chatis_login) {
+                handle_exitlogin();
+            }
+            handle_exit();
+            _exit(0);
+        }
+        reads = line;
+        free(line);
+        num = changenum(reads);
+        while (num == -1) {
+            line = readline(PURPLE "非法输入，请重新输入:" RESET);
+            if (line == nullptr) {
+                stop1 = true;
+                if (chatis_login) {
+                    handle_exitlogin();
+                }
+                handle_exit();
+                _exit(0);
+            }
+            reads = line;
+            free(line);
+            num = changenum(reads);
+        }
+    }
+    std::string fileid = chatdownloads[groupname1][num - 1]["ID"];
+    std::string filename1 = chatdownloads[groupname1][num - 1]["filename"];
+    std::string filesize = chatdownloads[groupname1][num - 1]["total"];
+    j["cmd"] = "redownloadfile";
+    j["fileid"] = fileid;
+    j["filename"] = filename1;
+    id = gen_req_id();
+    j["request_id"] = id;
+    std::promise<json> p;
+    std::future<json> f = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(active_mutex);
+        active_requests[id] = std::move(p);
+    }
+    chat_conn->send(j.dump() + '\n');
+    json res = f.get();
+    std::string downfilepath = res["filepath"];
+    std::string downsize = res["downsize"];
+    int n = fileclient_->reloadfile(filename1, filesize, fileid, downfilepath,
+                                    downsize, true);
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    if (n != -1) {
+        chatdownloads[groupname1].erase(chatdownloads[groupname1].begin() + num -
+                                      1);
+        json j;
+        j["cmd"] = "groupchat";
+        j["account"] = account;
+        j["groupname"] = groupname1;
+        j["message"] = "我下载了文件" + filename1;
+        id = gen_req_id();
+        j["request_id"] = id;
+        std::promise<json> p1;
+        std::future<json> f1 = p1.get_future();
+        {
+            std::lock_guard<std::mutex> lock(active_mutex);
+            active_requests[id] = std::move(p1);
+        }
+        chat_conn->send(j.dump() + '\n');
+        SQ.addgroupchat(groupname1, name, "我下载了文件" + filename1);
+    }
 }
 void chatclient::handle_friendlist() {
     if (!chatis_login) {
@@ -2395,7 +2970,7 @@ void chatclient::handle_sendedfile() {
                      << std::endl;
            return;
        }else{
-           std::cout << GREEN << "好友发送文件消息：" << RESET << std::endl;
+           std::cout << GREEN << "文件消息：" << RESET << std::endl;
            for (auto i = 0; i < sendfilelist.size(); i++) {
                std::cout << GREEN << "[" << i + 1 << "]"
                          << sendfilelist[i]["data"] << RESET << std::endl;
@@ -2511,8 +3086,10 @@ void chatclient::handle_sendedfile() {
             }
            }
            reply["cmd"] = "recvfile";
+           reply["ischat"] = "0";
            reply["from"] = from;
-           reply["filepath"]=filepath;
+           reply["account"] = account;
+           reply["filepath"] = filepath;
            reply["ID"] = sendfilelist[num - 1]["ID"];
            std::string ID = sendfilelist[num - 1]["ID"];
            reply["filename"] = filename;
@@ -2527,7 +3104,8 @@ void chatclient::handle_sendedfile() {
            chat_conn->send(reply.dump() + '\n');
            json res = f.get();
            std::string filesize = res["filesize"];
-           int n=fileclient_->loadfile(filename, filesize, ID, filepath,false);
+           int n =
+               fileclient_->loadfile(filename, filesize, ID, filepath, false);
            if(n!=-1){
                sendfilelist.erase(sendfilelist.begin() + num - 1);
            }
@@ -2743,7 +3321,7 @@ void chatclient::handle_uploadingfile(){
     chat_conn->send(j.dump() + '\n');
     json res = f.get();
     bool b;
-    std::string to = res["to"];
+    std::string to = uploads[num-1].to;
     if (!is_exists(to)){
         b = true;
     }else{
@@ -2752,7 +3330,7 @@ void chatclient::handle_uploadingfile(){
         std::string uploaded = res["uploaded"];
     std::string filepath = res["filepath"];
     fileclient_->uploadedsendfile(fileid, uploaded, filepath, filename,
-                                  filesize,b);
+                                  filesize,b,false,false);
     uploads.erase(uploads.begin() + num - 1);
 }
 void chatclient::getgrouphistory(std::string groupname) {
@@ -2880,11 +3458,21 @@ void chatclient::handle_groupchat() {
         }
     }
     std::cout << GREEN << "开启新聊天!" << RESET << std::endl;
+    if(!chatuploads[groupname].empty()){
+        std::cout << PURPLE << chatuploads[groupname].size()
+                  << "个文件上传失败，输入resendfile继续上传文件" << std::endl;
+    }
+    if(!chatdownloads[groupname].empty()){
+        std::cout << PURPLE << chatdownloads[groupname].size()
+                  << "个文件下载失败，输入reloadfile继续下载文件" << std::endl;
+    }
     std::cout << GREEN << "输入 EXIT 退出当前聊天" << RESET << std::endl;
     std::cout << GREEN << "输入shortchat开启短文本聊天" << RESET << std::endl;
     std::cout << GREEN << "输入longchat开启长文本聊天" << RESET << std::endl;
     std::cout << GREEN << "输入sendfile开启上传文件功能" << RESET << std::endl;
     std::cout << GREEN << "输入loadfile开启下载文件功能" << RESET << std::endl;
+    std::cout<<GREEN<<"输入resendfile继续上传文件"<<std::endl;
+    std::cout << GREEN << "输入reloadfile继续下载文件" << RESET << std::endl;
     while (groupchat) {
         std::string msg;
         std::string s = "\001";
@@ -2964,6 +3552,14 @@ void chatclient::handle_groupchat() {
                                     handle_chatgrouploadfile(groupname);
                                     continue;
                                 }
+                                if(msg=="resendfile"){
+                                    handle_regroupchatsendfile(groupname);
+                                    continue;
+                                }
+                                if(msg=="reloadfile"){
+                                    handle_regroupchatloadfile(groupname);
+                                    continue;
+                                }
                                 SQ.addgroupchat(groupname, name, msg);
                                 json chat;
                                 chat["cmd"] = "groupchat";
@@ -3031,6 +3627,14 @@ void chatclient::handle_groupchat() {
             handle_chatgrouploadfile(groupname);
             continue;
         }
+        if (msg == "resendfile") {
+            handle_regroupchatsendfile(groupname);
+            continue;
+        }
+        if (msg == "reloadfile") {
+            handle_regroupchatloadfile(groupname);
+            continue;
+        }
         SQ.addgroupchat(groupname, name, msg);
         json chat;
         chat["cmd"] = "groupchat";
@@ -3042,7 +3646,11 @@ void chatclient::handle_groupchat() {
     }
 }
 void chatclient::handle_chatgroupsendfile(std::string groupname1){
-   char* line = readline(PURPLE "请输入你要上传文件的路径:" GREEN);
+    for(int i=0;i<75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
+    char* line = readline(PURPLE "请输入你要上传文件的路径:" GREEN);
     if (line == nullptr) {
         stop1 = true;
         if (chatis_login) {
@@ -3073,6 +3681,7 @@ void chatclient::handle_chatgroupsendfile(std::string groupname1){
     json j;
     j["cmd"] = "groupsendfile";
     j["from"] = account;
+    j["ischat"] = "1";
     j["groupname"] = groupname1;
     j["filename"] = filename;
     j["filepath"] = filepath;
@@ -3088,8 +3697,12 @@ void chatclient::handle_chatgroupsendfile(std::string groupname1){
     chat_conn->send(j.dump() + '\n');
     json res = f.get();
     std::string ID = res["ID"];
-    fileclient_->groupsendfile(ID, filepath, filename,
-                               std::to_string(filesize),true);
+    fileclient_->groupsendfile(ID, filepath, filename, std::to_string(filesize),
+                               true);
+    for (int i = 0; i < 75;i++){
+        std::cout << "-";
+    }
+    std::cout << std::endl;
     json j1;
     j1["cmd"]="groupchat";
     j1["account"]=account;
@@ -3222,7 +3835,9 @@ void chatclient::handle_chatgrouploadfile(std::string groupname2){
     }
     json reply;
     reply["cmd"] = "recvfile";
+    reply["ischat"] = "1";
     reply["from"] = groupname2;
+    reply["account"] = account;
     reply["filepath"] = filepath;
     reply["ID"] = groupchatfile[groupname2][num - 1]["ID"];
     std::string ID = groupchatfile[groupname2][num - 1]["ID"];
@@ -3331,6 +3946,7 @@ void chatclient::handle_sendfile() {
         json j;
         j["cmd"] = "sendfile";
         j["from"] = account;
+        j["ischat"] = "0";
         j["to"] = frienduser;
         j["filename"] = filename;
         j["filepath"] = filepath;
@@ -3390,6 +4006,7 @@ void chatclient::handle_chatsendfile(std::string frienduser){
     json j;
     j["cmd"] = "sendfile";
     j["from"] = account;
+    j["ischat"] = "1";
     j["to"] = frienduser;
     j["filename"] = filename;
     j["filepath"] = filepath;
@@ -3471,6 +4088,7 @@ void chatclient::handle_groupsendfile(){
         json j;
         j["cmd"] = "groupsendfile";
         j["from"] = account;
+        j["ischat"] = "0";
         j["groupname"] = groupname;
         j["filename"] = filename;
         j["filepath"] = filepath;
@@ -3486,7 +4104,8 @@ void chatclient::handle_groupsendfile(){
         chat_conn->send(j.dump() + '\n');
         json res = f.get();
         std::string ID = res["ID"];
-        fileclient_->groupsendfile(ID, filepath, filename, std::to_string(filesize),false);
+        fileclient_->groupsendfile(ID, filepath, filename,
+                                   std::to_string(filesize), false);
     }
 }
 

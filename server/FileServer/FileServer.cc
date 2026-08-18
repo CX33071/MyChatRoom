@@ -56,7 +56,6 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filepath = "./file/" + filename;
                    fc.ID = j["ID"];
                    fc.filename = j["filename"];
-                   std::cout << "收到" << j.dump(4) << std::endl;
                    std::string ss = j["filesize"];
                    uint64_t filesize = std::stoi(ss);
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC,
@@ -108,7 +107,6 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filepath = "./file/" + filename;
                    fc.ID = j["ID"];
                    fc.filename = j["filename"];
-                   std::cout << "收到" << j.dump(4) << std::endl;
                    std::string ss = j["filesize"];
                    uint64_t filesize = std::stoi(ss);
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC,
@@ -132,14 +130,6 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                }
                if (cmd == "RETR") {
                    std::string ID = j["ID"];
-                   redis_.hset("file:" + ID, "status", "downing");
-                   redis_.hset("file:" + ID, "downsize", "0");
-                   redis_.sync_commit();
-                   std::string sql =
-                       "update fileid_info set status = "
-                       "'downing',downloadedsize = '0' where id = '" +
-                       ID + "'";
-                   mysql_.changemsg(sql.c_str());
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
                    std::string filepath = "./file/" + filename;
@@ -150,8 +140,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    }
                    ssize_t n;
                    char buf[4096];
-                   while ((n = read(fd, buf, sizeof(buf))) > 0) {
-                       conn->send(std::string(buf, n));
+                   while ((n = read(fd, buf, sizeof(buf))) > 0) {   if(conn){
+                           conn->send(std::string(buf, n));
+                   }
                    }
                    close(fd);
                    fc.state = FileState::PRASEJSON;
@@ -159,9 +150,12 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                }
                if (cmd == "reRETR") {
                    std::string ID = j["ID"];
+                   std::cout << "ID = " << ID << std::endl;
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
                    std::string downsize = j["downsize"];
+                   std::cout<<"filesize = "<<filesize<<std::endl;
+                   std::cout << "downsize = " << downsize << std::endl;
                    std::string filepath = "./file/" + filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
@@ -172,7 +166,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    long long downsize1 = std::stoll(downsize);
                    lseek(fd, downsize1, SEEK_SET);
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {
-                       conn->send(std::string(buf, n));
+                       if (conn) {
+                           conn->send(std::string(buf, n));
+                       }
                    }
                    close(fd);
                    std::cout << "文件上传给客户端完成" << std::endl;
@@ -181,14 +177,13 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                if (cmd == "update_downsize") {
                    std::string fileid = j["fileid"];
                    std::string downsize = j["downsize"];
-                   redis_.hset("file:" + fileid, "downsize", downsize);
-                   redis_.sync_commit();
                    std::string sql =
-                       "update fileid_info set downloadedsize ='" + downsize +
-                       "'where id ='" + fileid + "'";
+                       "update filestatus_info set downsize ='" + downsize +
+                       "'where fileid ='" + fileid + "'";
                    mysql_.changemsg(sql.c_str());
                }
                if (cmd == "Load_finish") {
+                   std::cout << "收到Load_finish" << std::endl;
                    json res;
                    std::string request_id = j.value("request_id", "");
                    if (!request_id.empty()) {
@@ -220,11 +215,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
              write(fc.fd, buf->peek(), len);
              buf->retrieve(len);
              fc.recvsize += len;
-             redis_.hset("file:" + fc.ID, "uploadedsize",std::to_string(fc.recvsize));
-             redis_.sync_commit();
-             std::string sql = "update fileid_info set uploadedsize ='" +
+             std::string sql = "update filestatus_info set upsize ='" +
                                std::to_string(fc.recvsize) +
-                               "'where id = '" + fc.ID + "'";
+                               "'where fileid = '" + fc.ID + "'";
              mysql_.changemsg(sql.c_str());
              if (fc.recvsize == fc.filesize) {
                  fc.state = FileState::PRASEJSON;

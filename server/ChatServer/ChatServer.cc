@@ -317,10 +317,16 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string filepath = j["filepath"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            std::string docu_id=file.begin(from, to, filename, filesize,filepath);
+            std::string s;
+            if (j["ischat"] == "1") {
+                s="1";
+            } else {
+                s="0";
+            }
+            std::string fileid=file.friendupbegin(from, to, filename, filesize,s,filepath);
             json res;
             res["cmd"] = "sendfileres";
-            res["ID"] = docu_id;
+            res["ID"] = fileid;
             res["data"] = "已发送上传文件请求给服务端";
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
@@ -330,16 +336,12 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if (cmd == "resendfile") {
             std::string fileid=j["fileid"];
-            std::cout << "fileid=" << fileid << std::endl;
-            std::string uploaded = file.getuploaded(fileid);
-            std::string filepath = file.getfilepath(fileid);
-            std::string to = file.getto(fileid);
-            std::cout << "resendfile to=" << to << std::endl;
+            std::string uploaded = file.getupsize(fileid);
+            std::string filepath = file.getuppath(fileid);
             json j1;
             j1["cmd"]="resendfileres";
             j1["uploaded"] = uploaded;
             j1["filepath"] = filepath;
-            j1["to"] = to;
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
@@ -348,23 +350,25 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if(cmd=="recvfile"){
             std::string from=j["from"];
+            std::string account = j["account"];
+            std::string ID = j["ID"];
             std::string filepath = j["filepath"];
             std::string filename = j["filename"];
-            std::string ID = j["ID"];
+            std::string ischat=j["ischat"];
+            std::string filesize = file.getfilesize(ID);
+            file.transferinsert(ID, account, filepath,ischat);
             json j1;
             j1["cmd"]="recvfileres";
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
             }
-            std::string filesize = file.getfilesize(ID);
-            file.insertfilepath(filepath,ID);
             j1["filesize"] = filesize;
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="redownloadfile"){
             std::string fileid=j["fileid"];
-            std::string filepath=file.getdownfilepath(fileid);
+            std::string filepath=file.getdownpath(fileid);
             std::string downsize = file.getdownsize(fileid);
             json j1;
             j1["cmd"]="redownloadfileres";
@@ -383,15 +387,25 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             if (!request_id.empty()) {
                 res["request_id"] = request_id;
             }
-            std::vector<filestatusserver> downs=file.getdownloading(account);
+            std::vector<filestatusserver> downs=file.getfrienddowninglist(account);
             std::vector<json> hh;
             for(auto t:downs){
                 json j2;
-                j2["recived"]=t.recived;
+                j2["sender"]=t.sender;
                 j2["filename"]=t.filename;
-                j2["total"]=t.total;
-                j2["from"]=t.from;
-                j2["fileid"] = t.id;
+                j2["filesize"]=t.filesize;
+                j2["downsize"] = t.downsize;
+                j2["fileid"] = t.fileid;
+                hh.push_back(j2);
+            }
+            std::vector<filestatusserver> downs1=file.getgroupdowninglist(account);
+            for (auto t : downs1) {
+                json j2;
+                j2["sender"] = t.sender;
+                j2["filename"] = t.filename;
+                j2["filesize"] = t.filesize;
+                j2["downsize"] = t.downsize;
+                j2["fileid"] = t.fileid;
                 hh.push_back(j2);
             }
             res["data"] = hh;
@@ -400,7 +414,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if(cmd=="RETR_ok"){
             std::string ID = j["ID"];
             std::string filename = j["filename"];
-            std::string from = file.getfrom(ID);
+            std::string from = file.getsender(ID);
             std::string account = j["account"];
             json j2, j1;
             // j1["cmd"] = "finish";
@@ -413,13 +427,15 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["cmd"] = "toRETRres";
             if(j["chatload"]=="1"){
                 j2["chatload"] = "1";
-            }else{
+            } else {
                 j2["chatload"] = "2";
             }
-            std::string to = file.finish(ID);
-            file.setloadfinish(ID);
+            file.downfinish(ID);
             std::string name = verifycode.getname(account);
             j2["data"] = "用户" + name + "下载了您发送的文件" + filename;
+            std::cout<<"from = "<<from<<std::endl;
+            std::cout << "reciver = " << account << std::endl;
+            std::cout << " recivername = " << name << std::endl;
             j2["time"] = get_current_time();
             j2["from"]=name;
             j2["filename"] = filename;
@@ -430,7 +446,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 if (it != clientmap.end()) {
                     target_conn = it->second;
                 } else {
-                    G.disconnectmsg(to, j2);
+                    G.disconnectmsg(from, j2);
                 }
             }
             if (target_conn) {
@@ -441,8 +457,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if(cmd=="sendfile_finish"){
             std::string ID = j["ID"];
             std::string filename=j["filename"];
-            std::string to=file.finish(ID);
-            std::string from = file.getfrom(ID);
+            file.upfinish(ID);
+            std::string from = file.getsender(ID);
+            std::string reciver = file.getreciver(ID);
             json j2;
             j2["cmd"]="sendedfile";
             if(j["chatsend"]=="1"){
@@ -460,14 +477,14 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             TcpConnectionPtr target_conn;
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(to);
+                auto it = clientmap.find(reciver);
                 // std::cout << "目标用户to=" << to << std::endl;
                 if (it != clientmap.end()) {
-                    std::cout << "用户当前在线" << to << std::endl;
+                    std::cout << "用户当前在线" << reciver << std::endl;
                     target_conn = it->second;
                 } else {
                     std::cout << "用户当前不在线" << std::endl;
-                    G.disconnectmsg(to, j2);
+                    G.disconnectmsg(reciver, j2);
                 }
             }
             if (target_conn) {
@@ -479,10 +496,11 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if (cmd == "groupsendfile_finish") {
             std::string ID = j["ID"];
-            std::cout << "groupsendfile_finish ID=" << ID << std::endl;
+            file.upfinish(ID);
             std::string filename = j["filename"];
-            std::string groupname1 = file.finish(ID);
-            std::string from = file.getfrom(ID);
+            std::cout << "进入finish" << std::endl;
+            std::string groupname1 = file.getgroupname(ID);
+            std::string from = file.getsender(ID);
             json j2;
             if(j["groupchat"]=="1"){
                 j2["groupchat"] = "1";
@@ -502,9 +520,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["ID"] = ID;
             std::vector<std::string> res =
                 G.grouptargetmember(groupname1, from);
+            std::cout << "res.size = " << res.size() << std::endl;
             for (int i = 0; i < res.size(); i++) {
                 std::string target = res[i];
-                std::cout << "target = " << target << std::endl;
                 TcpConnectionPtr target_conn;
                 {
                     std::lock_guard<std::mutex> lock(g_mutex);
@@ -678,14 +696,90 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             if (!request_id.empty()) {
                 res["request_id"] = request_id;
             }
-            std::vector<filestatusserver> ups = file.getuploading(account);
+            std::vector<filestatusserver> ups = file.getfriendupinglist(account);
+            std::vector<filestatusserver> ups1 =
+                file.getgroupupinglist(account);
             std::vector<json> hh;
             for(auto t:ups){
                 json j2;
-                j2["sended"] = t.sended;
+                j2["upsize"] = t.upsize;
                 j2["filename"]=t.filename;
-                j2["total"]=t.total;
-                j2["fileid"] = t.id;
+                j2["total"]=t.filesize;
+                j2["fileid"] = t.fileid;
+                j2["reciver"] = t.reciver;
+                hh.push_back(j2);
+            }
+            for (auto t : ups1) {
+                json j2;
+                j2["upsize"] = t.upsize;
+                j2["filename"] = t.filename;
+                j2["total"] = t.filesize;
+                j2["fileid"] = t.fileid;
+                j2["reciver"] = t.reciver;
+                hh.push_back(j2);
+            }
+            res["data"] = hh;
+            conn->send(res.dump() + '\n');
+        }
+        if(cmd=="chatuploadcheck"){
+            std::string account=j["account"];
+            json res;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                res["request_id"] = request_id;
+            }
+            std::vector<filestatusserver> ups = file.getchatfriendupinglist(account);
+            std::vector<filestatusserver> ups1 =
+                file.getchatgroupupinglist(account);
+            std::vector<json> hh;
+            for (auto t : ups) {
+                json j2;
+                j2["reciver"] = t.reciver;
+                j2["filename"] = t.filename;
+                j2["total"] = t.filesize;
+                j2["fileid"] = t.fileid;
+                j2["upsize"] = t.upsize;
+                hh.push_back(j2);
+            }
+            for(auto t:ups1){
+                json j2;
+                j2["reciver"] = t.reciver;
+                j2["filename"] = t.filename;
+                j2["total"] = t.filesize;
+                j2["fileid"] = t.fileid;
+                j2["upsize"] = t.upsize;
+                hh.push_back(j2);
+            }
+            res["data"] = hh;
+            conn->send(res.dump() + '\n');
+        }
+        if(cmd=="chatdownloadcheck"){
+            std::string account = j["account"];
+            json res;
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                res["request_id"] = request_id;
+            }
+            std::vector<filestatusserver> downs = file.getchatfrienddowninglist(account);
+            std::vector<filestatusserver> downs1 =
+                file.getchatgroupdowninglist(account);
+            std::vector<json> hh;
+            for (auto t : downs) {
+                json j2;
+                j2["recived"] = t.downsize;
+                j2["filename"] = t.filename;
+                j2["total"] = t.filesize;
+                j2["from"] = t.sender;
+                j2["fileid"] = t.fileid;
+                hh.push_back(j2);
+            }
+            for (auto t : downs1) {
+                json j2;
+                j2["recived"] = t.downsize;
+                j2["filename"] = t.filename;
+                j2["total"] = t.filesize;
+                j2["from"] = t.sender;
+                j2["fileid"] = t.fileid;
                 hh.push_back(j2);
             }
             res["data"] = hh;
@@ -760,10 +854,17 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string groupname = j["groupname"];
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
-            std::string docu_id=file.begin(from, groupname, filename, filesize,filepath);
+            std::string s;
+            if (j["ischat"] == "1") {
+                s="1";
+            } else {
+                s = "0";
+            }
+            std::string fileid =
+                file.groupupbegin(from, groupname, filename, filesize,s, filepath);
             json res;
             res["cmd"] = "sendfileres";
-            res["ID"] = docu_id;
+            res["ID"] = fileid;
             res["data"] = "已发送上传文件请求给服务端";
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {

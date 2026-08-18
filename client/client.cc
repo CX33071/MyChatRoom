@@ -174,22 +174,22 @@ void handle_message(chatclient*client) {
                     apply["filename"] = e.data["filename"];
                     apply["ID"] = e.data["ID"];
                     apply["data"] = e.data["data"];
-                   if(msg["groupchat"]=="1"){
-                    json jj;
-                    jj["groupname"]=groupname;
-                    jj["filename"] = msg["filename"];
-                    jj["ID"] = msg["ID"];
-                    client->groupchatfile[groupname].push_back(jj);
-                   } else {
-                       client->sendfilelist.push_back(apply);
-                       if (!client->is_blockfriend(from)) {
-                           {
-                               std::lock_guard<std::mutex> lock(
-                                   client->event_mutex);
-                               client->event_queue.push(e);
-                               client->event_cv.notify_one();
-                           }
-                       }
+                    if (msg["groupchat"] == "1") {
+                        json jj;
+                        jj["groupname"] = groupname;
+                        jj["filename"] = msg["filename"];
+                        jj["ID"] = msg["ID"];
+                        client->groupchatfile[groupname].push_back(jj);
+                    } else {
+                        client->sendfilelist.push_back(apply);
+                        if (!client->is_blockfriend(from)) {
+                            {
+                                std::lock_guard<std::mutex> lock(
+                                    client->event_mutex);
+                                client->event_queue.push(e);
+                                client->event_cv.notify_one();
+                            }
+                        }
                    }
                 } else if (cmd == "appliedjoinres") {
                     chatclient::Event e;

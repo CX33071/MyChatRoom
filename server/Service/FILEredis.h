@@ -17,27 +17,44 @@
 #include "database/Mysql.h"
 #include "friend.h"
 using json = nlohmann::json;
-class FILEredis{
-    private:
-     cpp_redis::client redis_;
-     Mysql mysql_;
+class FILEredis {
+   private:
+    Mysql mysql_;
 
-    public:
-     FILEredis();
-     std::string begin(std::string from,
-                std::string to,
-                std::string filename,
-                std::string filesize,std::string filepath);
-     std::string finish(std::string ID);
-     std::string getfrom(std::string ID);
-     std::string getto(std::string ID);
-     std::string getfilesize(std::string ID);
-     std::string getuploaded(std::string fileid);
-     void setloadfinish(std::string ID);
-     std::vector<filestatusserver> getuploading(std::string sender);
-     std::string getfilepath(std::string fileid);
-     void insertfilepath(std::string filepath,std::string ID);
-     std::string getdownfilepath(std::string fileid);
-     std::vector<filestatusserver> getdownloading(std::string account);
-     std::string getdownsize(std::string fileid);
+   public:
+    FILEredis();
+    std::string friendupbegin(std::string sender,
+                              std::string reciver,
+                              std::string filename,
+                              std::string filesize,
+                              std::string ischat,
+                              std::string uppath);
+    std::string groupupbegin(std::string sender,
+                             std::string groupname,
+                             std::string filename,
+                             std::string filesize,
+                             std::string ischat,
+                             std::string uppath);
+    std::string getsender(std::string fileid);
+    std::string getreciver(std::string fileid);
+    std::string getgroupname(std::string fileid);
+    std::string getfilesize(std::string fileid);
+    std::string getdownpath(std::string fileid);
+    std::string getuppath(std::string fileid);
+    std::string getupsize(std::string fileid);
+    std::string getdownsize(std::string fileid);
+    std::string getfilename(std::string fileid);
+    std::vector<filestatusserver> getfriendupinglist(std::string account);
+    std::vector<filestatusserver> getchatfriendupinglist(std::string account);
+    std::vector<filestatusserver> getgroupupinglist(std::string account);
+    std::vector<filestatusserver> getchatgroupupinglist(std::string account);
+    std::vector<filestatusserver> getfrienddowninglist(std::string account);
+    std::vector<filestatusserver> getchatfrienddowninglist(std::string account);
+    std::vector<filestatusserver> getgroupdowninglist(std::string account);
+    std::vector<filestatusserver> getchatgroupdowninglist(std::string account);
+    void transferinsert(std::string fileid,
+                        std::string account,
+                        std::string downpath,std::string ischat);
+    void upfinish(std::string fileid);
+    void downfinish(std::string fileid);
 };

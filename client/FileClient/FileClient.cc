@@ -276,7 +276,7 @@ int FileClient ::loadfile(std::string filename,
                            std::string filesize,
                            std::string ID,
                            std::string filepath,bool ischatload1){
-    if(ischatload1){
+    if (ischatload1) {
         ischatload = true;
     }
     fc.filename = filename;
@@ -287,6 +287,8 @@ int FileClient ::loadfile(std::string filename,
     fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (fc.fd == -1) {
         std::cout << "文件创建失败" << std::endl;
+        std::cerr << "文件创建失败: " << std::strerror(errno)
+                  << " (errno=" << errno << ")" << std::endl;
         return -1;
     }
     json j;
@@ -311,7 +313,9 @@ int FileClient ::loadfile(std::string filename,
     std::cout << PURPLE << "文件下载成功!" << RESET << std::endl;
     return 0;
 }
-void FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b){
+int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b,bool ischatsend1,bool groupchat){
+    ischatsend = ischatsend1;
+    groupchatsend = groupchat;
     int fd = open(filepath.c_str(), O_RDONLY);
     char* end = 0;
     long uploadedsize = std::strtol(uploaded.c_str(), &end, 10);
@@ -359,15 +363,18 @@ void FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
     std::cout << std::endl;
     if (cancel) {
         std::cout << PURPLE << "上传取消" << RESET << std::endl;
+        return -1;
     } else {
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
+        return 0;
     }
 }
 int FileClient::reloadfile(std::string filename,
                std::string filesize,
                std::string ID,
                std::string filepath,
-               std::string downsize){
+               std::string downsize,bool ischatload1){
+    ischatload = ischatload1;
     fc.filename = filename;
     fc.filesize = std::stoi(filesize);
     filepath = filepath + "/" + filename;
@@ -375,6 +382,8 @@ int FileClient::reloadfile(std::string filename,
     fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY , 0644);
     if (fc.fd == -1) {
         std::cout << "文件创建失败" << std::endl;
+        std::cerr << "文件创建失败: " << std::strerror(errno)
+                  << " (errno=" << errno << ")" << std::endl;
         return -1;
     }
     long long downsize1 = stoll(downsize);

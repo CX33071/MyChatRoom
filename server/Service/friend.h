@@ -20,12 +20,13 @@ struct friendchatrecord {
     std::string content;
 };
 struct filestatusserver{
-    std::string sended;
-    std::string total;
+    std::string upsize;
+    std::string filesize;
     std::string filename;
-    std::string from;
-    std::string recived;
-    std::string id;
+    std::string sender;
+    std::string downsize;
+    std::string fileid;
+    std::string reciver;
 };
 bool sendn(int fd, char* data, ssize_t len);
 class Friend {
@@ -55,4 +56,5 @@ class Friend {
     std::vector<std::string> friendlist(std::string account);
     std::vector<std::string> blocklist(std::string account);
     std::vector<std::string> onlinelist(std::string account);
+    void transferinsert(std::string fileid, std::string account);
 };
