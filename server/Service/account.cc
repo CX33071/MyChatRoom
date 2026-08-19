@@ -382,7 +382,10 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
 }
 void Verifycode::exitlogin(std::string account){
     redis_.del({"online" + account});
+    std::string s = "del online" + account;
+    std::cout << s << std::endl;
     redis_.sync_commit();
+    std::cout << "redis 删除执行" << std::endl;
     std::string sql =
         "update account_online_info set online=0 where account='" + account +
         "'";

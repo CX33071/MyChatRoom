@@ -74,7 +74,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account;
             for (auto a : clientmap) {
                 if(a.second==conn){
-                    account == a.first;
+                    account = a.first;
                 }
             }
             clientconntime[account] = Timestamp::now();
@@ -100,6 +100,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
             }
+            j1["cmd"]="getnameres";
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="isexistsname"){
@@ -238,7 +239,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "keysignin") {
             std::string account = j["account"];
             std::string password = j["password"];
+            std::cout << "account = "<<account<<std::endl;
+            std::cout << "password = " << password << std::endl;
             int res = verifycode.loginwithkey(account, password);
+            std::cout << "loginwithkey回复" << std::endl;
             json j1;
             j1["cmd"] = "keysignin_res";
             if (res == 0) {
@@ -252,6 +256,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 } else {
                 }
                 conn->send(j1.dump() + '\n');
+                std::cout << "密码登录回复给客户端发过去" << std::endl;
                 std::vector<std::string> disconnectmsg =
                     G.getdisconnectmsg(account);
                 G.destorydismsg(account);

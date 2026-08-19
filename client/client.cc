@@ -27,10 +27,23 @@ std::string get_current_time() {
     Timestamp now = Timestamp::now();
     return now.toFormattedString(true);
 }
+void resettermios() {
+    termios term;
+    tcgetattr(STDIN_FILENO, &term);
+    term.c_iflag |= ICRNL;
+    term.c_lflag |= ICANON;
+    term.c_lflag |= ECHO;
+    term.c_lflag |= ISIG;
+    term.c_oflag |= OPOST;
+    term.c_cc[VMIN] = 1;
+    term.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSANOW, &term);
+}
 void handler(int) {
     stop = true;
     c->stop1 = true;
     c->handle_exit();
+    resettermios();
 }
 void handle_message(chatclient*client) {
     while (client->running) {
@@ -625,7 +638,7 @@ void mainfunction(chatclient*chatclient) {
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 6) {
+                while (choice < 0 || choice > 7) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -640,7 +653,7 @@ void mainfunction(chatclient*chatclient) {
                         free(line);
                         choice = chatclient->changenum(s);
                     } else {
-                        line = readline(GREEN "请输入数字0-6:" RESET);
+                        line = readline(GREEN "请输入数字0-7:" RESET);
                         if (line == nullptr) {
                             chatclient->stop1 = true;
                             if (chatclient->chatis_login) {
@@ -778,8 +791,8 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     rl_catch_signals = 0;
-    // signal(SIGINT, handler);
-    // signal(SIGTSTP, handler);
+    signal(SIGINT, handler);
+    signal(SIGTSTP, handler);
     EventLoop loop;
     L = &loop;
     InetAddress chataddr(argv[1], 8888);

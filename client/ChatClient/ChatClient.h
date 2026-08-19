@@ -63,6 +63,9 @@ class chatclient {
     chatrecord cr;
 
    public:
+    static chatclient* chatptr;
+    bool shortchat = true;
+    std::string chatfriendname;
     std::map<std::string, std::vector<json>> chatfile;
     std::map<std::string, std::vector<json>> groupchatfile;
     std::mutex active_mutex;
@@ -107,6 +110,7 @@ class chatclient {
     std::condition_variable msg_cv;
     chatclient(EventLoop* loop, const InetAddress& addr);
     void sendheart();
+    void showchatmenu(int index);
     void setfileclient(FileClient* client);
     void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
     bool is_online(std::string account);
@@ -115,6 +119,7 @@ class chatclient {
                          Timestamp);
     void main_menu();
     void friend_menu();
+    void clearchatmenu();
     void group_menu();
     void file_menu();
    static int emptyfunction(int n1, int n2);
@@ -186,4 +191,5 @@ class chatclient {
     std::string gen_req_id();
     std::string cinkey();
     bool isQQemail(std::string email);
+    static int exechatmenu(int n1, int n2);
 };
