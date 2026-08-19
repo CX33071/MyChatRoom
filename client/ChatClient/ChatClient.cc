@@ -1186,6 +1186,16 @@ void chatclient::handle_getfriendchat(std::string friendaccount){
         }
     }
 }
+void chatclient::erase_utf8(std::string& msg) {
+    if (msg.empty()){
+        return;
+    }
+    int i = msg.size() - 1;
+    while (i >= 0 && ((unsigned char)msg[i] & 0xC0) == 0x80) {
+        i--;
+    }
+    msg.erase(i);
+}
 void chatclient::showchatmenu(int index){
     std::vector<std::string> menu = {"  /开启短文本模式",
                                      "  /开启长文本模式",
@@ -1429,13 +1439,21 @@ void chatclient::handle_friendchat() {
                                 break;
                             }
                         }
-                    }else if (c == 127 || c == '\b') {
+                    } else if (c == 127 || c == '\b') {
                         if (!msg.empty()) {
-                            msg.pop_back();
-                            std::cout << "\b \b" << std::flush;
+                            bool chinese = false;
+                            if ((unsigned char)msg.back() >= 0x80)
+                                chinese = true;
+                            erase_utf8(msg);
+                            if (chinese){
+                                std::cout << "\b \b\b \b";
+                            }else{
+                                std::cout << "\b \b";
+                            }
+                            std::cout.flush();
                         }
                         continue;
-                    }else if (c != '\033') {
+                    } else if (c != '\033') {
                         if (c == '\n') {
                             std::cout << '\n' << std::flush;
                             break;
@@ -3726,8 +3744,16 @@ void chatclient::handle_groupchat() {
                     }
                 } else if (c == 127 || c == '\b') {
                     if (!msg.empty()) {
-                        msg.pop_back();
-                        std::cout << "\b \b" << std::flush;
+                        bool chinese = false;
+                        if ((unsigned char)msg.back() >= 0x80)
+                            chinese = true;
+                        erase_utf8(msg);
+                        if (chinese) {
+                            std::cout << "\b \b\b \b";
+                        } else {
+                            std::cout << "\b \b";
+                        }
+                        std::cout.flush();
                     }
                     continue;
                 } else if (c != '\033') {

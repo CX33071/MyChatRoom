@@ -111,6 +111,7 @@ class chatclient {
     chatclient(EventLoop* loop, const InetAddress& addr);
     void sendheart();
     void showchatmenu(int index);
+    void erase_utf8(std::string& msg);
     void setfileclient(FileClient* client);
     void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
     bool is_online(std::string account);
