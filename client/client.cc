@@ -23,6 +23,7 @@ std::atomic<bool> msgmenu = false;
 EventLoop* L;
 chatclient* c;
 termios old_term;
+bool is_con = false;
 std::string get_current_time() {
     Timestamp now = Timestamp::now();
     return now.toFormattedString(true);
@@ -47,12 +48,18 @@ void handler(int) {
 }
 void handle_message(chatclient*client) {
     while (client->running) {
-        std::unique_lock<std::mutex> lock(client->msg_mutex);
-        client->msg_cv.wait(lock, [&client] { return !client->msg_map.empty()||!client->running; });
-        if(!client->running){
-             break;
+        std::unordered_map<std::string, std::queue<json>> temp;
+        {
+            std::unique_lock<std::mutex> lock(client->msg_mutex);
+            client->msg_cv.wait(lock, [&client] {
+                return !client->msg_map.empty() || !client->running;
+            });
+            if (!client->running) {
+                break;
+            }
+            temp.swap(client->msg_map);
         }
-        for (auto it = client->msg_map.begin(); it != client->msg_map.end();) {
+        for (auto it = temp.begin(); it != temp.end();) {
             std::string cmd = it->first;
             std::queue<json>& q = it->second;
             while (!q.empty()) {
@@ -71,10 +78,12 @@ void handle_message(chatclient*client) {
                     e.type = chatclient::Event::FRIENDCHAT;
                     std::string from = msg["account"];
                     std::string content = msg["message"];
-                    std::string name1 = client->getname(from);
+                    std::string name1 = msg["fromname"];
                     std::string name2 = client->name;
-                    std::string q =
-                        "\n收到来自[" + name1 + "]的消息:" + content;
+                    client->chatmessage[name1]++;
+                    std::string q = "\n收到来自[";
+                    q += name1 + "]的" +
+                         std::to_string(client->chatmessage[name1]) + "条消息";
                     e.data["data"]=q;
                     e.data["time"] = msg["time"];
                     client->SQ.addfriendchat(name1, name2, content);
@@ -85,7 +94,6 @@ void handle_message(chatclient*client) {
                         std::cout << GREEN << "[" << name2
                                   << "]:    " << RESET;
                         std::cout.flush();
-
                     } else {
                         if(!client->is_blockfriend(from)){
                             {
@@ -99,11 +107,15 @@ void handle_message(chatclient*client) {
                     chatclient::Event e;
                     e.type = chatclient::Event::GROUPCHAT;
                     std::string from = msg["account"];
-                    std::string name = client->getaccount(from);
+                    std::string name = msg["name"];
                     std::string content = msg["message"];
                     std::string groupname = msg["groupname"];
-                   std::string content1 = "\n收到来自群聊[" + groupname + "]的成员:[" + name +
-                          "]的消息:" + content;
+                    client->groupmessage[groupname]++;
+                    std::string content1 = "\n收到来自群聊[";
+                    content1 +=
+                        groupname + "]的成员:[" + name + "]的" +
+                        std::to_string(client->groupmessage[groupname]) +
+                        "条消息";
                     e.data["data"] = content1;
                     e.data["time"] = msg["time"];
                     client->SQ.addgroupchat(groupname, name, content);
@@ -122,6 +134,7 @@ void handle_message(chatclient*client) {
                         }
                     }
                 } else if (cmd == "addedres") {
+                    std::cout << "进入addedres" << std::endl;
                     chatclient::Event e;
                     e.type = chatclient::Event::Friendadd;
                     e.data = msg;
@@ -189,10 +202,10 @@ void handle_message(chatclient*client) {
                     apply["data"] = e.data["data"];
                     if (msg["groupchat"] == "1") {
                         json jj;
-                        jj["groupname"] = groupname;
+                        jj["from"] = groupname;
                         jj["filename"] = msg["filename"];
                         jj["ID"] = msg["ID"];
-                        client->groupchatfile[groupname].push_back(jj);
+                        client->chatfile[groupname].push_back(jj);
                     } else {
                         client->sendfilelist.push_back(apply);
                         if (!client->is_blockfriend(from)) {
@@ -228,7 +241,7 @@ void handle_message(chatclient*client) {
                 }
             }
             if (q.empty()) {
-                it = client->msg_map.erase(it);
+                it = temp.erase(it);
             } else {
                 ++it;
             }
@@ -249,8 +262,10 @@ void handle_event(chatclient*client) {
         json reply;
         if (e.type == chatclient::Event::Friendadd) {
             std::cout << std::endl;
-            std::cout << PURPLE << e.data["time"] << "[系统消息]："
-                      << e.data["message"] << "请稍后在菜单中查看" << "\n"
+            std::cout << PURPLE
+                      << e.data["time"].get<std::string>().substr(0, 16)
+                      << "[系统消息]：" << e.data["message"]
+                      << "请稍后在菜单中查看" << "\n"
                       << "请继续菜单输入:" << RESET << std::endl;
         }else if(e.type==chatclient::Event::SENDFILE){
             std::cout << std::endl;
@@ -260,23 +275,28 @@ void handle_event(chatclient*client) {
         }
          else if (e.type == chatclient::Event::GroupInvite) {
             std::cout << std::endl;
-            std::cout << PURPLE << e.data["time"]
+            std::cout << PURPLE
+                      << e.data["time"].get<std::string>().substr(0, 16)
                       << "[系统消息]:" << e.data["data"] << "请稍候在菜单中查看"
                       << "\n"
                       << "请继续菜单输入:" << RESET << std::endl;
         }else if(e.type==chatclient::Event::FRIENDCHAT){
             std::cout << std::endl;
-            std::cout << PURPLE<<e.data["time"] << "[系统消息]:" << e.data["data"]
-                      << "请稍候在菜单中查看" << "\n"
-                      << "请继续菜单输入:" << RESET << std::endl;
+            std::cout << PURPLE << e.data["time"].get<std::string>().substr(0, 16)
+            << "[系统消息]:" << e.data["data"] << "请稍候在菜单中查看" << "\n"
+            << "请继续菜单输入:" << RESET << std::endl;
         } else if (e.type == chatclient::Event::GROUPCHAT) {
             std::cout << std::endl;
-            std::cout << PURPLE<<e.data["time"] << "[系统消息]:" << e.data["data"]
-                      << "请稍候在菜单中查看" << "\n"
+            std::cout << PURPLE
+                      << e.data["time"].get<std::string>().substr(0, 16)
+                      << "[系统消息]:" << e.data["data"] << "请稍候在菜单中查看"
+                      << "\n"
                       << "请继续菜单输入:" << RESET << std::endl;
         }else if(e.type==chatclient::Event::APPLYJOINGROUP){
             std::cout << std::endl;
-            std::cout << PURPLE <<e.data["time"]<< "\n[系统消息]:" << e.data["data"]
+            std::cout << PURPLE
+                      << e.data["time"].get<std::string>().substr(0, 16)
+                      << "\n[系统消息]:" << e.data["data"]
                       << "请稍候在菜单中查看:" << "\n"
                       << "请继续菜单输入:" << RESET << std::endl;
         }
@@ -290,18 +310,23 @@ void mainfunction(chatclient*chatclient) {
             int choice;
             std::string s;
             char* line = readline(GREEN "请选择:" RESET);
-            if(line==nullptr){
+            if (line == nullptr) {
                 chatclient->stop1 = true;
-                if(chatclient->chatis_login){
+                if (chatclient->chatis_login) {
                     chatclient->handle_exitlogin();
                 }
                 chatclient->handle_exit();
-                break;
+                return;
+            }
+            if (line[0] == '\0') {
+                std::cout << "取消选择" << std::endl;
+                free(line);
+                continue;
             }
             s = line;
             free(line);
             choice=chatclient->changenum(s);
-            while(choice<0||choice>5){
+            while((choice<0||choice>5)){
                 if (choice == -1) {
                     line = readline(GREEN "请输入数字:" RESET);
                     if (line == nullptr) {
@@ -310,6 +335,11 @@ void mainfunction(chatclient*chatclient) {
                             chatclient->handle_exitlogin();
                         }
                         chatclient->handle_exit();
+                        return;
+                    }
+                    if (line[0] == '\0') {
+                        std::cout << "取消选择" << std::endl;
+                        free(line);
                         break;
                     }
                     s = line;
@@ -323,6 +353,11 @@ void mainfunction(chatclient*chatclient) {
                             chatclient->handle_exitlogin();
                         }
                         chatclient->handle_exit();
+                        return;
+                    }
+                    if (line[0] == '\0') {
+                        std::cout << "取消选择" << std::endl;
+                        free(line);
                         break;
                     }
                     s = line;
@@ -367,12 +402,17 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                     }
                     chatclient->handle_exit();
-                    break;
+                    return;
+                }
+                if (line[0] == '\0') {
+                    std::cout << "取消选择" << std::endl;
+                    free(line);
+                    continue;
                 }
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 11) {
+                while ((choice < 0 || choice > 11)) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -381,6 +421,12 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
@@ -394,12 +440,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
                         free(line);
                         choice = chatclient->changenum(s);
                     }
+                }
+                if(is_con){
+                    is_con = false;
+                    continue;
                 }
                 switch (choice) {
                             case 1:
@@ -459,12 +515,17 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                     }
                     chatclient->handle_exit();
-                    break;
+                    return;
+                }
+                if (line[0] == '\0') {
+                    std::cout << "取消选择" << std::endl;
+                    free(line);
+                    continue;
                 }
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 5) {
+                while ((choice < 0 || choice > 5)) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -473,6 +534,12 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
@@ -486,12 +553,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
                         free(line);
                         choice = chatclient->changenum(s);
                     }
+                }
+                if(is_con){
+                    is_con = false;
+                    continue;
                 }
                 switch (choice) {
                     case 1:
@@ -535,12 +612,17 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                     }
                     chatclient->handle_exit();
-                    break;
+                    return;
+                }
+                if (line[0] == '\0') {
+                    std::cout << "取消选择" << std::endl;
+                    free(line);
+                    continue;
                 }
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 13) {
+                while ((choice < 0 || choice > 13)) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -549,6 +631,12 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
@@ -562,12 +650,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
                         free(line);
                         choice = chatclient->changenum(s);
                     }
+                }
+                if(is_con){
+                    is_con = false;
+                    continue;
                 }
                 switch (choice) {
                     case 1:
@@ -633,12 +731,17 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                     }
                     chatclient->handle_exit();
-                    break;
+                    return;
+                }
+                if (line[0] == '\0') {
+                    std::cout << "取消选择" << std::endl;
+                    free(line);
+                    continue;
                 }
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 7) {
+                while ((choice < 0 || choice > 7)) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -647,6 +750,12 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
@@ -660,12 +769,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
                         free(line);
                         choice = chatclient->changenum(s);
                     }
+                }
+                if(is_con){
+                    is_con = false;
+                    continue;
                 }
                 switch (choice) {
                     case 1:
@@ -713,12 +832,17 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_exitlogin();
                     }
                     chatclient->handle_exit();
-                    break;
+                    return;
+                }
+                if (line[0] == '\0') {
+                    std::cout << "取消选择" << std::endl;
+                    free(line);
+                    continue;
                 }
                 s = line;
                 free(line);
                 choice = chatclient->changenum(s);
-                while (choice < 0 || choice > 6) {
+                while ((choice < 0 || choice > 6)) {
                     if (choice == -1) {
                         line = readline(GREEN "请输入数字:" RESET);
                         if (line == nullptr) {
@@ -727,6 +851,12 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
@@ -740,12 +870,22 @@ void mainfunction(chatclient*chatclient) {
                                 chatclient->handle_exitlogin();
                             }
                             chatclient->handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            is_con = true;
                             break;
                         }
                         s = line;
                         free(line);
                         choice = chatclient->changenum(s);
                     }
+                }
+                if(is_con){
+                    is_con = false;
+                    continue;
                 }
                 switch (choice) {
                     case 1:

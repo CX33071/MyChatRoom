@@ -91,6 +91,7 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                 active_requests[id] = std::move(p);
             }
             chatclient_->chat_conn->send(j1.dump() + '\n');
+            sendfinish = true;
         } else if (cmd == "loadfileres") {
         } else if (cmd == "groupSTOR_ok") {
             std::string ID = j["ID"];
@@ -164,11 +165,12 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                 json j3;
                 j3["cmd"]="Load_finish";
                 j3["request_id"] = fileloadID;
+                std::cout << "文件客户端需求id法国去" << std::endl;
                 file_conn->send(j3.dump() + '\n');
             }
         }
 }
-void FileClient ::sendfile(std::string ID,
+int FileClient ::sendfile(std::string ID,
                            std::string filepath,
                            std::string filename,
                            std::string filesize,bool ischatsend1){
@@ -178,7 +180,7 @@ void FileClient ::sendfile(std::string ID,
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         perror("open");
-        return;
+        return -1;
     }
     json j;
     j["cmd"] = "STOR";
@@ -215,12 +217,17 @@ void FileClient ::sendfile(std::string ID,
     }
     close(fd);
     std::cout << std::endl;
-    if(cancel){
+    while (!sendfinish) {
+       
+    }
+    if (cancel) {
         std::cout << PURPLE << "上传取消" << RESET << std::endl;
-    }else{
+    } else {
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
     }
-                           }
+    sendfinish = false;
+    return 0;
+}
 void FileClient::groupsendfile(std::string ID,
                   std::string filepath,
                   std::string filename,
@@ -275,13 +282,17 @@ void FileClient::groupsendfile(std::string ID,
 int FileClient ::loadfile(std::string filename,
                            std::string filesize,
                            std::string ID,
-                           std::string filepath,bool ischatload1){
+                           std::string filepath,bool ischatload1,std::string newfilename){
     if (ischatload1) {
         ischatload = true;
     }
     fc.filename = filename;
     fc.filesize = std::stoi(filesize);
-    filepath = filepath + "/" + filename;
+    if(!newfilename.empty()){
+        filepath = filepath + "/" + newfilename;
+    }else{
+        filepath = filepath + "/" + filename;
+    }
     fc.ID = ID;
     fc.recvsize = 0;
     fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -369,15 +380,15 @@ int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
         return 0;
     }
 }
-int FileClient::reloadfile(std::string filename,
+int FileClient::reloadfile(std::string filename,std::string newfilename,
                std::string filesize,
                std::string ID,
                std::string filepath,
                std::string downsize,bool ischatload1){
     ischatload = ischatload1;
-    fc.filename = filename;
+    fc.filename = newfilename;
     fc.filesize = std::stoi(filesize);
-    filepath = filepath + "/" + filename;
+    filepath = filepath + "/" + newfilename;
     fc.ID = ID;
     fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY , 0644);
     if (fc.fd == -1) {

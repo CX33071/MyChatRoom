@@ -153,6 +153,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::cout << "ID = " << ID << std::endl;
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
+                   std::cout << "filename = " << filename << std::endl;
                    std::string downsize = j["downsize"];
                    std::cout<<"filesize = "<<filesize<<std::endl;
                    std::cout << "downsize = " << downsize << std::endl;
@@ -166,10 +167,18 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    long long downsize1 = std::stoll(downsize);
                    lseek(fd, downsize1, SEEK_SET);
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {
+                       std::cout << "n = " << n << std::endl;
                        if (conn) {
                            conn->send(std::string(buf, n));
                        }
                    }
+                   if (n == -1) {
+                       perror("read error");
+                       std::cout << "errno = " << errno
+                                 << " message = " << strerror(errno)
+                                 << std::endl;
+                   }
+                   std::cout << "n = " << n << std::endl;
                    close(fd);
                    std::cout << "文件上传给客户端完成" << std::endl;
                    fc.state = FileState::PRASEJSON;

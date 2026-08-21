@@ -36,6 +36,7 @@ class FileClient {
 
    public:
    bool groupchatsend=false;
+   bool sendfinish = false;
    bool groupchatload = false;
    bool ischatload = false;
    bool ischatsend = false;
@@ -49,7 +50,7 @@ class FileClient {
                         Buffer* buf,
                         Timestamp);
    void fileprogress(long long cur, long long filesize, Timestamp t);
-   void sendfile(std::string ID,
+   int sendfile(std::string ID,
                  std::string filepath,
                  std::string filename,
                  std::string filesize,
@@ -63,8 +64,8 @@ class FileClient {
                 std::string filesize,
                 std::string ID,
                 std::string filepath,
-                bool ischatload);
-   int reloadfile(std::string filename,
+                bool ischatload,std::string newfilename);
+   int reloadfile(std::string filename,std::string newfilename,
                   std::string filesize,
                   std::string ID,
                   std::string filepath,

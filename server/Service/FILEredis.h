@@ -39,10 +39,10 @@ class FILEredis {
     std::string getreciver(std::string fileid);
     std::string getgroupname(std::string fileid);
     std::string getfilesize(std::string fileid);
-    std::string getdownpath(std::string fileid);
+    std::string getdownpath(std::string fileid,std::string account);
     std::string getuppath(std::string fileid);
     std::string getupsize(std::string fileid);
-    std::string getdownsize(std::string fileid);
+    std::string getdownsize(std::string fileid,std::string account);
     std::string getfilename(std::string fileid);
     std::vector<filestatusserver> getfriendupinglist(std::string account);
     std::vector<filestatusserver> getchatfriendupinglist(std::string account);
@@ -54,7 +54,13 @@ class FILEredis {
     std::vector<filestatusserver> getchatgroupdowninglist(std::string account);
     void transferinsert(std::string fileid,
                         std::string account,
-                        std::string downpath,std::string ischat);
+                        std::string downpath,std::string ischat,std::string newfilename);
     void upfinish(std::string fileid);
     void downfinish(std::string fileid);
+    std::vector<json> getdownfilelist(std::string account);
+    std::vector<json> getgroupdownfilelist(std::vector<std::string> grouplist);
+    std::vector<json> getchatdownfilelist(std::string account);
+    std::vector<json> getchatgroupdownfilelist(
+        std::vector<std::string> grouplist);
+    std::string getnewfilename(std::string fileid,std::string account,std::string ischat);
 };

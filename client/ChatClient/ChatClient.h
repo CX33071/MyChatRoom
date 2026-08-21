@@ -40,6 +40,15 @@ struct loadfile{
     std::string ID;
     bool has=false;
 };
+template <typename T>
+bool wait_future(std::future<T>& f, T& result) {
+    if (f.wait_for(std::chrono::seconds(10)) == std::future_status::timeout) {
+        return false;
+    }
+
+    result = f.get();
+    return true;
+}
 class FileClient;
 class chatclient {
    private:
@@ -63,16 +72,18 @@ class chatclient {
     chatrecord cr;
 
    public:
+    std::unordered_map<std::string, int> chatmessage;
+    std::unordered_map<std::string, int> groupmessage;
     static chatclient* chatptr;
     bool shortchat = true;
     std::string chatfriendname;
     std::map<std::string, std::vector<json>> chatfile;
-    std::map<std::string, std::vector<json>> groupchatfile;
     std::mutex active_mutex;
     std::unordered_map<std::string, std::promise<json>> active_requests;
     std::string id;
     loadfile lf;
     termios oldt;
+    termios nt;
     std::vector<filestatus> uploads;
     std::vector<filestatus> downloads;
     std::map<std::string, std::vector<json>> chatuploads;
@@ -88,8 +99,8 @@ class chatclient {
     std::vector<json> applyjoinlist;
     std::vector<json> sendfilelist;
     std::string account;
-    std::atomic<bool> inchat=false;
-    std::atomic<bool> groupchat=false;
+    std::atomic<bool> inchat = false;
+    std::atomic<bool> groupchat = false;
     std::string current_chat;
     struct Event {
         enum Type {
@@ -110,6 +121,7 @@ class chatclient {
     std::condition_variable msg_cv;
     chatclient(EventLoop* loop, const InetAddress& addr);
     void sendheart();
+    void cancel_requests();
     void showchatmenu(int index);
     void erase_utf8(std::string& msg);
     void setfileclient(FileClient* client);
@@ -162,6 +174,8 @@ class chatclient {
     void handle_chatgrouploadfile(std::string friendaccount);
     void handle_chatuploadcheck();
     void handle_chatdownloadcheck();
+    void handle_downfilelist();
+    void handle_chatdownfilelist();
     void handle_rechatsendfile(std::string toaccount);
     void handle_rechatloadfile(std::string fromaccount);
     void handle_regroupchatsendfile(std::string groupname);
@@ -187,6 +201,7 @@ class chatclient {
     void handle_chatloadfile(std::string from);
     int is_friend(std::string account);
     void printfmembers();
+    void checkreadlineinput(char *line);
     void handle_ownergrouplist();
     int is_blockfriend(std::string account);
     std::string gen_req_id();

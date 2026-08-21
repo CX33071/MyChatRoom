@@ -230,6 +230,7 @@ bool Verifycode::is_online(std::string account) {
     auto fut = redis_.exists({"online" + account});
     redis_.sync_commit();
     if (!fut.get().as_integer()) {
+        std::cout << "redis查出不在线，进mysql查" << std::endl;
         std::string sql =
             "select online from account_online_info where account ='" +
             account + "'";
@@ -237,13 +238,16 @@ bool Verifycode::is_online(std::string account) {
         if(res.empty()){
             return false;
         }else if(res=="1"){
+            std::cout << "mysql查到在线" << std::endl;
             redis_.set("online" + account, "1");
             redis_.sync_commit();
             return true;
         }else{
+            std::cout << "mysql查到不在线" << std::endl;
             return false;
         }
     }else{
+        std::cout << "redis查在线" << std::endl;
         return true;
     }
 }
@@ -341,7 +345,7 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     mysql_.delmsg(sql.c_str());
     sql = "delete from block_info where account ='" + account + "'";
     mysql_.delmsg(sql.c_str());
-    sql = "delete from block_info where blockfriend ='" + account + ";";
+    sql = "delete from block_info where blockfriend ='" + account + "'";
     mysql_.delmsg(sql.c_str());
     sql = "delete from disconnectmsg_info where account ='" + account + "'";
     mysql_.delmsg(sql.c_str());
@@ -371,12 +375,11 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     mysql_.delmsg(sql.c_str());
     sql = "delete from name_info where name ='" + name + "'";
     mysql_.delmsg(sql.c_str());
-    std::cout << "name =" << name << std::endl;
     redis_.del({account + "key", account + "code", "online" + account, account,
                 name, "onlinename" + name, "friend" + account,
                 "block" + account, "blocked" + account, "addfriend" + account,
                 "addedfriend" + account, "grouplist" + account,
-                "disconnectmsg" + account});
+                "disconnectmsg" + account,name+"owner","ownergrouplist"+account});
     redis_.sync_commit();
     return 0;
 }
