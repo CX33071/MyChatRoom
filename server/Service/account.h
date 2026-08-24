@@ -22,6 +22,11 @@ class Verifycode {
 
    public:
     Verifycode();
+    std::string generatesalt();
+    std::string sha(std::string input);
+    std::string screctkey(std::string key);
+    std::string getstartkey(std::string hashkey);
+    bool checkkey(const std::string& inputkey, const std::string& getkeyvalue);
     std::string code();
     bool addredis(const std::string& account);
     bool signup(std::string account, std::string password,std::string name);

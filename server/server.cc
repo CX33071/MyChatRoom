@@ -57,7 +57,7 @@ int main(int argc,char*argv[]){
     LOG(INFO) << "ChatServer Start!";
     LOG(INFO) << "FileServer Start!";
     Logger logger;
-    logger.setLogLevel(Logger::INFO);
+    logger.setLogLevel(Logger::FATAL);
     EventLoop loop;
     L = &loop;
     InetAddress chataddr(argv[1],std::stoi(argv[2]));

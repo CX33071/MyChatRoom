@@ -63,4 +63,9 @@ class FILEredis {
     std::vector<json> getchatgroupdownfilelist(
         std::vector<std::string> grouplist);
     std::string getnewfilename(std::string fileid,std::string account,std::string ischat);
+    void deldownrecords(std::string ID,
+                        std::string account,
+                        std::string filepath,
+                        std::string ischat,
+                        std::string filename);
 };

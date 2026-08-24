@@ -30,7 +30,7 @@ void SQlite::addfriendchat(std::string sender,
     std::string sql =
         "insert into friend_chat (sender,reciver,content)values('" + sender +
         "','" + reciver + "','" + text + "');";
-    char* e;
+    char* e = nullptr;
     int res = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &e);
 
     if (res != SQLITE_OK) {

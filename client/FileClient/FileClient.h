@@ -28,6 +28,7 @@ class FileClient {
         uint64_t filesize = 0;
         uint64_t recvsize = 0;
         uint64_t downsize = 0;
+        uint64_t updatesize = 0;
         std::string ID;
     };
     TcpClient client_;
@@ -35,46 +36,54 @@ class FileClient {
     Timestamp begin1;
 
    public:
-   bool groupchatsend=false;
-   bool sendfinish = false;
-   bool groupchatload = false;
-   bool ischatload = false;
-   bool ischatsend = false;
-   chatclient* chatclient_;
-   std::string fileloadID;
-   TcpClient::TcpConnectionPtr file_conn;
-   FileClient(EventLoop* loop, const InetAddress& addr);
-   void setchatclient(chatclient* client);
-   void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
-   void messagecallback(const TcpClient::TcpConnectionPtr& conn,
-                        Buffer* buf,
-                        Timestamp);
-   void fileprogress(long long cur, long long filesize, Timestamp t);
-   int sendfile(std::string ID,
+    std::atomic<long long> last_update{0};
+    long long totalfilesize;
+    std::atomic<bool> upload_done{false};
+    bool groupchatsend = false;
+    bool sendfinish = false;
+    bool groupchatload = false;
+    bool ischatload = false;
+    bool ischatsend = false;
+    chatclient* chatclient_;
+    std::string fileloadID;
+    TcpClient::TcpConnectionPtr file_conn;
+    FileClient(EventLoop* loop, const InetAddress& addr);
+    void setchatclient(chatclient* client);
+    void connectioncallback(const TcpClient::TcpConnectionPtr& conn);
+    void messagecallback(const TcpClient::TcpConnectionPtr& conn,
+                         Buffer* buf,
+                         Timestamp);
+    void fileprogress(long long cur, long long filesize, Timestamp t);
+    int sendfile(std::string ID,
                  std::string filepath,
                  std::string filename,
                  std::string filesize,
                  bool ischatsend);
-   void groupsendfile(std::string ID,
-                      std::string filepath,
-                      std::string filename,
-                      std::string filesize,
-                      bool groupchatsend);
-   int loadfile(std::string filename,
-                std::string filesize,
-                std::string ID,
-                std::string filepath,
-                bool ischatload,std::string newfilename);
-   int reloadfile(std::string filename,std::string newfilename,
-                  std::string filesize,
-                  std::string ID,
-                  std::string filepath,
-                  std::string downsize,bool ischatload1);
-   std::string gen_req_id();
-   int  uploadedsendfile(std::string fileid,
+    void groupsendfile(std::string ID,
+                       std::string filepath,
+                       std::string filename,
+                       std::string filesize,
+                       bool groupchatsend);
+    int loadfile(std::string filename,
+                 std::string filesize,
+                 std::string ID,
+                 std::string filepath,
+                 bool ischatload,
+                 std::string newfilename);
+    int reloadfile(std::string filename,
+                   std::string newfilename,
+                   std::string filesize,
+                   std::string ID,
+                   std::string filepath,
+                   std::string downsize,
+                   bool ischatload1);
+    std::string gen_req_id();
+    int uploadedsendfile(std::string fileid,
                          std::string uploaded,
                          std::string filepath,
                          std::string filename,
                          std::string filesize,
-                         bool b,bool ischatsend1,bool groupchat);
+                         bool b,
+                         bool ischatsend1,
+                         bool groupchat);
 };

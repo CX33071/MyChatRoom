@@ -72,6 +72,7 @@ class chatclient {
     chatrecord cr;
 
    public:
+    int chat_menu_index = -1;
     std::unordered_map<std::string, int> chatmessage;
     std::unordered_map<std::string, int> groupmessage;
     static chatclient* chatptr;

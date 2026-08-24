@@ -87,6 +87,12 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    fc.filesize = std::stoi(filesize);
                    fc.recvsize = std::stoi(recivesize);
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY, 0644);
+                   if (fc.fd == -1) {
+                       std::cout << "文件创建失败" << std::endl;
+                       std::cerr << "文件创建失败: " << std::strerror(errno)
+                                 << " (errno=" << errno << ")" << std::endl;
+                       return ;
+                   }
                    lseek(fc.fd, fc.recvsize, SEEK_SET);
                    fc.state = FileState::RECV_FILE;
                    json res;
@@ -139,7 +145,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                        return;
                    }
                    ssize_t n;
-                   char buf[4096];
+                   char buf[1024*1024*4];
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {   if(conn){
                            conn->send(std::string(buf, n));
                    }
@@ -150,24 +156,20 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                }
                if (cmd == "reRETR") {
                    std::string ID = j["ID"];
-                   std::cout << "ID = " << ID << std::endl;
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
-                   std::cout << "filename = " << filename << std::endl;
                    std::string downsize = j["downsize"];
-                   std::cout<<"filesize = "<<filesize<<std::endl;
-                   std::cout << "downsize = " << downsize << std::endl;
                    std::string filepath = "./file/" + filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
                        std::cout << "./file本地找不到文件" << std::endl;
+                       return;
                    }
                    ssize_t n;
-                   char buf[4096];
+                   char buf[1024*1024*4];
                    long long downsize1 = std::stoll(downsize);
                    lseek(fd, downsize1, SEEK_SET);
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {
-                       std::cout << "n = " << n << std::endl;
                        if (conn) {
                            conn->send(std::string(buf, n));
                        }
@@ -224,11 +226,22 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
              write(fc.fd, buf->peek(), len);
              buf->retrieve(len);
              fc.recvsize += len;
-             std::string sql = "update filestatus_info set upsize ='" +
-                               std::to_string(fc.recvsize) +
-                               "'where fileid = '" + fc.ID + "'";
-             mysql_.changemsg(sql.c_str());
+             if((fc.recvsize-fc.updatesize)>1024*1024*4){
+                 std::string sql = "update filestatus_info set upsize ='" +
+                                   std::to_string(fc.recvsize) +
+                                   "'where fileid = '" + fc.ID + "'";
+                 mysql_.changemsg(sql.c_str());
+                 fc.updatesize = fc.recvsize;
+                 json jj;
+                 jj["upsize"] = fc.recvsize;
+                 jj["cmd"] = "update_upsize";
+                 conn->send(jj.dump() + "\n");
+             }
              if (fc.recvsize == fc.filesize) {
+                 json jj;
+                 jj["cmd"] = "update_upsize";
+                 jj["upsize"] = fc.filesize;
+                 conn->send(jj.dump() + "\n");
                  fc.state = FileState::PRASEJSON;
                  fc.recvsize = 0;
                  fc.filesize = 0;

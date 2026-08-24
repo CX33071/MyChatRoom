@@ -54,121 +54,129 @@ void FileClient ::connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
 void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                                   Buffer* buf,
                                   Timestamp) {
-    if (fc.state == FileState::PRASEJSON) {
-        if (!buf->findn()) {
-            return;
-        }
-        std::string msg = buf->returnstring();
-        json j = json::parse(msg);
-        id = j.value("request_id", "");
-        if (!id.empty()) {
-            std::lock_guard<std::mutex> lock(active_mutex);
-            auto it = active_requests.find(id);
-            if (it != active_requests.end()) {
-                it->second.set_value(j);
-                active_requests.erase(it);
-            }
-        }
-        std::string cmd = j["cmd"];
-        if (cmd == "STOR_ok") {
-            std::string ID = j["ID"];
-            std::string filename = j["filename"];
-            json j1;
-            j1["cmd"] = "sendfile_finish";
-            j1["ID"] = ID;
-            j1["filename"] = filename;
-            if (ischatsend) {
-                j1["chatsend"] = "1";
-            }else{
-                j1["chatsend"] = "2";
-            }
-            id = gen_req_id();
-            j1["request_id"] = id;
-            std::promise<json> p;
-            std::future<json> f = p.get_future();
-            {
-                std::lock_guard<std::mutex> lock(active_mutex);
-                active_requests[id] = std::move(p);
-            }
-            chatclient_->chat_conn->send(j1.dump() + '\n');
-            sendfinish = true;
-        } else if (cmd == "loadfileres") {
-        } else if (cmd == "groupSTOR_ok") {
-            std::string ID = j["ID"];
-            std::string filename = j["filename"];
-            json j1;
-            j1["cmd"] = "groupsendfile_finish";
-            if(groupchatsend){
-                j1["groupchat"] = "1";
-            }else{
-                j1["groupchat"] = "2";
-            }
-            j1["ID"] = ID;
-            j1["filename"] = filename;
-            id = gen_req_id();
-            j1["request_id"] = id;
-            std::promise<json> p;
-            std::future<json> f = p.get_future();
-            {
-                std::lock_guard<std::mutex> lock(active_mutex);
-                active_requests[id] = std::move(p);
-            }
-            chatclient_->chat_conn->send(j1.dump() + '\n');
-            // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
-        } else if (cmd == "RETRres") {
-            fc.state = FileState::RECV_FILE;
-        } else if (cmd == "sendfinishtofileclient") {
-            json j1;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
-            j1["cmd"] = "to_clientfinish";
-            file_conn->send(j1.dump() + '\n');
-        }
-        } else if (fc.state == FileState::RECV_FILE) {
-            size_t len = buf->readableBytes();
-            if (len == 0) {
-                return;
-            }
-            size_t downloaded = fc.filesize - fc.downsize;
-            if (len > downloaded) {
-                len = downloaded;
-            }
-            write(fc.fd, buf->peek(), len);
-            buf->retrieve(len);
-            fc.downsize += len;
-            fc.recvsize += len;
-            json j1;
-            j1["cmd"] = "update_downsize";
-            j1["fileid"] = fc.ID;
-            j1["downsize"] = std::to_string(fc.downsize);
-            conn->send(j1.dump() + '\n');
-            fileprogress(fc.recvsize, fc.filesize, begin1);
-            if (fc.recvsize == fc.filesize) {
-                close(fc.fd);
-                fc.recvsize = 0;
-                fc.filesize = 0;
-                fc.downsize = 0;
-                json res;
-                res["cmd"] = "RETR_ok";
-                res["ID"] = fc.ID;
-                if(ischatload){
-                    res["chatload"] = "1";
-                }else{
-                    res["chatload"] = "2";
-                }
-                res["filename"] = fc.filename;
-                res["account"] = chatclient_->account;
-                chatclient_->chat_conn->send(res.dump() + "\n");
-                fc.state = FileState::PRASEJSON;
-                json j3;
-                j3["cmd"]="Load_finish";
-                j3["request_id"] = fileloadID;
-                std::cout << "文件客户端需求id法国去" << std::endl;
-                file_conn->send(j3.dump() + '\n');
-            }
-        }
+   while(true){
+       if (fc.state == FileState::PRASEJSON) {
+           if (!buf->findn()) {
+               break;
+           }
+           std::string msg = buf->returnstring();
+           json j = json::parse(msg);
+           id = j.value("request_id", "");
+           if (!id.empty()) {
+               std::lock_guard<std::mutex> lock(active_mutex);
+               auto it = active_requests.find(id);
+               if (it != active_requests.end()) {
+                   it->second.set_value(j);
+                   active_requests.erase(it);
+               }
+           }
+           std::string cmd = j["cmd"];
+           if (cmd == "STOR_ok") {
+               last_update = totalfilesize;
+               upload_done = true;
+               std::string ID = j["ID"];
+               std::string filename = j["filename"];
+               json j1;
+               j1["cmd"] = "sendfile_finish";
+               j1["ID"] = ID;
+               j1["filename"] = filename;
+               if (ischatsend) {
+                   j1["chatsend"] = "1";
+               } else {
+                   j1["chatsend"] = "2";
+               }
+               id = gen_req_id();
+               j1["request_id"] = id;
+               std::promise<json> p;
+               std::future<json> f = p.get_future();
+               {
+                   std::lock_guard<std::mutex> lock(active_mutex);
+                   active_requests[id] = std::move(p);
+               }
+               chatclient_->chat_conn->send(j1.dump() + '\n');
+               sendfinish = true;
+           } else if (cmd == "loadfileres") {
+           } else if (cmd == "groupSTOR_ok") {
+               last_update = totalfilesize;
+               upload_done = true;
+               std::string ID = j["ID"];
+               std::string filename = j["filename"];
+               json j1;
+               j1["cmd"] = "groupsendfile_finish";
+               if (groupchatsend) {
+                   j1["groupchat"] = "1";
+               } else {
+                   j1["groupchat"] = "2";
+               }
+               j1["ID"] = ID;
+               j1["filename"] = filename;
+               id = gen_req_id();
+               j1["request_id"] = id;
+               std::promise<json> p;
+               std::future<json> f = p.get_future();
+               {
+                   std::lock_guard<std::mutex> lock(active_mutex);
+                   active_requests[id] = std::move(p);
+               }
+               chatclient_->chat_conn->send(j1.dump() + '\n');
+               // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
+           } else if (cmd == "RETRres") {
+               fc.state = FileState::RECV_FILE;
+           } else if (cmd == "sendfinishtofileclient") {
+               json j1;
+               std::string request_id = j.value("request_id", "");
+               if (!request_id.empty()) {
+                   j1["request_id"] = request_id;
+               }
+               j1["cmd"] = "to_clientfinish";
+               file_conn->send(j1.dump() + '\n');
+           } else if (cmd == "update_upsize") {
+               long long cur = j["upsize"];
+               last_update = cur;
+           }
+       } else if (fc.state == FileState::RECV_FILE) {
+           size_t len = buf->readableBytes();
+           if (len == 0) {
+               return;
+           }
+           size_t downloaded = fc.filesize - fc.downsize;
+           if (len > downloaded) {
+               len = downloaded;
+           }
+           write(fc.fd, buf->peek(), len);
+           buf->retrieve(len);
+           fc.downsize += len;
+           fc.recvsize += len;
+           json j1;
+           j1["cmd"] = "update_downsize";
+           j1["fileid"] = fc.ID;
+           j1["downsize"] = std::to_string(fc.downsize);
+           conn->send(j1.dump() + '\n');
+           fileprogress(fc.recvsize, fc.filesize, begin1);
+           if (fc.recvsize == fc.filesize) {
+               close(fc.fd);
+               fc.recvsize = 0;
+               fc.filesize = 0;
+               fc.downsize = 0;
+               json res;
+               res["cmd"] = "RETR_ok";
+               res["ID"] = fc.ID;
+               if (ischatload) {
+                   res["chatload"] = "1";
+               } else {
+                   res["chatload"] = "2";
+               }
+               res["filename"] = fc.filename;
+               res["account"] = chatclient_->account;
+               chatclient_->chat_conn->send(res.dump() + "\n");
+               fc.state = FileState::PRASEJSON;
+               json j3;
+               j3["cmd"] = "Load_finish";
+               j3["request_id"] = fileloadID;
+               file_conn->send(j3.dump() + '\n');
+           }
+       }
+   }
 }
 int FileClient ::sendfile(std::string ID,
                            std::string filepath,
@@ -177,6 +185,8 @@ int FileClient ::sendfile(std::string ID,
     if(ischatsend1){
         ischatsend = true;
     }
+    last_update = 0;
+    upload_done = false;
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         perror("open");
@@ -197,13 +207,15 @@ int FileClient ::sendfile(std::string ID,
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[4096];
+    char buf[1024*1024*4];
     ssize_t n;
     size_t total = 0;
     char* end;
     long long num = strtoll(filesize.c_str(), &end, 10);
-    Timestamp begin = Timestamp::now();
+    totalfilesize = num;
     bool cancel = false;
+    Timestamp begin = Timestamp::now();
+    long long printed = -1;
     while ((n = read(fd, buf, sizeof(buf))) > 0) {
         if(chatclient_->stop1){
             cancel = true;
@@ -213,16 +225,32 @@ int FileClient ::sendfile(std::string ID,
             file_conn->send(std::string(buf, n));
         }
         total+=n;
-        fileprogress(total, num,begin);
+        long long current = last_update.load();
+
+        if (current != printed) {
+            fileprogress(current, num, begin);
+            printed = current;
+        }
     }
+    while (!upload_done&&!chatclient_->stop1) {
+        long long current = last_update.load();
+        if (current != printed) {
+            fileprogress(current, num, begin);
+
+            printed = current;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    if (!chatclient_->stop1) {
+        fileprogress(num, num, begin);
+    }
+    std::cout << std::endl;
     close(fd);
     std::cout << std::endl;
-    while (!sendfinish) {
-       
-    }
-    if (cancel) {
+    if (cancel && !chatclient_->stop1) {
         std::cout << PURPLE << "上传取消" << RESET << std::endl;
-    } else {
+    } else if(!chatclient_->stop1){
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
     }
     sendfinish = false;
@@ -233,6 +261,8 @@ void FileClient::groupsendfile(std::string ID,
                   std::string filename,
                   std::string filesize,bool groupchat){
     groupchatsend = groupchat;
+    last_update = 0;
+    upload_done = false;
     int fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         perror("open");
@@ -253,13 +283,15 @@ void FileClient::groupsendfile(std::string ID,
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[4096];
+    char buf[1024*1024*4];
     ssize_t n;
     size_t total = 0;
     char* end;
     long long num = strtoll(filesize.c_str(), &end, 10);
+    totalfilesize = num;
     bool cancel = false;
     Timestamp begin = Timestamp::now();
+    long long printed = -1;
     while ((n = read(fd, buf, sizeof(buf))) > 0) {
         if(chatclient_->stop1){
             cancel = true;
@@ -269,13 +301,31 @@ void FileClient::groupsendfile(std::string ID,
             file_conn->send(std::string(buf, n));
         }
         total += n;
-        fileprogress(total, num, begin);
+        long long current = last_update.load();
+        if (current != printed) {
+            fileprogress(current, num, begin);
+            printed = current;
+        }
     }
+    while (!upload_done && !chatclient_->stop1) {
+        long long current = last_update.load();
+        if (current != printed) {
+            fileprogress(current, num, begin);
+
+            printed = current;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    if (!chatclient_->stop1) {
+        fileprogress(num, num, begin);
+    }
+    std::cout << std::endl;
     close(fd);
     std::cout << std::endl;
-    if (cancel) {
+    if (cancel && !chatclient_->stop1) {
         std::cout << PURPLE << "上传取消" << RESET << std::endl;
-    } else {
+    } else if (!chatclient_->stop1) {
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
     }
                   }
@@ -326,6 +376,8 @@ int FileClient ::loadfile(std::string filename,
 }
 int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::string filepath,std::string filename,std::string filesize,bool b,bool ischatsend1,bool groupchat){
     ischatsend = ischatsend1;
+    last_update = std::stoll(uploaded);
+    upload_done = false;
     groupchatsend = groupchat;
     int fd = open(filepath.c_str(), O_RDONLY);
     char* end = 0;
@@ -352,13 +404,15 @@ int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[4096];
+    char buf[1024*1024*4];
     ssize_t n;
-    size_t total = 0;
+    size_t total = last_update;
     end = 0;
-    Timestamp begin = Timestamp::now();
     bool cancel = false;
     long num = strtol(filesize.c_str(), &end, 10);
+    totalfilesize = num;
+    Timestamp begin = Timestamp::now();
+    long long printed = -1;
     while ((n = read(fd, buf, sizeof(buf))) > 0) {
         if (chatclient_->stop1) {
             cancel = true;
@@ -368,14 +422,34 @@ int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
             file_conn->send(std::string(buf, n));
         }
         total += n;
-        fileprogress(total, num, begin);
+        long long current = last_update.load();
+
+        if (current != printed) {
+            fileprogress(current, num, begin);
+            printed = current;
+        }
     }
+    while (!upload_done && !chatclient_->stop1) {
+        long long current = last_update.load();
+        if (current != printed) {
+            fileprogress(current, num, begin);
+
+            printed = current;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    if (!chatclient_->stop1){
+        fileprogress(num, num, begin);
+    }
+
+    std::cout << std::endl;
     close(fd);
     std::cout << std::endl;
-    if (cancel) {
+    if (cancel && !chatclient_->stop1) {
         std::cout << PURPLE << "上传取消" << RESET << std::endl;
         return -1;
-    } else {
+    } else if(!chatclient_->stop1){
         std::cout << PURPLE << "\n文件上传完成" << RESET << std::endl;
         return 0;
     }

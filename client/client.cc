@@ -933,6 +933,8 @@ int main(int argc, char* argv[]) {
     rl_catch_signals = 0;
     signal(SIGINT, handler);
     signal(SIGTSTP, handler);
+    mulib::base::Logger logger;
+    logger.setLogLevel(mulib::base::Logger::FATAL);
     EventLoop loop;
     L = &loop;
     InetAddress chataddr(argv[1], 8888);

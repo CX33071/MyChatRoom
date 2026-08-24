@@ -27,6 +27,7 @@ class FileServer{
         uint64_t filesize = 0;
         uint64_t recvsize = 0;
         uint64_t downsize = 0;
+        uint64_t updatesize = 0;
         std::string ID;
     };
 

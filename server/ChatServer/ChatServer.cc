@@ -10,7 +10,7 @@ ChatServer::ChatServer(EventLoop* loop, std::string name, const InetAddress& add
             messagecallback(conn, buf, t);
         });
     LOG_INFO << "服务器启动";
-    loop_->runEvery(20, [this]() { checkoutclientconn(); });
+    loop_->runEvery(1, [this]() { checkoutclientconn(); });
     server_.start();
 }
 void ChatServer::connectioncallback(const TcpConnectionPtr& conn) {
@@ -18,8 +18,6 @@ void ChatServer::connectioncallback(const TcpConnectionPtr& conn) {
         LOG_INFO << "有一个chatclient客户端连接成功:" << conn->peerAddress().toIpPort();
         LOG(INFO) << "GLog:chatclient连接成功!";
     } else {
-        LOG_INFO << "有一个chatclient客户端下线了:" << conn->peerAddress().toIpPort();
-        std::lock_guard<std::mutex> lock(g_mutex);
         for (auto it = clientmap.begin(); it != clientmap.end(); ++it) {
             if (it->second == conn) {
                 std::string account = it->first;
@@ -29,6 +27,8 @@ void ChatServer::connectioncallback(const TcpConnectionPtr& conn) {
                 break;
             }
         }
+        LOG_INFO << "有一个chatclient客户端下线了:"
+                 << conn->peerAddress().toIpPort();
     }
 }
 void ChatServer::checkoutclientconn(){
@@ -36,7 +36,7 @@ void ChatServer::checkoutclientconn(){
         Timestamp t = Timestamp::now();
         Timestamp t1 = clientconntime[account.first];
         double tt = T.timeDifference(t, t1);
-        if(tt>35.0){
+        if(tt>5.0){
             LOG_INFO << "有一个chatclient客户端下线了:"
                      << account.second->peerAddress().toIpPort();
             std::lock_guard<std::mutex> lock(g_mutex);
@@ -328,16 +328,22 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
             std::string s;
-            if (j["ischat"] == "1") {
-                s="1";
-            } else {
-                s="0";
-            }
-            std::string fileid=file.friendupbegin(from, to, filename, filesize,s,filepath);
             json res;
-            res["cmd"] = "sendfileres";
-            res["ID"] = fileid;
-            res["data"] = "已发送上传文件请求给服务端";
+            if(F.isblocked(from,to)){
+                res["code"] = "1";
+            }else{
+                res["code"] = "0";
+                if (j["ischat"] == "1") {
+                    s = "1";
+                } else {
+                    s = "0";
+                }
+                std::string fileid = file.friendupbegin(from, to, filename,
+                                                        filesize, s, filepath);
+                res["cmd"] = "sendfileres";
+                res["ID"] = fileid;
+                res["data"] = "已发送上传文件请求给服务端";
+            }
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 res["request_id"] = request_id;
@@ -375,6 +381,21 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["request_id"] = request_id;
             }
             j1["filesize"] = filesize;
+            conn->send(j1.dump() + '\n');
+        }
+        if(cmd=="deldownrecord"){
+            std::string account = j["account"];
+            std::string ID = j["ID"];
+            std::string filepath = j["filepath"];
+            std::string filename = j["filename"];
+            std::string ischat = j["ischat"];
+            file.deldownrecords(ID, account, filepath, ischat, filename);
+            json j1;
+            j1["cmd"] = "deldownrecordres";
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="redownloadfile"){
@@ -416,6 +437,8 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 hh.push_back(j2);
             }
             std::vector<filestatusserver> downs1=file.getgroupdowninglist(account);
+            std::cout<<"downs.size = "<<downs.size()<<std::endl;
+            std::cout << "downs1.size = " << downs1.size() << std::endl;
             for (auto t : downs1) {
                 json j2;
                 j2["sender"] = t.sender;
@@ -467,7 +490,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 }
             }
             if (target_conn) {
-                std::cout << "已经给目标用户发过去" << std::endl;
                 target_conn->send(j2.dump() + '\n');
             }
         }
@@ -819,6 +841,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j2["upsize"] = t.upsize;
                 hh.push_back(j2);
             }
+            std::cout << "hh.size = " << hh.size() << std::endl;
             res["data"] = hh;
             conn->send(res.dump() + '\n');
         }
@@ -924,17 +947,22 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string filename = j["filename"];
             std::string filesize = j["filesize"];
             std::string s;
-            if (j["ischat"] == "1") {
-                s="1";
-            } else {
-                s = "0";
-            }
-            std::string fileid =
-                file.groupupbegin(from, groupname, filename, filesize,s, filepath);
             json res;
-            res["cmd"] = "sendfileres";
-            res["ID"] = fileid;
-            res["data"] = "已发送上传文件请求给服务端";
+            if(G.is_groupmember(groupname,from)!=1){
+                res["code"] = "1";
+            }else{
+                res["code"] = "0";
+                if (j["ischat"] == "1") {
+                    s = "1";
+                } else {
+                    s = "0";
+                }
+                std::string fileid = file.groupupbegin(
+                    from, groupname, filename, filesize, s, filepath);
+                res["cmd"] = "sendfileres";
+                res["ID"] = fileid;
+                res["data"] = "已发送上传文件请求给服务端";
+            }
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 res["request_id"] = request_id;
@@ -1187,33 +1215,43 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "friendchat") {
-            std::cout << "收到好友发来消息" << std::endl;
-            std::cout << "message=" << j["message"] << std::endl;
             std::string target = j["to"];
             std::string account = j["from"];
             std::string msg = j["message"];
-            json j2;
-            j2["cmd"] = "chatedres";
-            j2["account"] = account;
-            j2["message"] = msg;
-            std::string t = get_current_time();
-            j2["time"] = t;
-            std::string name1 = verifycode.getname(account);
-            j2["fromname"] = name1;
-            std::string name2 = verifycode.getname(target);
-            F.historyfriendchat(
-                account, target,name1,name2,msg+"   ["+t+"]");
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(target);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                    target_conn->send(j2.dump() + '\n');
-                    std::cout << "已经给目标用户发过去" << std::endl;
-                } else {
-                    G.disconnectmsg(target, j2);
+            json j1;
+            j1["cmd"] = "friendchatres";
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j1["request_id"] = request_id;
+            }
+            if (F.isblocked(account, target)) {
+                j1["code"] = "0";
+                conn->send(j1.dump() + '\n');
+            } else {
+                j1["code"] = "1";
+                conn->send(j1.dump() + '\n');
+                json j2;
+                j2["cmd"] = "chatedres";
+                j2["account"] = account;
+                j2["message"] = msg;
+                std::string t = get_current_time();
+                j2["time"] = t;
+                std::string name1 = verifycode.getname(account);
+                j2["fromname"] = name1;
+                std::string name2 = verifycode.getname(target);
+                TcpConnectionPtr target_conn;
+                {
+                    std::lock_guard<std::mutex> lock(g_mutex);
+                    auto it = clientmap.find(target);
+                    if (it != clientmap.end()) {
+                        target_conn = it->second;
+                        target_conn->send(j2.dump() + '\n');
+                    } else {
+                        G.disconnectmsg(target, j2);
+                    }
                 }
+                F.historyfriendchat(account, target, name1, name2,
+                                    msg + "   [" + t + "]");
             }
         }
         if (cmd == "block") {
@@ -1434,36 +1472,48 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string groupname = j["groupname"];
             std::string message = j["message"];
-            json j1;
-            j1["cmd"] = "groupchatedres";
-            std::string name = verifycode.getname(account);
-            j1["name"] = name;
-            j1["account"] = account;
-            j1["message"] = message;
-            j1["groupname"] = groupname;
-            std::string t = get_current_time();
-            j1["time"] = t;
-            std::cout << "时间" << t << std::endl;
-            G.historygroupchat(
-                account, groupname,name,
-                message + "         [" + t + "]");
-            std::vector<std::string> res =
-                G.grouptargetmember(groupname, account);
-            for (int i = 0; i < res.size(); i++) {
-                std::string target = res[i];
-                TcpConnectionPtr target_conn;
-                {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it = clientmap.find(target);
-                    if (it != clientmap.end()) {
-                        target_conn = it->second;
-                    } else {
-                        G.disconnectmsg(target, j1);
+            json j2;
+            j2["cmd"] = "groupchatres";
+            std::string request_id = j.value("request_id", "");
+            if (!request_id.empty()) {
+                j2["request_id"] = request_id;
+            }
+            if(G.is_groupmember(groupname,account)==1){
+                j2["code"] = "1";
+                conn->send(j2.dump() + '\n');
+                std::string name = verifycode.getname(account);
+                json j1;
+                j1["cmd"] = "groupchatedres";
+                j1["name"] = name;
+                j1["account"] = account;
+                j1["message"] = message;
+                j1["groupname"] = groupname;
+                std::string t = get_current_time();
+                j1["time"] = t;
+                std::cout << "时间" << t << std::endl;
+                G.historygroupchat(account, groupname, name,
+                                   message + "         [" + t + "]");
+                std::vector<std::string> res =
+                    G.grouptargetmember(groupname, account);
+                for (int i = 0; i < res.size(); i++) {
+                    std::string target = res[i];
+                    TcpConnectionPtr target_conn;
+                    {
+                        std::lock_guard<std::mutex> lock(g_mutex);
+                        auto it = clientmap.find(target);
+                        if (it != clientmap.end()) {
+                            target_conn = it->second;
+                        } else {
+                            G.disconnectmsg(target, j1);
+                        }
                     }
-                }
-                if (target_conn) {
-                    target_conn->send(j1.dump() + '\n');
-                }
+                    if (target_conn) {
+                        target_conn->send(j1.dump() + '\n');
+                    }
+            }
+            }else{
+                j2["code"] = "0";
+                conn->send(j2.dump() + '\n');
             }
         }
     }

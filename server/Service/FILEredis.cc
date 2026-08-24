@@ -157,6 +157,7 @@ std::vector<filestatusserver> FILEredis::getfriendupinglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql="select groupname from file_info where fileid = '"+id+"'";
         s=mysql_.selectstring(sql.c_str());
@@ -174,15 +175,16 @@ std::vector<filestatusserver> FILEredis::getfriendupinglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if(senderres.size()!=0){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.reciver = senderres[i];
             ff.upsize = upsizeres[i];
             res.push_back(ff);
@@ -202,6 +204,7 @@ std::vector<filestatusserver> FILEredis::getchatfriendupinglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql = "select groupname from file_info where fileid = '" + id + "'";
         s = mysql_.selectstring(sql.c_str());
@@ -219,25 +222,27 @@ std::vector<filestatusserver> FILEredis::getchatfriendupinglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     std::cout << "filename.size = " << filenameres.size() << std::endl;
     std::cout << "filesize.size = " << filesizeres.size() << std::endl;
-    std::cout<<"fileid.size = "<<fileidres.size()<<std::endl;
+    std::cout<<"fileid.size = "<<fileid1res.size()<<std::endl;
     std::cout << "sender.size = " << senderres.size() << std::endl;
     std::cout << "upsize.size = " << upsizeres.size() << std::endl;
     if(!senderres.empty()){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.reciver = senderres[i];
             ff.upsize = upsizeres[i];
             res.push_back(ff);
         }
     }
+    std::cout << "res.size = " << res.size() << std::endl;
     return res;
 }
 std::vector<filestatusserver> FILEredis::getgroupupinglist(
@@ -251,6 +256,7 @@ std::vector<filestatusserver> FILEredis::getgroupupinglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql = "select groupname from file_info where fileid = '" + id + "'";
         s = mysql_.selectstring(sql.c_str());
@@ -267,15 +273,16 @@ std::vector<filestatusserver> FILEredis::getgroupupinglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if(senderres.size()!=0){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.reciver = senderres[i];
             ff.upsize = upsizeres[i];
             res.push_back(ff);
@@ -294,6 +301,7 @@ std::vector<filestatusserver> FILEredis::getchatgroupupinglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql = "select groupname from file_info where fileid = '" + id + "'";
         s = mysql_.selectstring(sql.c_str());
@@ -309,6 +317,7 @@ std::vector<filestatusserver> FILEredis::getchatgroupupinglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
@@ -318,11 +327,11 @@ std::vector<filestatusserver> FILEredis::getchatgroupupinglist(
     std::cout << "sender.size = " << senderres.size() << std::endl;
     std::cout << "upsize.size = " << upsizeres.size() << std::endl;
     if(senderres.size()!=0){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.reciver = senderres[i];
             ff.upsize = upsizeres[i];
             res.push_back(ff);
@@ -341,11 +350,12 @@ std::vector<filestatusserver> FILEredis::getfrienddowninglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql="select groupname from file_info where fileid = '"+id+"'";
         s = mysql_.selectstring(sql.c_str());
         if(s.empty()){
-            sql = "select filename from filestatus_info where fileid = '" + id + "'";
+            sql = "select filename from file_info where fileid = '" + id + "'";
             s = mysql_.selectstring(sql.c_str());
             filenameres.push_back(s);
             sql = "select sender from file_info where fileid = '" + id + "'";
@@ -358,15 +368,16 @@ std::vector<filestatusserver> FILEredis::getfrienddowninglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if(senderres.size()!=0){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.sender = senderres[i];
             ff.downsize = upsizeres[i];
             res.push_back(ff);
@@ -386,6 +397,7 @@ std::vector<filestatusserver> FILEredis::getchatfrienddowninglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> upsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql =
             "select groupname from file_info where fileid = '" + id + "'";
@@ -404,15 +416,16 @@ std::vector<filestatusserver> FILEredis::getchatfrienddowninglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             upsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if(!senderres.empty()){
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.sender = senderres[i];
             ff.downsize = upsizeres[i];
             res.push_back(ff);
@@ -431,6 +444,7 @@ std::vector<filestatusserver> FILEredis::getgroupdowninglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> downsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql = "select groupname from file_info where fileid = '" + id + "'";
         s = mysql_.selectstring(sql.c_str());
@@ -446,15 +460,16 @@ std::vector<filestatusserver> FILEredis::getgroupdowninglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             downsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if (senderres.size() != 0) {
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.sender = senderres[i];
             ff.downsize = downsizeres[i];
             res.push_back(ff);
@@ -473,6 +488,7 @@ std::vector<filestatusserver> FILEredis::getchatgroupdowninglist(
     std::vector<std::string> senderres;
     std::vector<std::string> filesizeres;
     std::vector<std::string> downsizeres;
+    std::vector<std::string> fileid1res;
     for (auto id : fileidres) {
         sql = "select groupname from file_info where fileid = '" + id + "'";
         s = mysql_.selectstring(sql.c_str());
@@ -488,15 +504,16 @@ std::vector<filestatusserver> FILEredis::getchatgroupdowninglist(
                   "'";
             s = mysql_.selectstring(sql.c_str());
             downsizeres.push_back(s);
+            fileid1res.push_back(id);
         }
     }
     std::vector<filestatusserver> res;
     if (senderres.size() != 0) {
-        for (int i = 0; i < fileidres.size(); i++) {
+        for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
             ff.filename = filenameres[i];
             ff.filesize = filesizeres[i];
-            ff.fileid = fileidres[i];
+            ff.fileid = fileid1res[i];
             ff.sender = senderres[i];
             ff.downsize = downsizeres[i];
             res.push_back(ff);
@@ -600,4 +617,14 @@ std::string FILEredis::getnewfilename(std::string fileid,std::string account,std
     std::string sql="select newfilename from filestatus_info where fileid = '"+fileid+"' and curaccount ='"+account+"' and ischat ='"+ischat+"' and status = 'downing'";
     std::string newfilename = mysql_.selectstring(sql.c_str());
     return newfilename;
+}
+void FILEredis::deldownrecords(std::string ID,
+                    std::string account,
+                    std::string filepath,
+                    std::string ischat,
+                    std::string filename){
+    std::string sql = "delete from filestatus_info where curaccount = '" +
+                      account + "' and fileid = '" + ID + "' and filepath = '" +
+                      filepath + "' and ischat = '" + ischat + "'";
+    mysql_.delmsg(sql.c_str());
 }

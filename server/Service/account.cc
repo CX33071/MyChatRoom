@@ -28,6 +28,38 @@ Verifycode::Verifycode() {
         "key,name varchar(100),online int);";
     mysql_.createinfo(sql.c_str());
 }
+std::string Verifycode::generatesalt() {
+    std::string salt;
+    for (int i = 0; i < 10; i++) {
+        salt += ('0' + rand() % 10);
+    }
+    return salt;
+}
+std::string Verifycode::sha(std::string input) {
+    std::reverse(input.begin(), input.end());
+    return input;
+}
+std::string Verifycode::screctkey(std::string key) {
+    std::string salt = generatesalt();
+    std::string hash = sha(salt + key);
+    return salt + ":" + hash;
+}
+std::string Verifycode::getstartkey(std::string hashkey) {
+    size_t pos = hashkey.find(':');
+    std::string salt = hashkey.substr(0, pos);
+    std::string hash = hashkey.substr(pos + 1);
+    std::reverse(hash.begin(), hash.end());
+    std::string startkey = hash.substr(10);
+    return startkey;
+}
+bool Verifycode::checkkey(const std::string& inputkey,
+                          const std::string& getkeyvalue) {
+    size_t pos = getkeyvalue.find(':');
+    std::string salt = getkeyvalue.substr(0, pos);
+    std::string hash = getkeyvalue.substr(pos + 1);
+    std::string inputhash = sha(salt + inputkey);
+    return inputhash == hash;
+}
 void Verifycode::resetatstus(){
     std::string sql = "update account_online_info set online=0;";
     mysql_.changemsg(sql.c_str());
@@ -41,7 +73,14 @@ void Verifycode::resetatstus(){
        list.push_back(it.as_string());
    }
     for (auto t : list) {
-        redis_.del({t});
+       auto ff= redis_.del({t});
+       redis_.sync_commit();
+       auto reply3 = ff.get();
+       if(reply3.as_integer()==1){
+           std::cout << "redis成功删除" << std::endl;
+       }else{
+           std::cout << "redis没有查询到key" << std::endl;
+       }
     }
     auto fut1=redis_.keys("onlinename*");
     redis_.sync_commit();
@@ -50,7 +89,14 @@ void Verifycode::resetatstus(){
         list.push_back(it.as_string());
     }
     for (auto t : list) {
-        redis_.del({t});
+        auto fut4=redis_.del({t});
+        redis_.sync_commit();
+        auto reply4=fut4.get();
+        if(reply4.as_integer()==1){
+            std::cout << "redis删除成功" << std::endl;
+        }else{
+            std::cout << "reids没找到key" << std::endl;
+        }
     }
     redis_.sync_commit();
 }
@@ -187,12 +233,13 @@ bool Verifycode::signup(std::string account,std::string password,std::string nam
     if(exists){
         return false;
     }
-    redis_.set(account+"key", password);
+    std::string finalkey = screctkey(password);
+    redis_.set(account+"key", finalkey);
     redis_.set(name,account);
     redis_.set(account, name);
     redis_.sync_commit();
     std::string sql1 = "insert into account_info(account,password)values('" +
-                       account + "','" + password + "')";
+                       account + "','" + finalkey + "')";
     std::string sql2 =
         "insert into account_online_info(account,online)values('" + account +
         "',0)";
@@ -226,29 +273,30 @@ bool Verifycode::verify(std::string account,std::string code) {
     }
     return false;
 }
+
 bool Verifycode::is_online(std::string account) {
-    auto fut = redis_.exists({"online" + account});
+    auto fut = redis_.get("online" + account);
     redis_.sync_commit();
-    if (!fut.get().as_integer()) {
-        std::cout << "redis查出不在线，进mysql查" << std::endl;
-        std::string sql =
-            "select online from account_online_info where account ='" +
-            account + "'";
-        std::string res = mysql_.selectstring(sql.c_str());
-        if(res.empty()){
-            return false;
-        }else if(res=="1"){
-            std::cout << "mysql查到在线" << std::endl;
-            redis_.set("online" + account, "1");
-            redis_.sync_commit();
-            return true;
-        }else{
-            std::cout << "mysql查到不在线" << std::endl;
-            return false;
-        }
-    }else{
-        std::cout << "redis查在线" << std::endl;
+    auto reply = fut.get();
+    if(reply.is_null()){
+        std::cout << "redis查到不在线" << std::endl;
+    }
+    else{
+        if(reply.as_string()=="1"){
+        std::cout << "redis查到用户 在线" << std::endl;
         return true;
+    } 
+}
+    std::string sql =
+        "select online from account_online_info where account ='" + account +
+        "'";
+    std::string res = mysql_.selectstring(sql.c_str());
+    if (res.empty()) {
+        return false;
+    } else if (res == "1") {
+        return true;
+    } else {
+        return false;
     }
 }
 int Verifycode::loginwithkey(std::string account,std::string password) {
@@ -267,7 +315,8 @@ int Verifycode::loginwithkey(std::string account,std::string password) {
         return 1;
     }
     std::string hashkey = reply.as_string();
-    if(password!=hashkey) {
+
+    if (!checkkey(password, hashkey)) {
         return 2;
     }
     redis_.set("online" + account, "1");
@@ -297,7 +346,8 @@ bool Verifycode::forgetkey(std::string account) {
     auto fut1 = redis_.get(account+"key");
     redis_.sync_commit();
     std::string hashcode = fut1.get().as_string();
-    sendcom( account, "密码", "您的密码是: " + hashcode);
+    std::string truecode = getstartkey(hashcode);
+    sendcom( account, "密码", "您的密码是: " + truecode);
     return true;
 }
 int Verifycode::destroy(std::string account,std::string password,Group&group,Friend&f) {
@@ -317,7 +367,8 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     auto fut1 = redis_.get(account+"key");
     redis_.sync_commit();
     auto reply = fut1.get();
-    if (reply.as_string() !=password){
+    std::string hashkey = reply.as_string();
+    if (!checkkey(password, hashkey)) {
         return 2;
     }
     for(auto &t:f.friendlist(account)){
@@ -384,18 +435,23 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     return 0;
 }
 void Verifycode::exitlogin(std::string account){
-    redis_.del({"online" + account});
-    std::string s = "del online" + account;
-    std::cout << s << std::endl;
+   auto fut= redis_.del({"online" + account});
     redis_.sync_commit();
-    std::cout << "redis 删除执行" << std::endl;
+    auto reply = fut.get();
+    if (reply.as_integer() == 1) {
+        std::cout << "redis删除成功" << std::endl;
+    } else {
+        std::cout << "redis没有这个key" << std::endl;
+    }
     std::string sql =
         "update account_online_info set online=0 where account='" + account +
         "'";
     mysql_.changemsg(sql.c_str());
+    std::cout << "删除mysql用户账号在线" << std::endl;
     std::string name = getname(account);
     sql = "update onlinename_info set online =0 where name ='" + name + "'";
     mysql_.changemsg(sql.c_str());
+    std::cout << "删除mysql用户name在线" << std::endl;
 }
 void Verifycode::sendcom(
                          const std::string clientaccount,
@@ -414,6 +470,7 @@ void Verifycode::sendcom(
                        subject + "\r\n\r\n" + code;
     struct curl_slist* recipients = NULL;
     recipients = curl_slist_append(recipients, to.c_str());
+    curl_easy_setopt(curl, CURLOPT_NOPROXY, "*");
     curl_easy_setopt(curl, CURLOPT_URL, "smtps://smtp.qq.com:465");
     curl_easy_setopt(curl, CURLOPT_USERNAME, server.c_str());
     curl_easy_setopt(curl, CURLOPT_PASSWORD, "miojajsaujebdbch");
