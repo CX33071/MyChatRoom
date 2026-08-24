@@ -36,6 +36,24 @@ void FileServer::connectioncallback(const TcpConnectionPtr& conn) {
         uploadmap_.erase(conn);
     }
 }
+std::vector<std::string> getlocalfile(std::string path) {
+    std::vector<std::string> list;
+    DIR* dir = opendir(path.c_str());
+    if (dir == nullptr) {
+        perror("opendir");
+        return list;
+    }
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string name = entry->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+        list.push_back(name);
+    }
+    closedir(dir);
+    return list;
+}
 void FileServer::messagecallback(const TcpConnectionPtr& conn,
                                  Buffer* buf,
                                  Timestamp) {
@@ -52,9 +70,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                j = json::parse(msg);
                std::string cmd = j["cmd"];
                if (cmd == "STOR") {
-                   std::string filename = j["filename"];
-                   std::string filepath = "./file/" + filename;
                    fc.ID = j["ID"];
+                   std::string filename = j["filename"];
+                   std::string filepath = "./file/" + fc.ID+filename;
                    fc.filename = j["filename"];
                    std::string ss = j["filesize"];
                    uint64_t filesize = std::stoi(ss);
@@ -80,9 +98,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                if (cmd == "uploadedSTOR") {
                    std::string filename = j["filename"];
                    std::string filesize = j["filesize"];
-                   std::string recivesize = j["recivesize"];
-                   std::string filepath = "./file/" + filename;
                    fc.ID = j["ID"];
+                   std::string recivesize = j["recivesize"];
+                   std::string filepath = "./file/" + fc.ID+filename;
                    fc.filename = filename;
                    fc.filesize = std::stoi(filesize);
                    fc.recvsize = std::stoi(recivesize);
@@ -109,9 +127,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    }
                }
                if (cmd == "groupSTOR") {
-                   std::string filename = j["filename"];
-                   std::string filepath = "./file/" + filename;
                    fc.ID = j["ID"];
+                   std::string filename = j["filename"];
+                   std::string filepath = "./file/" +fc.ID+ filename;
                    fc.filename = j["filename"];
                    std::string ss = j["filesize"];
                    uint64_t filesize = std::stoi(ss);
@@ -138,7 +156,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string ID = j["ID"];
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
-                   std::string filepath = "./file/" + filename;
+                   std::string filepath = "./file/" + ID+filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
                        std::cout << "./file本地找不到文件" << std::endl;
@@ -159,7 +177,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filesize = j["filesize"];
                    std::string filename = j["filename"];
                    std::string downsize = j["downsize"];
-                   std::string filepath = "./file/" + filename;
+                   std::string filepath = "./file/" +ID+ filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
                        std::cout << "./file本地找不到文件" << std::endl;

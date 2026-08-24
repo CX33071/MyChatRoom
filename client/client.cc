@@ -94,14 +94,7 @@ void handle_message(chatclient*client) {
                         std::cout << GREEN << "[" << name2
                                   << "]:    " << RESET;
                         std::cout.flush();
-                    } else {
-                        if(!client->is_blockfriend(from)){
-                            {
-                                std::lock_guard<std::mutex> lock(client->event_mutex);
-                                client->event_queue.push(e);
-                                client->event_cv.notify_one();
-                            }
-                        }
+                    } else {  
                     }
                 } else if (cmd == "groupchatedres") {
                     chatclient::Event e;
@@ -127,11 +120,6 @@ void handle_message(chatclient*client) {
                                   << "]:    " << RESET;
                         std::cout.flush();
                     } else {
-                        {
-                            std::lock_guard<std::mutex> lock(client->event_mutex);
-                            client->event_queue.push(e);
-                            client->event_cv.notify_one();
-                        }
                     }
                 } else if (cmd == "addedres") {
                     std::cout << "进入addedres" << std::endl;
@@ -393,6 +381,12 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->friend_menu();
                 chatclient->handle_onlinelist();
                 chatclient->handle_blocklist();
+                for(auto p:chatclient->chatmessage){
+                    if(p.second>0){
+                        std::cout << PURPLE << "收到" << p.first << "发来"
+                                  << p.second << "条消息" << std::endl;
+                    }
+                }
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);
@@ -603,6 +597,12 @@ void mainfunction(chatclient*chatclient) {
                 chatclient->group_menu();
                 chatclient->handle_ownergrouplist();
                 chatclient->handle_grouplist();
+                for(auto p:chatclient->groupmessage){
+                    if(p.second>0){
+                        std::cout << PURPLE << "收到" << p.first << "群聊的"
+                                  << p.second << "条消息" << std::endl;
+                    }
+                }
                 int choice;
                 std::string s;
                 char* line = readline(GREEN "请选择:" RESET);

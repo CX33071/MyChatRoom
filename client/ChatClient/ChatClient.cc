@@ -2,11 +2,13 @@
 #include "FileClient/FileClient.h"
 #define BG_SELECT "\033[48;5;238m"
 #define WHITE "\033[37m"
+bool cancelinput = false;
 chatclient* chatclient::chatptr = nullptr;
 int cancel_function(int n1,int n2) {
     rl_replace_line("",0);
     rl_crlf();
     rl_done = 1;
+    cancelinput = true;
     return 0;
 }
 chatclient::chatclient(EventLoop* loop, const InetAddress& addr):client_(loop,addr),loop_(loop){
@@ -53,6 +55,7 @@ int chatclient::emptyfunction(int n1,int n2){
     return 0;
 }
 int chatclient::exechatmenu(int n1,int n2){
+    chatptr->chat_menu_index = -1;
     rl_done = 1;
     rl_replace_line("", 0);
     rl_on_new_line();
@@ -83,7 +86,7 @@ int chatclient::exechatmenu(int n1,int n2){
                 chatptr->showchatmenu(index);
             }
         }
-        if (p == '\r') {
+        if (p == '\r'||p=='\n') {
             chatptr->clearchatmenu();
             chatptr->chat_menu_index = index;
             rl_done = 1;
@@ -1522,6 +1525,7 @@ void chatclient::handle_friendchat() {
         std::cout << PURPLE << "你已被该用户拉黑，无法私聊" << RESET
                   << std::endl;
     } else {
+        chatmessage.erase(chatfriendname);
         inchat = true;
         system("clear");
         std::cout << GREEN << "进入与用户[" << chatfriendname << "]的聊天界面"
@@ -1580,6 +1584,10 @@ void chatclient::handle_friendchat() {
                         break;
                     }
                     if (n < 0) {
+                        break;
+                    }
+                    if (c == '\007') {
+                        std::cout << "取消选择" << std::endl;
                         break;
                     }
                     // if (c == '\007') {
@@ -1940,9 +1948,10 @@ void chatclient::handle_friendchat() {
                     handle_exit();
                     return;
                 }
-                if (line[0] == '\0') {
+                if (line[0] == '\0'&&cancelinput) {
                     std::cout << "取消选择" << std::endl;
                     free(line);
+                    cancelinput = false;
                     continue;
                 }
                 msg = line;
@@ -2132,10 +2141,20 @@ void chatclient::handle_chatloadfile(std::string from){
                     break;
                 } else if (ss == "n" || ss == "N") {
                     newfilename = filename;
+                    size_t pos = filename.find_last_of('.');
+                    std::string name;
+                    std::string type;
+                    if (pos != std::string::npos) {
+                        name = filename.substr(0, pos);
+                        type = filename.substr(pos);
+                    } else {
+                        name = filename;
+                        type = "";
+                    }
                     while (std::find(pathfile.begin(), pathfile.end(),
                                      newfilename) != pathfile.end()) {
                         newfilename =
-                            filename + "(" + std::to_string(nn++) + ")";
+                            name + "(" + std::to_string(nn++) + ")" + type;
                     }
                     break;
                 } else {
@@ -4209,28 +4228,37 @@ void chatclient::handle_sendedfile() {
                         break;
                     } else if (ss == "n" || ss == "N") {
                         newfilename = filename;
+                        size_t pos = filename.find_last_of('.');
+                        std::string name;
+                        std::string type;
+                        if (pos != std::string::npos) {
+                            name = filename.substr(0, pos);
+                            type = filename.substr(pos);
+                        } else {
+                            name = filename;
+                            type = "";
+                        }
                         while (std::find(pathfile.begin(), pathfile.end(),
                                          newfilename) != pathfile.end()) {
                             newfilename =
-                                filename + "(" + std::to_string(nn++) + ")";
+                                name + "(" + std::to_string(nn++) + ")" + type;
                         }
                         break;
                     } else {
-                          line =
-                            readline(PURPLE "请输入替换y|Y,下载n|N:" RESET);
-                          if (line == nullptr) {
-                              stop1 = true;
-                              if (chatis_login) {
-                                  handle_exitlogin();
-                              }
-                              handle_exit();
-                              return;
-                          }
-                          if (line[0] == '\0') {
-                              std::cout << "取消选择" << std::endl;
-                              free(line);
-                              return;
-                          }
+                        line = readline(PURPLE "请输入替换y|Y,下载n|N:" RESET);
+                        if (line == nullptr) {
+                            stop1 = true;
+                            if (chatis_login) {
+                                handle_exitlogin();
+                            }
+                            handle_exit();
+                            return;
+                        }
+                        if (line[0] == '\0') {
+                            std::cout << "取消选择" << std::endl;
+                            free(line);
+                            return;
+                        }
                         ss = line;
                         free(line);
                     }
@@ -4691,6 +4719,11 @@ void chatclient::handle_groupchat() {
                          break;
                      }
                      if (n <= 0) {
+                         break;
+                     }
+                     if (c == '\007') {
+                         clearchatmenu();
+                         std::cout << "取消选择" << std::endl;
                          break;
                      }
                      if (c == 0x1f) {
@@ -5307,10 +5340,20 @@ void chatclient::handle_chatgrouploadfile(std::string groupname2){
                     break;
                 } else if (ss == "n" || ss == "N") {
                     newfilename = filename;
+                    size_t pos = filename.find_last_of('.');
+                    std::string name;
+                    std::string type;
+                    if (pos != std::string::npos) {
+                        name = filename.substr(0, pos);
+                        type = filename.substr(pos);
+                    } else {
+                        name = filename;
+                        type = "";
+                    }
                     while (std::find(pathfile.begin(), pathfile.end(),
                                      newfilename) != pathfile.end()) {
                         newfilename =
-                            filename + "(" + std::to_string(nn++) + ")";
+                            name + "(" + std::to_string(nn++) + ")" + type;
                     }
                     break;
                 } else {
