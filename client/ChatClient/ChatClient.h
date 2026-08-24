@@ -72,6 +72,8 @@ class chatclient {
     chatrecord cr;
 
    public:
+    std::vector<std::string> grouplist;
+    std::unordered_map<std::string, bool> isblocklist;
     int chat_menu_index = -1;
     std::unordered_map<std::string, int> chatmessage;
     std::unordered_map<std::string, int> groupmessage;
@@ -123,6 +125,8 @@ class chatclient {
     chatclient(EventLoop* loop, const InetAddress& addr);
     void sendheart();
     void cancel_requests();
+    bool is_groupmember2(std::string groupname);
+    bool is_groupmember(std::string groupname,std::string account);
     void showchatmenu(int index);
     void erase_utf8(std::string& msg);
     void setfileclient(FileClient* client);
@@ -198,7 +202,6 @@ class chatclient {
     void handle_loadfile();
     bool is_existsgroup(std::string groupname);
     bool is_manager(std::string groupname, std::string count);
-    bool is_groupmember(std::string groupname, std::string count);
     void handle_chatloadfile(std::string from);
     int is_friend(std::string account);
     void printfmembers();

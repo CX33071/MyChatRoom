@@ -34,6 +34,10 @@ void SQlite::addfriendchat(std::string sender,
     int res = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &e);
 
     if (res != SQLITE_OK) {
+        std::cout << "进入addfriendchat:"
+                  << " sender=" << sender << " reciver=" << reciver
+                  << " text=" << text << std::endl;
+
         std::cout << "SQL执行失败："<<e<<std::endl;
         sqlite3_free(e);
     }

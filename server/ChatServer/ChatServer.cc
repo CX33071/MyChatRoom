@@ -247,7 +247,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::cout << "account = "<<account<<std::endl;
             std::cout << "password = " << password << std::endl;
             int res = verifycode.loginwithkey(account, password);
-            std::cout << "loginwithkey回复" << std::endl;
             json j1;
             j1["cmd"] = "keysignin_res";
             if (res == 0) {
@@ -292,7 +291,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if (cmd == "exitlogin") {
             std::string account = j["account"];
-            std::cout << "进入verify函数" << std::endl;
             verifycode.exitlogin(account);
             json reply;
             reply["cmd"] = "exitloginres";
@@ -1099,14 +1097,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "grouplist") {
             std::string account = j["account"];
             std::vector<std::string> res = G.grouplist(account);
-            std::string list = "加入的群聊列表:\n";
-            for (int i = 0; i < res.size(); i++) {
-                list += res[i];
-                list += "\n";
-            }
             json j1;
             j1["cmd"] = "grouplistres";
-            j1["data"] = list;
+            j1["data"] = res;
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
@@ -1130,6 +1123,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             conn->send(j1.dump() + '\n');
         }
+
         if (cmd == "blocklist") {
             std::string account = j["account"];
             std::vector<std::string> res = F.blocklist(account);
@@ -1218,18 +1212,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string target = j["to"];
             std::string account = j["from"];
             std::string msg = j["message"];
-            json j1;
-            j1["cmd"] = "friendchatres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
-            if (F.isblocked(account, target)) {
-                j1["code"] = "0";
-                conn->send(j1.dump() + '\n');
-            } else {
-                j1["code"] = "1";
-                conn->send(j1.dump() + '\n');
                 json j2;
                 j2["cmd"] = "chatedres";
                 j2["account"] = account;
@@ -1252,7 +1234,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 }
                 F.historyfriendchat(account, target, name1, name2,
                                     msg + "   [" + t + "]");
-            }
         }
         if (cmd == "block") {
             std::string account = j["account"];
@@ -1271,6 +1252,20 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["request_id"] = request_id;
             }
             conn->send(j1.dump() + '\n');
+            json j2;
+            j2["cmd"] = "blockedmes";
+            j2["friendname"] = verifycode.getname(account);
+            TcpConnectionPtr target_conn;
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(target);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                    target_conn->send(j2.dump() + '\n');
+                } else {
+                    G.disconnectmsg(target, j2);
+                }
+            }
         }
         if (cmd == "is_block") {
             json j1;
@@ -1321,6 +1316,20 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             j1["data"] = "已成功取消拉黑";
             conn->send(j1.dump() + '\n');
+            json j2;
+            j2["cmd"] = "cancelblockedmes";
+            j2["friendname"] = verifycode.getname(account);
+            TcpConnectionPtr target_conn;
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(target);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                    target_conn->send(j2.dump() + '\n');
+                } else {
+                    G.disconnectmsg(target, j2);
+                }
+            }
         }
         if(cmd=="changeowner"){
             std::string groupname=j["groupname"];
@@ -1472,15 +1481,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string groupname = j["groupname"];
             std::string message = j["message"];
-            json j2;
-            j2["cmd"] = "groupchatres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j2["request_id"] = request_id;
-            }
-            if(G.is_groupmember(groupname,account)==1){
-                j2["code"] = "1";
-                conn->send(j2.dump() + '\n');
                 std::string name = verifycode.getname(account);
                 json j1;
                 j1["cmd"] = "groupchatedres";
@@ -1490,7 +1490,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["groupname"] = groupname;
                 std::string t = get_current_time();
                 j1["time"] = t;
-                std::cout << "时间" << t << std::endl;
                 G.historygroupchat(account, groupname, name,
                                    message + "         [" + t + "]");
                 std::vector<std::string> res =
@@ -1510,10 +1509,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                     if (target_conn) {
                         target_conn->send(j1.dump() + '\n');
                     }
-            }
-            }else{
-                j2["code"] = "0";
-                conn->send(j2.dump() + '\n');
             }
         }
     }

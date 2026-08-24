@@ -1313,7 +1313,7 @@ void chatclient::handle_applyjoingroup() {
             std::cout << "该群聊并不存在!" << std::endl;
             return;
         }
-        b = is_groupmember(groupname, account);
+        b = is_groupmember2(groupname);
         if (b) {
             std::cout << "您已经是群聊成员了" << std::endl;
             return;
@@ -1368,6 +1368,13 @@ void chatclient::handle_exitlogin() {
         std::cout << PURPLE << res["data"] << RESET << std::endl;
         chatis_login = false;
         system("clear");
+        {
+            std::lock_guard<std::mutex> lock(event_mutex);
+
+            while (!event_queue.empty())
+                event_queue.pop();
+        }
+        msg_map.clear();
     }
 }
 int chatclient::is_friend(std::string friendaccount) {
@@ -1516,12 +1523,11 @@ void chatclient::handle_friendchat() {
     current_chat = getaccount(chatfriendname);
     friendhistory.clear();
     int is = is_friend(current_chat);
-    bool b = is_blocked(current_chat);
     if (is == 1) {
         std::cout << "该账号并不存在" << std::endl;
     } else if (is == 0) {
         std::cout << "对方目前还不是您的好友" << std::endl;
-    }else if(b){
+    }else if(isblocklist[chatfriendname]){
         std::cout << PURPLE << "你已被该用户拉黑，无法私聊" << RESET
                   << std::endl;
     } else {
@@ -1761,46 +1767,18 @@ void chatclient::handle_friendchat() {
                                     }
                                     std::cout << msg << std::endl;
                                     std::cout << s1 << std::flush;
-                                    // b = is_blocked(current_chat);
-                                    // if (b) {
-                                    //     std::cout << PURPLE
-                                    //               << "你已被该用户拉黑，请退出聊天"
-                                    //               << RESET << std::endl;
-                                    //     continue;
-                                    // }
-                                    // is = is_friend(current_chat);
-                                    // if (is == 0) {
-                                    //     std::cout
-                                    //         << PURPLE
-                                    //         << "对方目前不是你的好友，不能开启"
-                                    //            "私聊，请结束聊天"
-                                    //         << RESET << std::endl;
-                                    //     continue;
-                                    // }
                                     json chat;
                                     chat["cmd"] = "friendchat";
                                     chat["from"] = account;
                                     chat["to"] = current_chat;
                                     chat["message"] = msg;
-                                    id = gen_req_id();
-                                    chat["request_id"] = id;
-                                    std::promise<json> p;
-                                    std::future<json> f = p.get_future();
-                                    {
-                                        std::lock_guard<std::mutex> lock(
-                                            active_mutex);
-                                        active_requests[id] = std::move(p);
-                                    }
-                                    chat_conn->send(chat.dump() + '\n');
-                                    json res=f.get();
-                                    if(res["code"]=="0"){
-                                        std::cout
-                                            << PURPLE
-                                            << "你并不是对方好友，请退出聊天"
-                                            << std::endl;
+                                    if (isblocklist[chatfriendname]) {
+                                        std::cout << PURPLE
+                                                  << "你当前已经被用户拉黑，请"
+                                                     "退出聊天"
+                                                  << std::endl;
                                     } else {
-                                        SQ.addfriendchat(name, chatfriendname,
-                                                         msg);
+                                        chat_conn->send(chat.dump() + '\n');
                                     }
                                     msg.clear();
                                 } else {
@@ -1977,28 +1955,13 @@ void chatclient::handle_friendchat() {
                 chat["from"] = account;
                 chat["to"] = current_chat;
                 chat["message"] = msg;
-                id = gen_req_id();
-                chat["request_id"] = id;
-                std::promise<json> p;
-                std::future<json> f = p.get_future();
-                {
-                    std::lock_guard<std::mutex> lock(active_mutex);
-                    active_requests[id] = std::move(p);
-                }
-                chat_conn->send(chat.dump() + '\n');
-                json res;
-                if (!wait_future(f, res)) {
-                    std::cout << "服务器响应超时" << std::endl;
-                    continue;
-                }
-                if (res["cmd"] == "cancel") {
-                    return;
-                }
-                if(res["code"]=="1"){
-                    SQ.addfriendchat(name, chatfriendname, msg);
-                }else{
-                    std::cout << PURPLE << "你已被对方拉黑，请按ctrl+/退出聊天"
+                if (isblocklist[chatfriendname]) {
+                    std::cout << PURPLE
+                              << "你当前已经被用户拉黑，请"
+                                 "退出聊天"
                               << std::endl;
+                } else {
+                    chat_conn->send(chat.dump() + '\n');
                 }
             }
         }
@@ -2226,17 +2189,14 @@ void chatclient::handle_chatloadfile(std::string from){
     j["from"] = account;
     j["to"] = from;
     j["message"] = "我下载了文件" + filename;
-    id = gen_req_id();
-    j["request_id"] = id;
-    std::promise<json> p1;
-    std::future<json> f1 = p1.get_future();
-    {
-        std::lock_guard<std::mutex> lock(active_mutex);
-        active_requests[id] = std::move(p1);
+    if (isblocklist[chatfriendname]) {
+        std::cout << PURPLE
+                  << "你当前已经被用户拉黑，请"
+                     "退出聊天"
+                  << std::endl;
+    } else {
+        chat_conn->send(j.dump() + '\n');
     }
-    chat_conn->send(j.dump() + '\n');
-    SQ.addfriendchat(name, getname(from), "我下载了文件" + filename);
-    std::cout << std::endl;
 }
 void chatclient::handle_rechatsendfile(std::string toaccount){
     std::string toname = getname(toaccount);
@@ -2375,27 +2335,13 @@ void chatclient::handle_rechatsendfile(std::string toaccount){
         j1["from"] = account;
         j1["message"] = "[上传文件]:" + filename1;
         j1["to"] = toaccount;
-        id = gen_req_id();
-        j1["request_id"] = id;
-        std::promise<json> p1;
-        std::future<json> f1 = p1.get_future();
-        {
-            std::lock_guard<std::mutex> lock(active_mutex);
-            active_requests[id] = std::move(p1);
-        }
-        chat_conn->send(j1.dump() + '\n');
-        json res1;
-        if (!wait_future(f1, res1)) {
-            std::cout << "服务器响应超时" << std::endl;
-            return ;
-        }
-        if (res1["cmd"] == "cancel") {
-            return ;
-        }
-        if(res1["code"]=="0"){
-            std::cout << PURPLE << "你当前并不是对方好友,不能发文件"
+        if (isblocklist[chatfriendname]) {
+            std::cout << PURPLE
+                      << "你当前已经被用户拉黑，请"
+                         "退出聊天"
                       << std::endl;
-            return;
+        } else {
+            chat_conn->send(j1.dump() + '\n');
         }
 }
 void chatclient::handle_rechatloadfile(std::string from1){
@@ -2532,16 +2478,7 @@ void chatclient::handle_rechatloadfile(std::string from1){
     j["from"] = account;
     j["to"] = from1;
     j["message"] = "我下载了文件" + filename1;
-    id = gen_req_id();
-    j["request_id"] = id;
-    std::promise<json> p1;
-    std::future<json> f1 = p1.get_future();
-    {
-        std::lock_guard<std::mutex> lock(active_mutex);
-        active_requests[id] = std::move(p1);
-    }
     chat_conn->send(j.dump() + '\n');
-    SQ.addfriendchat(name, fromname, "我下载了文件" + filename);
 }
 void chatclient::handle_regroupchatsendfile(std::string groupname1){
     if(chatuploads[groupname1].empty()){
@@ -2676,27 +2613,11 @@ void chatclient::handle_regroupchatsendfile(std::string groupname1){
     j1["account"] = account;
     j1["groupname"] = groupname1;
     j1["message"] = "[上传文件]:" + filename1;
-    id = gen_req_id();
-    j1["request_id"] = id;
-    std::promise<json> p1;
-    std::future<json> f1 = p1.get_future();
-    {
-        std::lock_guard<std::mutex> lock(active_mutex);
-        active_requests[id] = std::move(p1);
-    }
-    chat_conn->send(j1.dump() + '\n');
-    json res1;
-    if (!wait_future(f1, res1)) {
-        std::cout << "服务器响应超时" << std::endl;
-        return ;
-    }
-    if (res1["cmd"] == "cancel") {
-        return ;
-    }
-    if(res1["code"]=="0"){
-        std::cout << PURPLE << "你当前并不在群聊当中,不能发文件" << std::endl;
-        return;
-    }
+   if(!is_groupmember2(groupname1)){
+       std::cout << PURPLE << "你当前不在该群聊，请退出" << std::endl;
+   }else{
+       chat_conn->send(j1.dump() + '\n');
+   }
 }
 void chatclient::handle_regroupchatloadfile(std::string groupname1){
     if(chatdownloads[groupname1].empty()){
@@ -2837,16 +2758,7 @@ void chatclient::handle_regroupchatloadfile(std::string groupname1){
         j["account"] = account;
         j["groupname"] = groupname1;
         j["message"] = "我下载了文件" + filename1;
-        id = gen_req_id();
-        j["request_id"] = id;
-        std::promise<json> p1;
-        std::future<json> f1 = p1.get_future();
-        {
-            std::lock_guard<std::mutex> lock(active_mutex);
-            active_requests[id] = std::move(p1);
-        }
         chat_conn->send(j.dump() + '\n');
-        SQ.addgroupchat(groupname1, name, "我下载了文件" + filename1);
         chatdownloads[groupname1].erase(chatdownloads[groupname1].begin() + num -
                                         1);
     }
@@ -2940,6 +2852,44 @@ bool chatclient::is_groupmember(std::string groupname, std::string count) {
         return false;
     }
 }
+     bool chatclient::is_groupmember2(std::string groupname) {
+    for (auto s : grouplist) {
+        if (s == groupname) {
+            return true;
+        }
+    }
+    return false;
+}
+void chatclient::handle_grouplist() {
+    if (!chatis_login) {
+        std::cout << "请先登录!" << std::endl;
+    } else {
+        j["cmd"] = "grouplist";
+        j["account"] = account;
+        id = gen_req_id();
+        j["request_id"] = id;
+        std::promise<json> p;
+        std::future<json> f = p.get_future();
+        {
+            std::lock_guard<std::mutex> lock(active_mutex);
+            active_requests[id] = std::move(p);
+        }
+        chat_conn->send(j.dump() + '\n');
+        json res;
+        if (!wait_future(f, res)) {
+            std::cout << "服务器响应超时" << std::endl;
+            return;
+        }
+        if (res["cmd"] == "cancel") {
+            return;
+        }
+        size_t pos = 0;
+        grouplist = res["data"];
+        for (auto s : grouplist) {
+            std::cout << PURPLE << s << std::endl;
+        }
+    }
+}
 bool chatclient::is_manager(std::string groupname, std::string count) {
     j["cmd"] = "is_manager";
     j["account"] = count;
@@ -3022,7 +2972,7 @@ void chatclient::handle_setgroupmanager() {
             std::cout << "该群聊并不存在" << std::endl;
             return;
         }
-        b = is_groupmember(groupname, account);
+        b = is_groupmember2(groupname);
         if (!b) {
             std::cout << "您并不在该群当中，无管理权限" << std::endl;
             return;
@@ -3198,38 +3148,6 @@ void chatclient::handle_groupmember() {
         }
         free(line);
         printfmembers();
-    }
-}
-void chatclient::handle_grouplist() {
-    if (!chatis_login) {
-        std::cout << "请先登录!" << std::endl;
-    } else {
-        j["cmd"] = "grouplist";
-        j["account"] = account;
-        id = gen_req_id();
-        j["request_id"] = id;
-        std::promise<json> p;
-        std::future<json> f = p.get_future();
-        {
-            std::lock_guard<std::mutex> lock(active_mutex);
-            active_requests[id] = std::move(p);
-        }
-        chat_conn->send(j.dump() + '\n');
-        json res;
-        if (!wait_future(f, res)) {
-            std::cout << "服务器响应超时" << std::endl;
-            return;
-        }
-        if (res["cmd"] == "cancel") {
-            return;
-        }
-        size_t pos = 0;
-        std::string data = res["data"];
-        while ((pos = data.find("\\n", pos)) != std::string::npos) {
-            data.replace(pos, 2, "\n");
-            pos += 1;
-        }
-        std::cout << PURPLE << data << RESET << std::endl;
     }
 }
 void chatclient::handle_blocklist() {
@@ -4658,7 +4576,7 @@ void chatclient::handle_groupchat() {
              std::cout << PURPLE << "该群聊并不存在!" << RESET << std::endl;
              return;
          }
-         b = is_groupmember(groupname, account);
+         b = is_groupmember2(groupname);
          if (!b) {
              std::cout << PURPLE << "您当前并不在该群聊里，不能进行聊天"
                        << RESET << std::endl;
@@ -4896,24 +4814,13 @@ void chatclient::handle_groupchat() {
                                      chat["account"] = account;
                                      chat["groupname"] = groupname;
                                      chat["message"] = msg;
-                                     id = gen_req_id();
-                                     chat["request_id"] = id;
-                                     std::promise<json> p;
-                                     std::future<json> f = p.get_future();
-                                     {
-                                         std::lock_guard<std::mutex> lock(
-                                             active_mutex);
-                                         active_requests[id] = std::move(p);
-                                     }
-                                     chat_conn->send(chat.dump() + '\n');
-                                     json res = f.get();
-                                     if (res["code"] == "0") {
+                                     if (!is_groupmember2(groupname)) {
                                          std::cout
                                              << PURPLE
                                              << "你当前并不在该群聊，请退出聊天"
                                              << std::endl;
                                      } else {
-                                         SQ.addgroupchat(groupname, name, msg);
+                                         chat_conn->send(chat.dump() + '\n');
                                      }
                                      msg.clear();
                                  } else {
@@ -5059,43 +4966,17 @@ void chatclient::handle_groupchat() {
                  msg = line;
                  free(line);
              }
-             // b = is_groupmember(groupname, account);
-             // if (!b) {
-             //     std::cout
-             //         << PURPLE
-             //         <<
-             //         "你当前并不在该群聊里，不能进行聊天，请输入EXIT结束聊天"
-             //         << RESET << std::endl;
-             //     continue;
-             // }
              if (!msg.empty()) {
                  json chat;
                  chat["cmd"] = "groupchat";
                  chat["account"] = account;
                  chat["groupname"] = groupname;
                  chat["message"] = msg;
-                 id = gen_req_id();
-                 chat["request_id"] = id;
-                 std::promise<json> p;
-                 std::future<json> f = p.get_future();
-                 {
-                     std::lock_guard<std::mutex> lock(active_mutex);
-                     active_requests[id] = std::move(p);
-                 }
-                 chat_conn->send(chat.dump() + '\n');
-                 json res;
-                 if (!wait_future(f, res)) {
-                     std::cout << "服务器响应超时" << std::endl;
-                     continue;
-                 }
-                 if (res["cmd"] == "cancel") {
-                     return;
-                 }
-                 if (res["code"] == "1") {
-                     SQ.addgroupchat(groupname, name, msg);
-                 } else {
-                     std::cout << PURPLE << "你已被踢出群聊，请按ctrl+/退出聊天"
+                 if (!is_groupmember2(groupname)) {
+                     std::cout << PURPLE << "你当前并不在该群聊，请退出聊天"
                                << std::endl;
+                 } else {
+                     chat_conn->send(chat.dump() + '\n');
                  }
              }
          }
@@ -5180,27 +5061,11 @@ void chatclient::handle_chatgroupsendfile(std::string groupname1){
     j1["account"]=account;
     j1["groupname"] = groupname1;
     j1["message"] = "[上传文件]:" + filename;
-    id = gen_req_id();
-    j1["request_id"] = id;
-    std::promise<json> p1;
-    std::future<json> f1 = p1.get_future();
-    {
-        std::lock_guard<std::mutex> lock(active_mutex);
-        active_requests[id] = std::move(p1);
-    }
-    chat_conn->send(j1.dump() + '\n');
-    json res1;
-    if (!wait_future(f1, res1)) {
-        std::cout << "服务器响应超时" << std::endl;
-        return;
-    }
-    if (res1["cmd"] == "cancel") {
-        return;
-    }
-    if(res1["code"]=="0"){
-        std::cout << PURPLE << "你当前并不在群聊里，不能发文件" << std::endl;
-        return;
-    }
+  if(!is_groupmember2(groupname1)){
+      std::cout << PURPLE << "你并不在群聊里，请退出" << std::endl;
+  }else{
+      chat_conn->send(j1.dump() + '\n');
+  }
 }
 void chatclient::handle_chatgrouploadfile(std::string groupname2){
     if(chatfile[groupname2].empty()){
@@ -5425,16 +5290,7 @@ void chatclient::handle_chatgrouploadfile(std::string groupname2){
     j["account"] = account;
     j["groupname"] = groupname2;
     j["message"] = "我下载了文件" + filename;
-    id = gen_req_id();
-    j["request_id"] = id;
-    std::promise<json> p1;
-    std::future<json> f1 = p1.get_future();
-    {
-        std::lock_guard<std::mutex> lock(active_mutex);
-        active_requests[id] = std::move(p1);
-    }
     chat_conn->send(j.dump() + '\n');
-    SQ.addgroupchat(groupname2,name, "我下载了文件" + filename);
 }
 void chatclient::handle_sendfile() {
     if (!chatis_login) {
@@ -5641,26 +5497,13 @@ void chatclient::handle_chatsendfile(std::string frienduser){
         j1["from"] = account;
         j1["message"] = "[上传文件]:" + filename;
         j1["to"] = frienduser;
-        id = gen_req_id();
-        j1["request_id"] = id;
-        std::promise<json> p1;
-        std::future<json> f1 = p1.get_future();
-        {
-            std::lock_guard<std::mutex> lock(active_mutex);
-            active_requests[id] = std::move(p1);
-        }
-        chat_conn->send(j1.dump() + '\n');
-        json res1;
-        if (!wait_future(f1, res1)) {
-            std::cout << "服务器响应超时" << std::endl;
-            return;
-        }
-        if (res1["cmd"] == "cancel") {
-            return;
-        }
-        if (res1["code"] == "0") {
-            std::cout << PURPLE << "你已被该用户拉黑。不能发文件" << std::endl;
-            return;
+        if (isblocklist[chatfriendname]) {
+            std::cout << PURPLE
+                      << "你当前已经被用户拉黑，请"
+                         "退出聊天"
+                      << std::endl;
+        } else {
+            chat_conn->send(j1.dump() + '\n');
         }
     }
    
@@ -5688,7 +5531,7 @@ void chatclient::handle_groupsendfile(){
     if(!b){
         std::cout << PURPLE << "该群聊并不存在" << RESET << std::endl;
         return;
-    }else if(!is_groupmember(groupname,account)){
+    }else if(!is_groupmember2(groupname)){
         std::cout << PURPLE << "你并不在该群聊里" << RESET << std::endl;
         return;
     }else{

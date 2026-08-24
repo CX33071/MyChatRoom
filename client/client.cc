@@ -80,7 +80,6 @@ void handle_message(chatclient*client) {
                     std::string content = msg["message"];
                     std::string name1 = msg["fromname"];
                     std::string name2 = client->name;
-                    client->chatmessage[name1]++;
                     std::string q = "\n收到来自[";
                     q += name1 + "]的" +
                          std::to_string(client->chatmessage[name1]) + "条消息";
@@ -94,7 +93,8 @@ void handle_message(chatclient*client) {
                         std::cout << GREEN << "[" << name2
                                   << "]:    " << RESET;
                         std::cout.flush();
-                    } else {  
+                    } else {
+                        client->chatmessage[name1]++;
                     }
                 } else if (cmd == "groupchatedres") {
                     chatclient::Event e;
@@ -103,7 +103,6 @@ void handle_message(chatclient*client) {
                     std::string name = msg["name"];
                     std::string content = msg["message"];
                     std::string groupname = msg["groupname"];
-                    client->groupmessage[groupname]++;
                     std::string content1 = "\n收到来自群聊[";
                     content1 +=
                         groupname + "]的成员:[" + name + "]的" +
@@ -120,9 +119,9 @@ void handle_message(chatclient*client) {
                                   << "]:    " << RESET;
                         std::cout.flush();
                     } else {
+                        client->groupmessage[groupname]++;
                     }
                 } else if (cmd == "addedres") {
-                    std::cout << "进入addedres" << std::endl;
                     chatclient::Event e;
                     e.type = chatclient::Event::Friendadd;
                     e.data = msg;
@@ -148,6 +147,12 @@ void handle_message(chatclient*client) {
                         std::cout << PURPLE << msg["data"] << msg["time"]
                                   << RESET << std::endl;
                     }
+                }else if(cmd =="blockmes"){
+                    std::string friendname = msg["friendname"];
+                    client->isblocklist[friendname] = true;
+                } else if(cmd=="cancelblockedmes"){
+                    std::string friendname = msg["friendname"];
+                    client->isblocklist[friendname] = false;
                 } else if (cmd == "sendedfile") {
                     chatclient::Event e;
                     e.type = chatclient::Event::SENDFILE;
