@@ -79,9 +79,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC,
                                 0644);
                    if (fc.fd == -1) {
-                       std::cout << "文件创建失败" << std::endl;
+                       LOG_INFO << "文件创建失败"  ;
                    }
-                   std::cout << "已创建文件在" << filepath << std::endl;
+                   LOG_INFO << "已创建文件在" << filepath  ;
                    fc.filesize = filesize;
                    fc.recvsize = 0;
                    fc.state = FileState::RECV_FILE;
@@ -106,7 +106,6 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    fc.recvsize = std::stoi(recivesize);
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY, 0644);
                    if (fc.fd == -1) {
-                       std::cout << "文件创建失败" << std::endl;
                        std::cerr << "文件创建失败: " << std::strerror(errno)
                                  << " (errno=" << errno << ")" << std::endl;
                        return ;
@@ -136,9 +135,9 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC,
                                 0644);
                    if (fc.fd == -1) {
-                       std::cout << "文件创建失败" << std::endl;
+                       LOG_INFO << "文件创建失败"  ;
                    }
-                   std::cout << "已创建文件在" << filepath << std::endl;
+                   LOG_INFO << "已创建文件在" << filepath  ;
                    fc.filesize = filesize;
                    fc.recvsize = 0;
                    fc.state = FileState::RECV_FILE;
@@ -159,7 +158,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filepath = "./file/" + ID+filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
-                       std::cout << "./file本地找不到文件" << std::endl;
+                       LOG_INFO << "./file本地找不到文件"  ;
                        return;
                    }
                    ssize_t n;
@@ -170,7 +169,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    }
                    close(fd);
                    fc.state = FileState::PRASEJSON;
-                   std::cout << "发给客户端完成，JSON模式开启" << std::endl;
+                   LOG_INFO << "发给客户端完成，JSON模式开启"  ;
                }
                if (cmd == "reRETR") {
                    std::string ID = j["ID"];
@@ -180,7 +179,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filepath = "./file/" +ID+ filename;
                    int fd = open(filepath.c_str(), O_RDONLY);
                    if (fd == -1) {
-                       std::cout << "./file本地找不到文件" << std::endl;
+                       LOG_INFO << "./file本地找不到文件"  ;
                        return;
                    }
                    ssize_t n;
@@ -194,13 +193,13 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    }
                    if (n == -1) {
                        perror("read error");
-                       std::cout << "errno = " << errno
-                                 << " message = " << strerror(errno)
-                                 << std::endl;
+                       LOG_INFO << "errno = " << errno
+                                << " message = " << strerror(errno)
+                                ;
                    }
-                   std::cout << "n = " << n << std::endl;
+                   LOG_INFO << "n = " << n ;
                    close(fd);
-                   std::cout << "文件上传给客户端完成" << std::endl;
+                   LOG_INFO << "文件上传给客户端完成"  ;
                    fc.state = FileState::PRASEJSON;
                }
                if (cmd == "update_downsize") {
@@ -212,14 +211,14 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    mysql_.changemsg(sql.c_str());
                }
                if (cmd == "Load_finish") {
-                   std::cout << "收到Load_finish" << std::endl;
+                   LOG_INFO << "收到Load_finish"  ;
                    json res;
                    std::string request_id = j.value("request_id", "");
                    if (!request_id.empty()) {
                        res["request_id"] = request_id;
                    }
-                   std::cout << "进入Load_finish" << std::endl;
-                   std::cout << "收到fileloadID=" << request_id << std::endl;
+                   LOG_INFO << "进入Load_finish"  ;
+                   LOG_INFO << "收到fileloadID=" << request_id  ;
                    res["cmd"] = "loadfileres";
                    conn->send(res.dump() + '\n');
                }
@@ -263,7 +262,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  fc.state = FileState::PRASEJSON;
                  fc.recvsize = 0;
                  fc.filesize = 0;
-                 std::cout << "文件接收完成" << std::endl;
+                 LOG_INFO << "文件接收完成"  ;
                  json res;
                  if(groupsend){
                      res["cmd"] = "groupSTOR_ok";

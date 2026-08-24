@@ -226,11 +226,11 @@ std::vector<filestatusserver> FILEredis::getchatfriendupinglist(
         }
     }
     std::vector<filestatusserver> res;
-    std::cout << "filename.size = " << filenameres.size() << std::endl;
-    std::cout << "filesize.size = " << filesizeres.size() << std::endl;
-    std::cout<<"fileid.size = "<<fileid1res.size()<<std::endl;
-    std::cout << "sender.size = " << senderres.size() << std::endl;
-    std::cout << "upsize.size = " << upsizeres.size() << std::endl;
+    LOG_INFO << "filename.size = " << filenameres.size() ;
+    LOG_INFO << "filesize.size = " << filesizeres.size() ;
+    LOG_INFO<<"fileid.size = "<<fileid1res.size() ;
+    LOG_INFO << "sender.size = " << senderres.size()  ;
+    LOG_INFO << "upsize.size = " << upsizeres.size()  ;
     if(!senderres.empty()){
         for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
@@ -242,7 +242,7 @@ std::vector<filestatusserver> FILEredis::getchatfriendupinglist(
             res.push_back(ff);
         }
     }
-    std::cout << "res.size = " << res.size() << std::endl;
+    LOG_INFO << "res.size = " << res.size();
     return res;
 }
 std::vector<filestatusserver> FILEredis::getgroupupinglist(
@@ -321,11 +321,11 @@ std::vector<filestatusserver> FILEredis::getchatgroupupinglist(
         }
     }
     std::vector<filestatusserver> res;
-    std::cout << "filename.size = " << filenameres.size() << std::endl;
-    std::cout << "filesize.size = " << filesizeres.size() << std::endl;
-    std::cout << "fileid.size = " << fileidres.size() << std::endl;
-    std::cout << "sender.size = " << senderres.size() << std::endl;
-    std::cout << "upsize.size = " << upsizeres.size() << std::endl;
+    LOG_INFO << "filename.size = " << filenameres.size() ;
+    LOG_INFO << "filesize.size = " << filesizeres.size() ;
+    LOG_INFO << "fileid.size = " << fileidres.size() ;
+    LOG_INFO << "sender.size = " << senderres.size() ;
+    LOG_INFO << "upsize.size = " << upsizeres.size() ;
     if(senderres.size()!=0){
         for (int i = 0; i < fileid1res.size(); i++) {
             filestatusserver ff;
@@ -600,7 +600,7 @@ std::vector<json> FILEredis::getchatgroupdownfilelist(std::vector<std::string> g
         sql = "select fileid from file_info where groupname = '" +
               grouplist[i] + "' and ischat ='1' and status = 'upfinish'";
         std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-        std::cout << "fileid.size = " << fileidres.size() << std::endl;
+        LOG_INFO << "fileid.size = " << fileidres.size()  ;
         for (auto fileid : fileidres) {
             sql =
                 "select filename from file_info where fileid ='" + fileid + "'";

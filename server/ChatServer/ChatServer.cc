@@ -79,7 +79,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             clientconntime[account] = Timestamp::now();
         }
-        LOG_INFO << "收到命令cmd=" << cmd;
         if (cmd == "getaccount") {
             std::string name=j["name"];
             std::string account=verifycode.getaccount(name);
@@ -92,32 +91,24 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="getname"){
-            std::cout << "fd=" << conn->fd() << " cmd=" << j["cmd"]
-                      << std::endl;
             std::string account = j["account"];
             std::string name=verifycode.getname(account);
-            std::cout << "account = " << account << "   name = " << name
-                      << std::endl;
             json j1;
             j1["data"]=name;
             std::string request_id = j["request_id"];
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
             }
-            std::cout << "收到getname id = " << request_id << std::endl;
             j1["cmd"] = "getnameres";
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="isexistsname"){
             std::string name=j["name"];
-            std::cout << "name=" << name << std::endl;
             json j1;
             if (verifycode.isexistsname(name)) {
                 j1["code"] = "1";
-                std::cout << "name" << name << "存在" << std::endl;
             } else {
                 j1["code"] = "0";
-                std::cout << "name" << name << "不存在" << std::endl;
             }
             std::string request_id = j["request_id"];
             if (!request_id.empty()) {
@@ -145,7 +136,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string password = j["password"];
             std::string name = j["name"];
-            std::cout << "name =" << name << std::endl;
             bool res = verifycode.signup(account, password, name);
             json j1;
             j1["cmd"] = "signup_res";
@@ -206,7 +196,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["code"] = "0";
             }
             conn->send(j1.dump() + '\n');
-            std::cout << "123" << std::endl;
         }
         if (cmd == "verifycodesignin") {
             std::string account = j["account"];
@@ -244,8 +233,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "keysignin") {
             std::string account = j["account"];
             std::string password = j["password"];
-            std::cout << "account = "<<account<<std::endl;
-            std::cout << "password = " << password << std::endl;
             int res = verifycode.loginwithkey(account, password);
             json j1;
             j1["cmd"] = "keysignin_res";
@@ -260,7 +247,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 } else {
                 }
                 conn->send(j1.dump() + '\n');
-                std::cout << "密码登录回复给客户端发过去" << std::endl;
                 std::vector<std::string> disconnectmsg =
                     G.getdisconnectmsg(account);
                 G.destorydismsg(account);
@@ -300,7 +286,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             reply["data"] = "[系统消息]:已经退出登录";
             conn->send(reply.dump() + '\n');
-            std::cout << "exitlogin已回复" << std::endl;
             clientmap.erase(account);
         }
         if (cmd == "forgetkey") {
@@ -435,8 +420,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 hh.push_back(j2);
             }
             std::vector<filestatusserver> downs1=file.getgroupdowninglist(account);
-            std::cout<<"downs.size = "<<downs.size()<<std::endl;
-            std::cout << "downs1.size = " << downs1.size() << std::endl;
             for (auto t : downs1) {
                 json j2;
                 j2["sender"] = t.sender;
@@ -471,9 +454,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             file.downfinish(ID);
             std::string name = verifycode.getname(account);
             j2["data"] = "用户" + name + "下载了您发送的文件" + filename;
-            std::cout<<"from = "<<from<<std::endl;
-            std::cout << "reciver = " << account << std::endl;
-            std::cout << " recivername = " << name << std::endl;
             j2["time"] = get_current_time();
             j2["from"]=name;
             j2["filename"] = filename;
@@ -515,20 +495,19 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             {
                 std::lock_guard<std::mutex> lock(g_mutex);
                 auto it = clientmap.find(reciver);
-                std::cout << "reciver = " << reciver << std::endl;
                 if (it != clientmap.end()) {
-                    std::cout << "用户当前在线" << reciver << std::endl;
+                    LOG_INFO << "用户当前在线" << reciver ;
                     target_conn = it->second;
                 } else {
-                    std::cout << "用户当前不在线" << std::endl;
+                    LOG_INFO << "用户当前不在线"  ;
                     G.disconnectmsg(reciver, j2);
                 }
             }
             if (target_conn) {
                 target_conn->send(j2.dump() + '\n');
-                std::cout << "给目标用户发送接收文件消息" << std::endl;
+                LOG_INFO << "给目标用户发送接收文件消息"  ;
             }else{
-                std::cout << "目标用户当前不在线" << std::endl;
+                LOG_INFO << "目标用户当前不在线"  ;
             }
         }
         if(cmd=="getdownfilelist"){
@@ -567,7 +546,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::vector<std::string> grouplist = G.grouplist(account);
             std::vector<json> data = file.getchatdownfilelist(account);
             std::vector<json> data1=file.getchatgroupdownfilelist(grouplist);
-            std::cout << "data1.size = " << data1.size() << std::endl;
             data.insert(data.begin(), data1.begin(), data1.end());
             for (int i = 0; i < data.size();i++){
                 std::string ss = "您收到" + data[i]["from"].get<std::string>();
@@ -586,7 +564,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string ID = j["ID"];
             file.upfinish(ID);
             std::string filename = j["filename"];
-            std::cout << "进入finish" << std::endl;
             std::string groupname1 = file.getgroupname(ID);
             std::string from = file.getsender(ID);
             json j2;
@@ -608,7 +585,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["ID"] = ID;
             std::vector<std::string> res =
                 G.grouptargetmember(groupname1, from);
-            std::cout << "res.size = " << res.size() << std::endl;
             for (int i = 0; i < res.size(); i++) {
                 std::string target = res[i];
                 TcpConnectionPtr target_conn;
@@ -683,7 +659,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["request_id"] = request_id;
             }
             conn->send(j1.dump() + '\n');
-            std::cout << "目标用户 =" << to << std::endl;
+            LOG_INFO << "目标用户 =" << to  ;
         }
         if (cmd == "delmember") {
             std::string groupname = j["groupname"];
@@ -720,18 +696,17 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 {
                     std::lock_guard<std::mutex> lock(g_mutex);
                     auto it = clientmap.find(target);
-                    std::cout << "target=" << target << std::endl;
                     if (it != clientmap.end()) {
                         target_conn = it->second;
-                        std::cout << "对方在线" << std::endl;
+                        LOG_INFO << "对方在线"  ;
                     } else {
-                        std::cout << "对方不在线" << std::endl;
+                        LOG_INFO << "对方不在线"  ;
                         G.disconnectmsg(target, j2);
                     }
                 }
                 if (target_conn) {
                     target_conn->send(j2.dump() + '\n');
-                    std::cout << "已经给群主发送加群申请" << std::endl;
+                    LOG_INFO << "已经给群主发送加群申请"  ;
                 }
             }
 
@@ -839,7 +814,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j2["upsize"] = t.upsize;
                 hh.push_back(j2);
             }
-            std::cout << "hh.size = " << hh.size() << std::endl;
             res["data"] = hh;
             conn->send(res.dump() + '\n');
         }
@@ -878,7 +852,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "agreefriend") {
             std::string account = j["account"];
             std::string friendaccount = j["friendaccount"];
-            std::cout << "friendaccount=" << friendaccount << std::endl;
             F.agreeapply(account, friendaccount);
             json j1, j2;
             j1["cmd"] = "agreeres";
@@ -898,9 +871,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 auto it = clientmap.find(friendaccount);
                 if (it != clientmap.end()) {
                     target_conn = it->second;
-                    std::cout << "pppp当前在线" << std::endl;
+                    LOG_INFO << "pppp当前在线"  ;
                 } else {
-                    std::cout << "用户当前不在线" << std::endl;
+                    LOG_INFO << "用户当前不在线"  ;
                     G.disconnectmsg(friendaccount, j2);
                 }
             }
@@ -977,8 +950,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }
             for (int i = 0; i < res.size(); i++) {
                 std::string name = verifycode.getname(res[i]);
-                std::cout << "name =" << name << std::endl;
-                ;
                 list += name;
                 list += "\n";
             }
@@ -1287,9 +1258,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         }
         if(cmd=="isexists"){
             std::string account=j["account"];
-            std::cout << "account = " << account << std::endl;
             int res = verifycode.isexists(account);
-            std::cout << "res = " << res << std::endl;
             json j1;
             j1["cmd"] = "isexistsres";
             std::string request_id = j.value("request_id", "");
@@ -1348,8 +1317,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string target = j["target"];
             int res = F.delfriend(account, target);
-            std::cout << "account =" << account << "    target =" << target
-                      << "  res =" << res << std::endl;
             json j1;
             j1["cmd"] = "delfriendres";
             if (res == 1) {
@@ -1400,9 +1367,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if (cmd == "agreejoingroup") {
             std::string account = j["account"];
             std::string groupname = j["groupname"];
-            std::cout << "进入agreejoin" << std::endl;
             G.agreejoin(account, groupname);
-            std::cout << "完成agreejoin函数" << std::endl;
             json j1, j2;
             j1["cmd"] = "agreejoingroupres";
             j1["data"] = "您已同意该用户的入群申请";

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cpp_redis/cpp_redis>
 #include <cstdlib>
+#include "muduo/base/logger.h"
 #include <cstring>
 #include <ctime>
 #include <future>

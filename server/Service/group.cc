@@ -212,8 +212,8 @@ std::string Group::getname(std::string account) {
 void Group::changeowner(std::string groupname,std::string owner,std::string friendaccount){
     redis_.set(groupname + "owner:", friendaccount);
     auto fut = redis_.sadd("ownergrouplist" + friendaccount, {groupname});
-    std::cout << "sadd的key=" << "ownergrouplist" << friendaccount << std::endl;
-    std::cout << friendaccount << "创建的群聊增加" << groupname << std::endl;
+    LOG_INFO << "sadd的key=" << "ownergrouplist" << friendaccount;
+    LOG_INFO << friendaccount << "创建的群聊增加" << groupname;
     redis_.sync_commit();
     redis_.srem("ownergrouplist" + owner, {groupname});
     redis_.sync_commit();
