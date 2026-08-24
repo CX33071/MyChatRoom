@@ -147,11 +147,14 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
            buf->retrieve(len);
            fc.downsize += len;
            fc.recvsize += len;
-           json j1;
-           j1["cmd"] = "update_downsize";
-           j1["fileid"] = fc.ID;
-           j1["downsize"] = std::to_string(fc.downsize);
-           conn->send(j1.dump() + '\n');
+           if(fc.downsize-fc.updatesize>=64*1024*1024||fc.downsize==fc.filesize){
+               json j1;
+               j1["cmd"] = "update_downsize";
+               j1["fileid"] = fc.ID;
+               j1["downsize"] = std::to_string(fc.downsize);
+               conn->send(j1.dump() + '\n');
+               fc.updatesize = fc.downsize;
+           }
            fileprogress(fc.recvsize, fc.filesize, begin1);
            if (fc.recvsize == fc.filesize) {
                close(fc.fd);
@@ -207,7 +210,7 @@ int FileClient ::sendfile(std::string ID,
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[1024*1024*4];
+    char buf[1024*1024*5];
     ssize_t n;
     size_t total = 0;
     char* end;
@@ -226,7 +229,6 @@ int FileClient ::sendfile(std::string ID,
         }
         total+=n;
         long long current = last_update.load();
-
         if (current != printed) {
             fileprogress(current, num, begin);
             printed = current;
@@ -283,7 +285,7 @@ void FileClient::groupsendfile(std::string ID,
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[1024*1024*4];
+    char buf[1024*1024*5];
     ssize_t n;
     size_t total = 0;
     char* end;
@@ -337,7 +339,7 @@ int FileClient ::loadfile(std::string filename,
         ischatload = true;
     }
     fc.filename = filename;
-    fc.filesize = std::stoi(filesize);
+    fc.filesize = std::stoll(filesize);
     if(!newfilename.empty()){
         filepath = filepath + "/" + newfilename;
     }else{
@@ -404,7 +406,7 @@ int  FileClient::uploadedsendfile(std::string fileid, std::string uploaded,std::
     }
     file_conn->send(j.dump() + '\n');
     json res = f.get();
-    char buf[1024*1024*4];
+    char buf[1024*1024*5];
     ssize_t n;
     size_t total = last_update;
     end = 0;

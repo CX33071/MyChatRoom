@@ -2885,9 +2885,13 @@ void chatclient::handle_grouplist() {
         }
         size_t pos = 0;
         grouplist = res["data"];
-        for (auto s : grouplist) {
-            std::cout << PURPLE << s << std::endl;
-        }
+    }
+}
+void chatclient::printfgrouplist(){
+    handle_grouplist();
+    std::cout << PURPLE << "你加入的群聊:" << std::endl;
+    for (auto s : grouplist) {
+        std::cout << PURPLE << s << std::endl;
     }
 }
 bool chatclient::is_manager(std::string groupname, std::string count) {
@@ -4576,6 +4580,7 @@ void chatclient::handle_groupchat() {
              std::cout << PURPLE << "该群聊并不存在!" << RESET << std::endl;
              return;
          }
+         handle_grouplist();
          b = is_groupmember2(groupname);
          if (!b) {
              std::cout << PURPLE << "您当前并不在该群聊里，不能进行聊天"
@@ -5506,10 +5511,9 @@ void chatclient::handle_chatsendfile(std::string frienduser){
             chat_conn->send(j1.dump() + '\n');
         }
     }
-   
 }
 void chatclient::handle_groupsendfile(){
-    handle_grouplist();
+    printfgrouplist();
     std::string groupname;
     char* line = readline(PURPLE "请输入您要发送文件群聊名称:" GREEN);
     if (line == nullptr) {

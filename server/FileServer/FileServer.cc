@@ -75,7 +75,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string filepath = "./file/" + fc.ID+filename;
                    fc.filename = j["filename"];
                    std::string ss = j["filesize"];
-                   uint64_t filesize = std::stoi(ss);
+                   long long filesize = std::stoll(ss);
                    fc.fd = open(filepath.c_str(), O_CREAT | O_WRONLY | O_TRUNC,
                                 0644);
                    if (fc.fd == -1) {
@@ -162,7 +162,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                        return;
                    }
                    ssize_t n;
-                   char buf[1024*1024*4];
+                   char buf[1024*1024*5];
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {   if(conn){
                            conn->send(std::string(buf, n));
                    }
@@ -183,7 +183,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                        return;
                    }
                    ssize_t n;
-                   char buf[1024*1024*4];
+                   char buf[1024*1024*5];
                    long long downsize1 = std::stoll(downsize);
                    lseek(fd, downsize1, SEEK_SET);
                    while ((n = read(fd, buf, sizeof(buf))) > 0) {
@@ -243,7 +243,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
              write(fc.fd, buf->peek(), len);
              buf->retrieve(len);
              fc.recvsize += len;
-             if((fc.recvsize-fc.updatesize)>1024*1024*4){
+             if((fc.recvsize-fc.updatesize)>1024*1024*32){
                  std::string sql = "update filestatus_info set upsize ='" +
                                    std::to_string(fc.recvsize) +
                                    "'where fileid = '" + fc.ID + "'";

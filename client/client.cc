@@ -147,10 +147,16 @@ void handle_message(chatclient*client) {
                         std::cout << PURPLE << msg["data"] << msg["time"]
                                   << RESET << std::endl;
                     }
-                }else if(cmd =="blockmes"){
+                }else if(cmd =="blockedmes"){
                     std::string friendname = msg["friendname"];
                     client->isblocklist[friendname] = true;
-                } else if(cmd=="cancelblockedmes"){
+                } else if(cmd=="deledgroupmember"){
+                    std::string groupname = msg["groupname"];
+                    auto it = std::find(client->grouplist.begin(), client->grouplist.end(), groupname);
+                    if (it != client->grouplist.end()) {
+                        client->grouplist.erase(it);
+                    }
+                } else if (cmd == "cancelblockedmes") {
                     std::string friendname = msg["friendname"];
                     client->isblocklist[friendname] = false;
                 } else if (cmd == "sendedfile") {
@@ -228,6 +234,9 @@ void handle_message(chatclient*client) {
                             client->event_cv.notify_one();
                         }
                     }
+                }else if(cmd=="agreejoingroupres"){
+                    std::string groupname = msg["groupname"];
+                    client->grouplist.push_back(groupname);
                 } else {
                     std::string data = msg["data"];
                     std::cout <<PURPLE<< "\n[系统消息]: " << data<<RESET << std::endl;
@@ -601,7 +610,7 @@ void mainfunction(chatclient*chatclient) {
             } else if (groupmenu) {
                 chatclient->group_menu();
                 chatclient->handle_ownergrouplist();
-                chatclient->handle_grouplist();
+                chatclient->printfgrouplist();
                 for(auto p:chatclient->groupmessage){
                     if(p.second>0){
                         std::cout << PURPLE << "收到" << p.first << "群聊的"
@@ -696,7 +705,7 @@ void mainfunction(chatclient*chatclient) {
                         chatclient->handle_delgroup();
                         break;
                     case 7:
-                        chatclient->handle_grouplist();
+                        chatclient->printfgrouplist();
                         break;
                     case 8:
                         chatclient->handle_delmember();

@@ -139,8 +139,9 @@ class chatclient {
     void friend_menu();
     void clearchatmenu();
     void group_menu();
+    void printfgrouplist();
     void file_menu();
-   static int emptyfunction(int n1, int n2);
+    static int emptyfunction(int n1, int n2);
     void select_menu();
     void msg_menu();
     int changenum(std::string s);

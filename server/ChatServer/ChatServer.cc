@@ -673,6 +673,20 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["request_id"] = request_id;
             }
             conn->send(j1.dump() + '\n');
+            json j2;
+            j2["cmd"] = "deledgroupmember";
+            j2["groupname"] = groupname;
+            TcpConnectionPtr target_conn;
+            {
+                std::lock_guard<std::mutex> lock(g_mutex);
+                auto it = clientmap.find(account);
+                if (it != clientmap.end()) {
+                    target_conn = it->second;
+                    target_conn->send(j2.dump() + '\n');
+                } else {
+                    G.disconnectmsg(account, j2);
+                }
+            }
         }
         if (cmd == "applyjoingroup") {
             std::string groupname = j["groupname"];
@@ -1374,6 +1388,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["cmd"] = "agreedjoingroupres";
             j2["data"] =
                 "您已经通过群聊[" + groupname + "]管理员验证，成功进入该群聊";
+            j2["groupname"] = groupname;
             std::string request_id = j.value("request_id", "");
             if (!request_id.empty()) {
                 j1["request_id"] = request_id;
