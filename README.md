@@ -81,8 +81,6 @@ pthread
 ```
 
 ```c++
-# 安装依赖
-sudo apt update
 sudo apt install cmake
 ```
 
@@ -91,7 +89,19 @@ sudo apt install cmake
 ```c
 sudo apt install mysql-server
 sudo apt install redis-server
-sudo apt install sqlite3 
+sudo apt install sqlite3 libsqlite3-dev 
+```
+
+安装`json`
+
+```c
+sudo apt install nlohmann-json3-dev
+```
+
+安装`readline`
+
+```c
+sudo apt install libreadline-dev
 ```
 
 安装其他依赖
