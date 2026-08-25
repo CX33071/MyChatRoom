@@ -46,7 +46,6 @@ void FileClient ::connectioncallback(const TcpClient::TcpConnectionPtr& conn) {
         file_conn = conn;
         fileconnok = true;
     } else {
-        // std::cout << "fileclientclose！" << std::endl;
         file_conn.reset();
         fileconnok = false;
     }
@@ -118,9 +117,7 @@ void FileClient ::messagecallback(const TcpClient::TcpConnectionPtr& conn,
                    std::lock_guard<std::mutex> lock(active_mutex);
                    active_requests[id] = std::move(p);
                }
-               chatclient_->chat_conn->send(j1.dump() + '\n');
-               // std::cout<<PURPLE << "文件上传成功!" <<RESET<< std::endl;
-           } else if (cmd == "RETRres") {
+               chatclient_->chat_conn->send(j1.dump() + '\n');           } else if (cmd == "RETRres") {
                fc.state = FileState::RECV_FILE;
            } else if (cmd == "sendfinishtofileclient") {
                json j1;
@@ -500,4 +497,3 @@ int FileClient::reloadfile(std::string filename,std::string newfilename,
     std::cout << PURPLE << "文件下载成功!" << RESET << std::endl;
     return 0;
                }
-               

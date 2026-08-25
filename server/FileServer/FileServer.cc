@@ -208,7 +208,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                    std::string sql =
                        "update filestatus_info set downsize ='" + downsize +
                        "'where fileid ='" + fileid + "'";
-                   mysql_.changemsg(sql.c_str());
+                   mysql_.exesql(sql.c_str());
                }
                if (cmd == "Load_finish") {
                    LOG_INFO << "收到Load_finish"  ;
@@ -247,7 +247,7 @@ void FileServer::messagecallback(const TcpConnectionPtr& conn,
                  std::string sql = "update filestatus_info set upsize ='" +
                                    std::to_string(fc.recvsize) +
                                    "'where fileid = '" + fc.ID + "'";
-                 mysql_.changemsg(sql.c_str());
+                 mysql_.exesql(sql.c_str());
                  fc.updatesize = fc.recvsize;
                  json jj;
                  jj["upsize"] = fc.recvsize;

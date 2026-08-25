@@ -34,7 +34,3 @@ void LogStream::append(const std::string &s)
     if (isMaxString())
         buffer_ += s;
 }
-
-// 定义一个临时字符串转换器，用来把任意数据变成字符串
-// 把输入的数据转为字符串存在oss里
-// 为了链式调用<<,返回对象自己，指针解引用返回对象本身

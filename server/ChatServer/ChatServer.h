@@ -29,6 +29,8 @@ class ChatServer {
     ChatServer(EventLoop* loop, std::string name, const InetAddress& addr);
     void connectioncallback(const TcpConnectionPtr& conn);
     std::string get_current_time();
+    void getrequest_id(json j, json& j1);
     void messagecallback(const TcpConnectionPtr& conn, Buffer* buf, Timestamp);
     void checkoutclientconn();
+    void sendtotarget(std::string account, json j);
 };

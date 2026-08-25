@@ -51,9 +51,3 @@ bool Timestamp::operator>(const Timestamp that) const
 {
     return this->microSecondsSinceEpoch_ > that.microSecondsSinceEpoch_;
 }
-
-//系统调用获取时间
-//秒数
-//转成微秒生成Timestamp对象
-//交换传进来的时间和现在“我”的时间
-//数字时间转换成日历时间，存在秒、分、时、日、月、年的结构体里

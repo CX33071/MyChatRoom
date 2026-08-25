@@ -14,19 +14,19 @@ Verifycode::Verifycode() {
     std::string sql =
         "create table if not exists account_info(id int auto_increment primary "
         "key,account varchar(30) not null,password varchar(50));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists account_online_info(id int auto_increment "
         "primary key,account varchar(30) not null,online int); ";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists name_info (id int auto_increment primary "
         "key,name varchar(100),account varchar(50));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists onlinename_info (id int auto_increment primary "
         "key,name varchar(100),online int);";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::string Verifycode::generatesalt() {
     std::string salt;
@@ -62,9 +62,9 @@ bool Verifycode::checkkey(const std::string& inputkey,
 }
 void Verifycode::resetatstus(){
     std::string sql = "update account_online_info set online=0;";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "update onlinename_info set online=0;";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     std::vector<std::string> list;
    auto fut = redis_.keys("online*");
    redis_.sync_commit();
@@ -174,10 +174,10 @@ int Verifycode::modifyname(std::string account,std::string name){
     redis_.sync_commit();
     std::string sql = "update onlinename_info set name ='" + name +
                       "' where name ='" + oldname + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     std::string sql1 = "update name_info set name ='" + name +
                        "'where account ='" + account + "'";
-    mysql_.changemsg(sql1.c_str());
+    mysql_.exesql(sql1.c_str());
     return 0;
 }
 int Verifycode::isexists(std::string account){
@@ -246,10 +246,10 @@ bool Verifycode::signup(std::string account,std::string password,std::string nam
                        name + "','" + account + "')";
     std::string sql4 =
         "insert into onlinename_info (name,online)values('" + name + "',0)";
-    mysql_.addmsg(sql1.c_str());
-    mysql_.addmsg(sql2.c_str());
-    mysql_.addmsg(sql3.c_str());
-    mysql_.addmsg(sql4.c_str());
+    mysql_.exesql(sql1.c_str());
+    mysql_.exesql(sql2.c_str());
+    mysql_.exesql(sql3.c_str());
+    mysql_.exesql(sql4.c_str());
     return true;
 }
 bool Verifycode::verify(std::string account,std::string code) {
@@ -265,9 +265,9 @@ bool Verifycode::verify(std::string account,std::string code) {
         std::string sql =
             "update account_online_info set online=1 where account='" +
             account + "'";
-        mysql_.changemsg(sql.c_str());
+        mysql_.exesql(sql.c_str());
         sql = "update onlinename_info set online =1 where name ='" + name + "'";
-        mysql_.changemsg(sql.c_str());
+        mysql_.exesql(sql.c_str());
         return true;
     }
     return false;
@@ -323,9 +323,9 @@ int Verifycode::loginwithkey(std::string account,std::string password) {
     redis_.sync_commit();
     sql = "update account_online_info set online=1 where account='" + account +
           "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "update onlinename_info set online =1 where name ='" + name + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return 0;
 }
 bool Verifycode::forgetkey(std::string account) {
@@ -382,49 +382,49 @@ int Verifycode::destroy(std::string account,std::string password,Group&group,Fri
     }
     std::string sql =
         "delete from account_info where account='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     std::string sql1 =
         "delete from account_online_info where account='" + account + "'";
-    mysql_.delmsg(sql1.c_str());
+    mysql_.exesql(sql1.c_str());
     sql = "delete from apply_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from applyaddfriend_info where appaccount ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "delete from applyaddfriend_info where appedaccount ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from block_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from block_info where blockfriend ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from disconnectmsg_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from friend_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from friend_info where friendaccount ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from groupmanage_info where manager ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from groupmember_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "select groupname from owner_info where owner ='" + account + "'";
     std::string groupname = mysql_.selectstring(sql.c_str());
     sql = "delete from owner_info where owner ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from groupchat_history where groupname ='" + groupname + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from groupmanage_info where groupname ='" + groupname + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from groupmember_info where groupname ='" + groupname + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from friendchat_history where sender ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from friendchat_history where reciver ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql="delete from onlinename_info where name ='"+name+"'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "delete from name_info where name ='" + name + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     redis_.del({account + "key", account + "code", "online" + account, account,
                 name, "onlinename" + name, "friend" + account,
                 "block" + account, "blocked" + account, "addfriend" + account,
@@ -445,11 +445,11 @@ void Verifycode::exitlogin(std::string account){
     std::string sql =
         "update account_online_info set online=0 where account='" + account +
         "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     LOG_INFO << "删除mysql用户账号在线" ;
     std::string name = getname(account);
     sql = "update onlinename_info set online =0 where name ='" + name + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     LOG_INFO << "删除mysql用户name在线" ;
 }
 void Verifycode::sendcom(

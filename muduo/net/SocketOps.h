@@ -1,9 +1,7 @@
 #ifndef MUDUO_NET_SOCKETOPS_H
 #define MUDUO_NET_SOCKETOPS_H
-
 #include <arpa/inet.h>
 #include <unistd.h>//
-
 namespace mulib{
     namespace net{
         namespace socket{
@@ -30,17 +28,4 @@ namespace mulib{
         }
     }
 }
-
 #endif
-
-//创建非阻塞socket
-//关闭写端
-//获取socket内部错误码
-//获取本端地址
-//获取对端地址
-//判断是否自己连自己
-//ip+端口->sockaddr_in
-//sockaddr_in->字符串，只含端口
-//sockaddr->"ip:port"字符串
-//只转IP字符串
-// namespace socket

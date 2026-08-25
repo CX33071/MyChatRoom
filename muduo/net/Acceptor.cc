@@ -1,8 +1,6 @@
 #include "Acceptor.h"
 #include "InetAddress.h"
-
 using namespace mulib::net;
-
 Acceptor::Acceptor(EventLoop *loop, const InetAddress &listenAddr)
 : loop_(loop) ,acceptSocket_(socket::createNonblockingOrDie()) ,
 acceptChannel_(loop,acceptSocket_.fd()), listening_(false){
@@ -37,8 +35,3 @@ void Acceptor::handleRead(){
         }
     }//
 }
-
-//创建非阻塞监听socket,给监听fd绑定channel
-//端口复用，绑定IP+端口，给channel设置回调
-//channel开始监听读事件
-//调用回调函数，把sock交给Tcpserver,tcpserver会创建tcpconnection管理这个连接

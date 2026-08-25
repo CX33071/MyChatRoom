@@ -67,13 +67,3 @@ TcpServer::~TcpServer() {
         conn->getLoop()->runInLoop(std::bind(&TcpConnection::connectDestroyed, conn));
     }
 }//
-
-//Acceptor收到新连接，设置新连接回调
-//从线程池中取一个线程
-//存入map
-//先从map中删除
-//消除编译器未使用警告
-//销毁连接
-//拷贝一份连接给局部变量conn,确保不会再操作的时候断开连接
-//从map中删除
-//让连接自己的IO线程去安全销毁这个连接

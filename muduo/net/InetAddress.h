@@ -53,6 +53,3 @@ inline std::string InetAddress::toIpPort() const{
     return buf;
 }
 #endif
-
-//地址类
-//若没有传入参数则系统自动分配空闲窗口

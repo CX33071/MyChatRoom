@@ -6,12 +6,12 @@ FILEredis::FILEredis() {
         "varchar(300),filename varchar(100),filesize varchar(100),uppath "
         "varchar(300),ischat "
         "varchar(10),status varchar(30));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists filestatus_info (transferid int "
         "auto_increment primary key,fileid int,sender varchar(100),curaccount varchar(100),status "
         "varchar(100),upsize varchar(300),downsize varchar(300),ischat varchar(10),downpath varchar(300),newfilename varchar(300));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::string FILEredis::friendupbegin(std::string sender,
                                      std::string reciver,
@@ -24,14 +24,14 @@ std::string FILEredis::friendupbegin(std::string sender,
         "(sender,reciver,filename,filesize,ischat,uppath,status)values('" +
         sender + "','" + reciver + "','" + filename + "','" + filesize + "','" +
         ischat + "','" + uppath  + "','uping')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "select last_insert_id()";
     std::string fileid = mysql_.selectstring(sql.c_str());
     sql =
         "insert into filestatus_info "
         "(fileid,sender,status,upsize,downsize,ischat)values('" +
         fileid + "','" + sender + "','uping','0','0','"+ischat+"')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return fileid;
 }
 std::string FILEredis::groupupbegin(std::string sender,
@@ -45,32 +45,32 @@ std::string FILEredis::groupupbegin(std::string sender,
         "(sender,groupname,filename,filesize,ischat,uppath,status)values('" +
         sender + "','" + groupname + "','" + filename + "','" + filesize +
         "','" + ischat + "','" + uppath  + "','uping')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "select last_insert_id()";
     std::string fileid = mysql_.selectstring(sql.c_str());
     sql =
         "insert into filestatus_info "
         "(fileid,sender,status,upsize,downsize,ischat)values('" +
         fileid + "','" + sender + "','uping','0','0','" + ischat + "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return fileid;
 }
 void FILEredis::upfinish(std::string fileid) {
     std::string sql =
         "update filestatus_info set status = 'upfinish' where fileid = '" +
         fileid + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql="update file_info set status = 'upfinish' where fileid = '"+fileid+"'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 void FILEredis::downfinish(std::string fileid) {
     std::string sql =
         "update filestatus_info set status = 'downfinish' where fileid = '" +
         fileid + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql = "update filestatus_info set downsize = '0' where fileid = '" +
           fileid + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 void FILEredis::transferinsert(std::string fileid,
                                std::string account,
@@ -81,7 +81,7 @@ void FILEredis::transferinsert(std::string fileid,
             "(fileid,curaccount,status,downsize,ischat,downpath)values('" +
             fileid + "','" + account + "','downing','0','" + ischat + "','" +
             downpath + "')";
-        mysql_.addmsg(sql.c_str());
+        mysql_.exesql(sql.c_str());
     }else{
         std::string sql =
             "insert into filestatus_info "
@@ -89,7 +89,7 @@ void FILEredis::transferinsert(std::string fileid,
             "values('" +
             fileid + "','" + account + "','downing','0','" + ischat + "','" +
             downpath + "','" + newfilename + "')";
-        mysql_.changemsg(sql.c_str());
+        mysql_.exesql(sql.c_str());
     }
 }
 std::string FILEredis::getsender(std::string fileid) {
@@ -146,385 +146,10 @@ std::string FILEredis::getfilename(std::string fileid) {
     std::string filename = mysql_.selectstring(sql.c_str());
     return filename;
 }
-std::vector<filestatusserver> FILEredis::getfriendupinglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where sender = '"+ account +
-        "' and status = 'uping' and ischat = '0'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql="select groupname from file_info where fileid = '"+id+"'";
-        s=mysql_.selectstring(sql.c_str());
-        if(s.empty()){
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select reciver from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            senderres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select upsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if(senderres.size()!=0){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.reciver = senderres[i];
-            ff.upsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getchatfriendupinglist(
-    std::string account) {
-    std::vector<std::string> fileidres;
-    std::string sql =
-        "select fileid from filestatus_info where sender = '" + account +
-        "' and ischat = '1' and status = 'uping'";
-    fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql = "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(s.empty()){
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select reciver from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            senderres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select upsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    LOG_INFO << "filename.size = " << filenameres.size() ;
-    LOG_INFO << "filesize.size = " << filesizeres.size() ;
-    LOG_INFO<<"fileid.size = "<<fileid1res.size() ;
-    LOG_INFO << "sender.size = " << senderres.size()  ;
-    LOG_INFO << "upsize.size = " << upsizeres.size()  ;
-    if(!senderres.empty()){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.reciver = senderres[i];
-            ff.upsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    LOG_INFO << "res.size = " << res.size();
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getgroupupinglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where  sender= '" + account +
-        "' and status = 'uping' and ischat = '0'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql = "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(!s.empty()){
-            senderres.push_back(s);
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select upsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if(senderres.size()!=0){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.reciver = senderres[i];
-            ff.upsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getchatgroupupinglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where sender = '" + account +
-        "' and status = 'uping' and ischat = '1'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql = "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(!s.empty()){
-            senderres.push_back(s);
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select upsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    LOG_INFO << "filename.size = " << filenameres.size() ;
-    LOG_INFO << "filesize.size = " << filesizeres.size() ;
-    LOG_INFO << "fileid.size = " << fileidres.size() ;
-    LOG_INFO << "sender.size = " << senderres.size() ;
-    LOG_INFO << "upsize.size = " << upsizeres.size() ;
-    if(senderres.size()!=0){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.reciver = senderres[i];
-            ff.upsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getfrienddowninglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where curaccount = '" + account +
-        "' and status = 'downing' and ischat = '0'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql="select groupname from file_info where fileid = '"+id+"'";
-        s = mysql_.selectstring(sql.c_str());
-        if(s.empty()){
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select sender from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            senderres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select downsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if(senderres.size()!=0){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.sender = senderres[i];
-            ff.downsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getchatfrienddowninglist(
-    std::string account) {
-    std::vector<std::string> fileidres;
-    std::string sql =
-        "select fileid from filestatus_info where curaccount = '" + account +
-        "' and ischat = '1' and status = 'downing'";
-    fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> upsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql =
-            "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(s.empty()){
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select sender from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            senderres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select downsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            upsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if(!senderres.empty()){
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.sender = senderres[i];
-            ff.downsize = upsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getgroupdowninglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where curaccount = '" + account +
-        "' and status = 'downing' and ischat = '0'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> downsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql = "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(!s.empty()){
-            senderres.push_back(s);
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select downsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            downsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if (senderres.size() != 0) {
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.sender = senderres[i];
-            ff.downsize = downsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<filestatusserver> FILEredis::getchatgroupdowninglist(
-    std::string account) {
-    std::string sql =
-        "select fileid from filestatus_info where curaccount = '" + account +
-        "' and status = 'downing' and ischat = '1'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string s;
-    std::vector<std::string> filenameres;
-    std::vector<std::string> senderres;
-    std::vector<std::string> filesizeres;
-    std::vector<std::string> downsizeres;
-    std::vector<std::string> fileid1res;
-    for (auto id : fileidres) {
-        sql = "select groupname from file_info where fileid = '" + id + "'";
-        s = mysql_.selectstring(sql.c_str());
-        if(!s.empty()){
-            senderres.push_back(s);
-            sql = "select filename from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filenameres.push_back(s);
-            sql = "select filesize from file_info where fileid = '" + id + "'";
-            s = mysql_.selectstring(sql.c_str());
-            filesizeres.push_back(s);
-            sql = "select downsize from filestatus_info where fileid = '" + id +
-                  "'";
-            s = mysql_.selectstring(sql.c_str());
-            downsizeres.push_back(s);
-            fileid1res.push_back(id);
-        }
-    }
-    std::vector<filestatusserver> res;
-    if (senderres.size() != 0) {
-        for (int i = 0; i < fileid1res.size(); i++) {
-            filestatusserver ff;
-            ff.filename = filenameres[i];
-            ff.filesize = filesizeres[i];
-            ff.fileid = fileid1res[i];
-            ff.sender = senderres[i];
-            ff.downsize = downsizeres[i];
-            res.push_back(ff);
-        }
-    }
-    return res;
-}
-std::vector<json> FILEredis::getdownfilelist(std::string account){
+std::vector<json> FILEredis::getdownfilelist(std::string account,std::string ischat){
     std::vector<json> res;
     std::string sql = "select fileid from file_info where reciver = '" +
-                      account + "' and status = 'upfinish' and ischat = '0'";
+                      account + "' and status = 'upfinish' and ischat = '"+ischat+"'";
     std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
     std::string s;
     for (auto id : fileidres) {
@@ -567,28 +192,6 @@ std::vector<json> FILEredis::getgroupdownfilelist(std::vector<std::string> group
     }
     return res;
 }
-std::vector<json> FILEredis::getchatdownfilelist(std::string account){
-    std::vector<json> res;
-    std::string sql = "select fileid from file_info where reciver = '" +
-                      account + "' and ischat = '1' and status = 'upfinish'";
-    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
-    std::string filename;
-    std::string from;
-    for (int i = 0; i < fileidres.size();i++){
-        sql = "select filename from file_info where fileid = '" + fileidres[i] +
-              "'";
-        filename = mysql_.selectstring(sql.c_str());
-        sql = "select sender from file_info where fileid = '" + fileidres[i] +
-              "'";
-        from = mysql_.selectstring(sql.c_str());
-        json jj;
-        jj["filename"] = filename;
-        jj["ID"] = fileidres[i];
-        jj["from"] = from;
-        res.push_back(jj);
-    }
-    return res;
-}
 std::vector<json> FILEredis::getchatgroupdownfilelist(std::vector<std::string> grouplist){
     std::vector<json> res;
     std::string filename;
@@ -626,5 +229,104 @@ void FILEredis::deldownrecords(std::string ID,
     std::string sql = "delete from filestatus_info where curaccount = '" +
                       account + "' and fileid = '" + ID + "' and filepath = '" +
                       filepath + "' and ischat = '" + ischat + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
+}
+std::vector<filestatusserver> FILEredis::getlist(std::string account,
+                                                 std::string ischat,
+                                                 std::string status,
+                                                 bool group) {
+    std::vector<filestatusserver> result;
+    std::string sql;
+    if (status == "uping") {
+        sql = "select fileid from filestatus_info where sender = '" + account +
+              "' and status = 'uping' and ischat = '" + ischat + "'";
+    } else if (status == "downing") {
+        sql = "select fileid from filestatus_info where curaccount = '" +
+              account + "' and status = 'downing' and ischat = '" + ischat +
+              "'";
+    }
+    std::vector<std::string> fileidres = mysql_.selectmul(sql.c_str());
+    for (auto  id : fileidres) {
+        sql = "select groupname from file_info where fileid = '" + id + "'";
+        std::string groupname = mysql_.selectstring(sql.c_str());
+        bool isgroupfile = !groupname.empty();
+        if (isgroupfile != group) {
+            continue;
+        }
+        filestatusserver file;
+        file.fileid = id;
+        if (!group) {
+            if (status == "uping") {
+                sql =
+                    "select filename,reciver,filesize "
+                    "from file_info where fileid = '" +
+                    id + "'";
+                auto row = mysql_.selectrow(sql.c_str());
+                if (row.size() != 3) {
+                    continue;
+                }
+                file.filename = row[0];
+                file.reciver = row[1];
+                file.filesize = row[2];
+                sql =
+                    "select upsize from filestatus_info "
+                    "where fileid = '" +
+                    id + "' and status = 'uping'";
+                file.upsize = mysql_.selectstring(sql.c_str());
+            } else {
+                sql =
+                    "select filename,sender,filesize "
+                    "from file_info where fileid = '" +
+                    id + "'";
+                auto row = mysql_.selectrow(sql.c_str());
+                if (row.size() != 3) {
+                    continue;
+                }
+                file.filename = row[0];
+                file.sender = row[1];
+                file.filesize = row[2];
+                sql =
+                    "select downsize from filestatus_info "
+                    "where fileid = '" +
+                    id +
+                    "' and status = 'downing' "
+                    "and curaccount = '" +
+                    account + "'";
+
+                file.downsize = mysql_.selectstring(sql.c_str());
+            }
+        } else {
+            sql =
+                "select filename,groupname,filesize "
+                "from file_info where fileid = '" +
+                id + "'";
+            auto row = mysql_.selectrow(sql.c_str());
+            if (row.size() != 3) {
+                continue;
+            }
+            file.filename = row[0];
+            file.filesize = row[2];
+            if (status == "uping") {
+                file.reciver = row[1];
+                sql =
+                    "select upsize from filestatus_info "
+                    "where fileid = '" +
+                    id + "' and status = 'uping'";
+
+                file.upsize = mysql_.selectstring(sql.c_str());
+            } else {
+                file.sender = row[1];
+                sql =
+                    "select downsize from filestatus_info "
+                    "where fileid = '" +
+                    id +
+                    "' and status = 'downing' "
+                    "and curaccount = '" +
+                    account + "'";
+                file.downsize = mysql_.selectstring(sql.c_str());
+            }
+        }
+        result.push_back(file);
+    }
+    return result;
 }

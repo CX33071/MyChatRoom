@@ -1,13 +1,11 @@
 #include "EventLoopThreadpool.h"
 using namespace mulib::net;
-
 EventLoopThreadPool::EventLoopThreadPool(EventLoop* baseloop):
 baseLoop_(baseloop),
 started_(false),
 numThreads_(0),
 next_(0){}
 EventLoopThreadPool::~EventLoopThreadPool() {}
-
 void EventLoopThreadPool::start(){
     baseLoop_->assertInLoopThread();
     started_ = true;
@@ -28,7 +26,4 @@ EventLoop *EventLoopThreadPool::getNextLoop()
     }
     return loop;
 }
-//
 
-//启动线程，拿到里面的EventLoop。自动启动loop()循环，把loop指针存进loops_数组
-//轮询取出下一个loop

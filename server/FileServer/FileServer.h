@@ -1,5 +1,4 @@
 #pragma once
-
 #include <assert.h>
 #include <sys/stat.h>
 #include <cpp_redis/cpp_redis>
@@ -32,9 +31,7 @@ class FileServer{
         uint64_t updatesize = 0;
         std::string ID;
     };
-
      std::unordered_map<TcpConnectionPtr, FileContext> uploadmap_;
-
     public:
      FileServer(EventLoop* loop, std::string name, const InetAddress& addr);
      void connectioncallback(const TcpConnectionPtr& conn);

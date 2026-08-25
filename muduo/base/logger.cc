@@ -75,33 +75,12 @@ void Logger::setLogLevel(Logger::LogLevel level)
 }
 Logger::~Logger()
 {
-    // 有问题
-    impl_.finish(); // 补充文件名、行号等结尾信息
-
+    impl_.finish(); 
     const std::string &msg = impl_.stream_.str();
-
-    // if (OutputFunc())
-    // {
-    //     // OutputFunc(msg.c_str(), static_cast<int>(msg.size()));
-    // }
-    // else
-    // {
         fwrite(msg.c_str(), 1, msg.size(), stdout);
-    // }
-
     if (impl_.level_ == FATAL)
     {
-    //     if (FlushFunc())
-    //     {
-    //         FlushFunc();
-    //     }
-    //     else
-    //     {
             fflush(stdout);
-    //     }
         abort(); // FATAL 日志：程序终止
     }
 }
-
-//自动拼接时间和级别
-//如果有自定义输出到哪的函数就执行，否则输出到屏幕

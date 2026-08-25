@@ -38,7 +38,7 @@ Mysql::~Mysql() {
     }
 }
 
-void Mysql::createinfo(const char* sql_) {
+void Mysql::exesql(const char* sql_) {
     std::lock_guard<std::mutex> lock(mutex_);
     init_mysql_thread();
     if (!mysql_) {
@@ -48,40 +48,6 @@ void Mysql::createinfo(const char* sql_) {
         std::cout << "mysql error: " << mysql_error(mysql_) << std::endl;
     }
 }
-
-void Mysql::addmsg(const char* sql_) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    init_mysql_thread();
-    if (!mysql_) {
-        return;
-    }
-    if (mysql_query(mysql_, sql_)) {
-        std::cout << "mysql error: " << mysql_error(mysql_) << std::endl;
-    }
-}
-
-void Mysql::delmsg(const char* sql_) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    init_mysql_thread();
-    if (!mysql_) {
-        return;
-    }
-    if (mysql_query(mysql_, sql_)) {
-        std::cout << "mysql error: " << mysql_error(mysql_) << std::endl;
-    }
-}
-
-void Mysql::changemsg(const char* sql_) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    init_mysql_thread();
-    if (!mysql_) {
-        return;
-    }
-    if (mysql_query(mysql_, sql_)) {
-        std::cout << "mysql error: " << mysql_error(mysql_) << std::endl;
-    }
-}
-
 std::vector<std::string> Mysql::selectmul(const char* sql_) {
     std::lock_guard<std::mutex> lock(mutex_);
     init_mysql_thread();
@@ -152,8 +118,7 @@ bool Mysql::select(const char* sql_) {
     mysql_free_result(res);
     return found;
 }
-
-std::vector<std::string> Mysql::selectmul2(const char* sql_) {
+std::vector<std::string> Mysql::selectrow(const char* sql_) {
     std::lock_guard<std::mutex> lock(mutex_);
     init_mysql_thread();
     std::vector<std::string> result;
@@ -164,16 +129,20 @@ std::vector<std::string> Mysql::selectmul2(const char* sql_) {
         std::cout << "mysql error: " << mysql_error(mysql_) << std::endl;
         return result;
     }
-
     MYSQL_RES* res = mysql_store_result(mysql_);
     if (!res) {
         return result;
     }
-    MYSQL_ROW row;
-    while ((row = mysql_fetch_row(res))) {
-        std::string first = row[0] ? row[0] : "";
-        std::string second = row[1] ? row[1] : "";
-        result.push_back(first + ": " + second);
+    MYSQL_ROW row = mysql_fetch_row(res);
+    if (row) {
+        unsigned int fields = mysql_num_fields(res);
+        for (unsigned int i = 0; i < fields; i++) {
+            if (row[i]) {
+                result.push_back(row[i]);
+            } else {
+                result.push_back("");
+            }
+        }
     }
     mysql_free_result(res);
     return result;

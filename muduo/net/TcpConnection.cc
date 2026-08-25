@@ -82,43 +82,7 @@ void TcpConnection::shutdownInLoop(){
     {
         socket_->shutdownWrite();
     }
-} // 只关闭写端，防止对面还在发消息
-// void TcpConnection::sendInLoop(const std::string &message){
-//     loop_->assertInLoopThread();
-//     ssize_t nwrote = 0;
-//     if (state_ == kDisconnected){
-//         LOG_WARN << "disconnected, give up writing";
-//         return;
-//     }
-//     if (!channel_->isWriting() && outputBuffer_.readableBytes() == 0){
-//         nwrote = ::write(channel_->fd(), message.data(), message.size());
-//         if (nwrote >= 0){
-//             if (static_cast<size_t>(nwrote) < message.size()){
-//                 LOG_WARN << "data not fully written";
-//             }
-//             else if (writeCompleteCallback_){
-//                 loop_->queueInLoop([this]()
-//                                    { writeCompleteCallback_(shared_from_this()); });
-//             }
-//         }
-//         else{
-//             nwrote = 0;
-//             if (errno != EWOULDBLOCK) // 对端 socket 的发送缓冲区满了
-//             {
-//                 LOG_SYSERR << "TcpConnection::sendInLoop: send failed";
-//             }
-//         }
-//     }
-//     assert(nwrote >= 0);
-//     if (static_cast<size_t>(nwrote) < message.size())
-//     {
-//         outputBuffer_.append(message.data() + nwrote, message.size() - nwrote);
-//         if (!channel_->isWriting())
-//         {
-//             channel_->enableWriting();
-//         }
-//     }
-// }
+} 
 void TcpConnection::sendInLoop(const std::string &data)
 {
     loop_->assertInLoopThread();
@@ -239,16 +203,3 @@ void TcpConnection::forceClose(){
     }
 }
 
-//监听可读事件
-//通知用户连接上线
-//移除channel
-//跨线程->扔到线程IO执行
-//关闭写端
-//全部发完，触发发送完成回调
-//数据没发完，剩余数据放入发送缓冲区
-//读取数据放到缓冲区
-//读到数据通知用户
-///客户端关闭->本端关闭
-//通知用户断开
-//通知server移除连接
-//移除已发送数据

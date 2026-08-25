@@ -1,7 +1,6 @@
 #include "CurrentThread.h"
 #include <sys/syscall.h>
 #include <unistd.h>
-
 namespace mulib{
     namespace CurrentThread{
         extern __thread int t_cachedTid = 0;
@@ -19,5 +18,3 @@ namespace mulib{
         }
     }
 }
-
-//syscall是系统函数，直接进入函数，具体用什么系统调用取决于宏，SYS_gettid宏告诉内核我要获取当前线程的ID，返回值是long

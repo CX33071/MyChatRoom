@@ -34,7 +34,6 @@ class Friend {
    private:
     cpp_redis::client redis_;
     Mysql mysql_;
-
    public:
     Friend();
     bool addapply(std::string applyaccount, std::string appliedaccount) ;

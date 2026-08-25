@@ -51,14 +51,3 @@ namespace mulib{
     
 }
 #endif//
-
-//获取当前连接
-//连接成功，创建TcpConnection
-//断开是否重连
-//保存与服务器的连接
-// namespace net
-//客户端流程：
-// TcpClient启动
-// Connector连接服务器
-// 连接成功创建Tcpconnection
-// 收发数据

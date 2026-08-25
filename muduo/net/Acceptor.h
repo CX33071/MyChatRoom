@@ -1,11 +1,9 @@
 #ifndef MUDUO_NET_ACCEPTOR_H
 #define MUDUO_NET_ACCEPTOR_H
-
 #include <functional>
 #include "EventLoop.h"
 #include "InetAddress.h"
 #include "Socket.h"
-
 namespace mulib{
     namespace net{
         class Acceptor{
@@ -30,6 +28,3 @@ namespace mulib{
     }
 }
 #endif
-
-// namespace net
-//创建Acceptor,调用listen(),客户端发起连接有可读事件Channel调用handleRead(),handleread()调用accept获取新连接fd,调用回调函数

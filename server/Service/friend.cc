@@ -17,24 +17,20 @@ Friend::Friend() {
     std::string sql =
         "create table if not exists friend_info(id int auto_increment primary key,account "
         "varchar(30) ,friendaccount varchar(30));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists applyaddfriend_info(id int auto_increment primary "
         "key,appaccount varchar(30),appedaccount varchar(30));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists block_info(id int auto_increment primary key,account "
         "varchar(30),blockfriend varchar(30));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     sql =
         "create table if not exists friendchat_history(id int auto_increment "
         "primary key,sender varchar(30),reciver varchar(30),content longtext,"
         "send_time datetime default current_timestamp);";
-    mysql_.createinfo(sql.c_str());
-    // sql =
-    //     "create table if not exists friendname_info (id int increment primary "
-    //     "key,name varchar(100),friendname varchar(100));";
-    // mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::string Friend::getname(std::string account){
     auto fut = redis_.exists({account});
@@ -77,7 +73,7 @@ bool Friend::addapply(std::string applyaccount, std::string appliedaccount) {
             "insert into applyaddfriend_info "
             "(appaccount,appedaccount)values('" +
             applyaccount + "','" + appliedaccount + "')";
-        mysql_.addmsg(sql.c_str());
+        mysql_.exesql(sql.c_str());
         return true;
 }
 bool Friend::agreeapply(std::string applyaccount, std::string appliedaccount) {
@@ -93,9 +89,9 @@ bool Friend::agreeapply(std::string applyaccount, std::string appliedaccount) {
            appliedaccount + "','" + applyaccount + "')";
     sql2 = "delete from applyaddfriend_info where appaccount = '" +
            applyaccount + "' and appedaccount = '" + appliedaccount + "'";
-    mysql_.addmsg(sql1.c_str());
-    mysql_.delmsg(sql2.c_str());
-    mysql_.addmsg(sql3.c_str());
+    mysql_.exesql(sql1.c_str());
+    mysql_.exesql(sql2.c_str());
+    mysql_.exesql(sql3.c_str());
     return true;
 }
 bool Friend::refuseapply(std::string applyaccount, std::string appliedaccount) {
@@ -104,7 +100,7 @@ bool Friend::refuseapply(std::string applyaccount, std::string appliedaccount) {
     redis_.sync_commit();
     std::string sql="delete from applyaddfriend_info where appaccount = '" + applyaccount +
         "' and appedaccount = '" + appliedaccount + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return true;
 }
 bool Friend::block(std::string applyaccount, std::string appliedaccount) {
@@ -113,7 +109,7 @@ bool Friend::block(std::string applyaccount, std::string appliedaccount) {
     redis_.sync_commit();
     std::string sql = "insert into block_info (account,blockfriend) values('" +
                       applyaccount + "','" + appliedaccount + "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return true;
 }
 int Friend::cancleblock(std::string applyaccount, std::string appliedaccount) {
@@ -122,7 +118,7 @@ int Friend::cancleblock(std::string applyaccount, std::string appliedaccount) {
     redis_.sync_commit();
     std::string sql = "delete from block_info where account='" + applyaccount +
                       "'and blockfriend ='" + appliedaccount + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return 0;
 }
 int Friend::delfriend(std::string applyaccount, std::string appliedaccount) {
@@ -172,10 +168,10 @@ int Friend::delfriend(std::string applyaccount, std::string appliedaccount) {
                        applyaccount + "'and reciver ='" + appliedaccount + "'";
     std::string sql5 = "delete from friendchat_history where sender ='" +
                        appliedaccount + "'and reciver ='" + applyaccount + "'";
-    mysql_.delmsg(sql2.c_str());
-    mysql_.delmsg(sql3.c_str());
-    mysql_.delmsg(sql4.c_str());
-    mysql_.delmsg(sql5.c_str());
+    mysql_.exesql(sql2.c_str());
+    mysql_.exesql(sql3.c_str());
+    mysql_.exesql(sql4.c_str());
+    mysql_.exesql(sql5.c_str());
     return 0;
 }
 void Friend::delfriend1(std::string account, std::string target) {
@@ -183,7 +179,7 @@ void Friend::delfriend1(std::string account, std::string target) {
     redis_.sync_commit();
     std::string sql = "delete from friend_info where account='" + account +
                       "'and friendaccount = '" + target + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 void Friend::addfriend(std::string account, std::string target) {
     redis_.sadd("friend" + account, {target});
@@ -191,7 +187,7 @@ void Friend::addfriend(std::string account, std::string target) {
     std::string sql =
         "insert into friend_info (account,friendaccount)values('" + account +
         "','" + target + "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 int Friend::isfriend(std::string account, std::string friendaccount) {
     auto fut1 = redis_.exists({friendaccount + "key"});
@@ -384,7 +380,7 @@ void Friend::historyfriendchat(std::string account1,
     std::string sql =
         "insert into friendchat_history(sender,reciver,content) values('" +
         account1 + "','" + account2 + "','" + content + "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::vector<friendchatrecord> Friend::gethistoryfriendchat(std::string account1,
                                                       std::string account2) {

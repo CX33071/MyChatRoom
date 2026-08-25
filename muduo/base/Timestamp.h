@@ -32,8 +32,4 @@ namespace mulib{
         };
     }
 }
-
 #endif
-
-//秒到微秒的转换
-//比较两个Timestamp类对象

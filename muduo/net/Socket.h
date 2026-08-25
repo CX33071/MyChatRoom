@@ -75,10 +75,4 @@ inline void Socket::setReuseAddr(bool on)
     int optval = on ? 1 : 0;
     ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 }
-#endif//
-
-//把一个fd包装成安全的C++对象
-// namespace net
-//tcp为了省流量，有个默认规则：数据很小？先攒着不发，等攒多了再发，这就是Nagle算法
-// 设置socket选项，IPPROTO_TCPTCP层，TCP_NODELAY是否禁用Nagle
-//端口复用，重启服务器不出错
+#endif

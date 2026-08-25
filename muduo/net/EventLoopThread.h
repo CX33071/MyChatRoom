@@ -59,17 +59,3 @@ inline void EventLoopThread::threadFunc(){
     loop.loop(-1);
 }
 #endif
-
-//EventLoopThread是对一个线程+一个EventLoop的封装
-//启动线程，返回里面的loop,主线程等子线程把EventLoop创建好再返回指针
-//线程真正执行的函数
-//线程对象
-//线程里跑的循环loop
-//等待loop创建好
-//等待线程里的loop创建完成
-//返回创建好的EVentLoop
-//loop_创好了退出loop循环
-//等待线程结束
-//创建
-//唤醒，通知主线程已经创好
-//启动事件循环，阻塞再这里

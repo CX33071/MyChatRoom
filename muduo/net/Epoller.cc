@@ -1,7 +1,6 @@
 #include "Epoller.h"
 #include <errno.h>
 #include <unistd.h>
-
 const int _knew = -1; // Channel 从没添加进 poller
 const int _kadded = 1; // 已添加
 const int _kdelete = 2; // 曾经添加过，现在删除了
@@ -14,12 +13,10 @@ ownerLoop_(loop),epollfd_(epoll_create1(EPOLL_CLOEXEC)),events_(kInitEventListSi
         LOG_FATAL << "Epoller::Epoller";
     }
 }
-
 Epoller::~Epoller()
 {
     close(epollfd_);
 }
-
 mulib::base::Timestamp Epoller::poll(int timeoutMs, ChannelList &activeChannels){
     Timestamp now(Timestamp::now());
     while(1){
@@ -44,7 +41,6 @@ mulib::base::Timestamp Epoller::poll(int timeoutMs, ChannelList &activeChannels)
         break;
     }
     }
-    
     return now;
 }
 void Epoller::fillActiveChannels(int numEvents, ChannelList &activeChannels) const{
@@ -76,7 +72,6 @@ void Epoller::updateChannel(Channel *channel){
         }
     }
 }
-
 void Epoller::removeChannel(Channel *channel)
 {
     assertInLoopThread();
@@ -103,21 +98,4 @@ void Epoller::update(int opt, Channel *channel){
             LOG_ERROR << "Epoller::epoll : add / mod error" << strerror(errno);
         }
     }
-}//
-
-//给updateChannel判断执行ADD还是DEL
-//Channel从没加入epoll
-//已在epoll中
-//从epoll中删除
-//epoll_wait内核返回活跃fd交给fillActiveChannels
-//被信号打断，重试
-//从内核拿到就绪fd
-//加入活跃列表
-//获取状态
-//channel是新的或者已经删除，执行ADD
-//将channel加入map进行管理
-//设置状态为已添加
-//channel已经存在但是没有监听任何事件，删除
-//修改监听事件
-//从map中删除
-//从epoll中删除
+}

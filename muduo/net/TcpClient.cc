@@ -100,11 +100,3 @@ TcpClient::TcpConnectionPtr TcpClient::connection(){
     return connection_;
 }//
 
-//，拿到sockfd,设置TcpConnection
-//激活连接
-// 清空map
-//true只有我掌握这个连接，false还有其他线程掌握这个连接
-//如果连接存在
-//只有我掌握这个连接
-//强制关闭连接
-//停止连接器

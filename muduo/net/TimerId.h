@@ -21,9 +21,4 @@ namespace mulib{
         };
     }
 }
-
 #endif//
-
-//定时期的身份证，防止删除一个已经被销毁的定时器
-//让TimerQueue可以访问内部成员
-// namespace net

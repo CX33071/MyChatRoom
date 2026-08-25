@@ -48,10 +48,3 @@ LogStream &LogStream::operator<<(const T &val)
     return *this;
 }
 #endif
-
-//日志一行最长4096
-//继承类
-//允许operator输出任意类型的数据
-//支持std::endl这种控制输出符，std::endl是函数，必须写一个专门接受函数的<<重载
-//获取最终拼接好的完整日志字符串
-//清空缓冲区，打印完这条日志清空准备下一条

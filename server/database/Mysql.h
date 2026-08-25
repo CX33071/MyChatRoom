@@ -13,21 +13,16 @@
 #include <mutex>
 #include <string>
 #include <vector>
-
 class Mysql {
     private:
      MYSQL* mysql_;
      std::mutex mutex_;
-
     public:
      Mysql();
      ~Mysql();
-     void createinfo(const char*sql_);
-     void addmsg(const char* sql_);
-     void delmsg(const char* sql_);
-     void changemsg(const char* sql_);
+     void exesql(const char* sql);
      std::vector<std::string> selectmul(const char* sql);
      bool select(const char* sql_);
      std::string selectstring(const char* sql);
-     std::vector<std::string>selectmul2(const char* sql_);
+     std::vector<std::string> selectrow(const char* sql_);
 };

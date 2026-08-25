@@ -72,6 +72,7 @@ class chatclient {
     chatrecord cr;
 
    public:
+    uint64_t filesize;
     std::vector<std::string> grouplist;
     std::unordered_map<std::string, bool> isblocklist;
     int chat_menu_index = -1;
@@ -123,7 +124,17 @@ class chatclient {
     std::mutex msg_mutex;
     std::condition_variable msg_cv;
     chatclient(EventLoop* loop, const InetAddress& addr);
+    bool inputvail(char* line);
+    bool inputemail();
+    bool groupinput();
+    bool inputfilepath();
+    int numvail(int total);
+    void chatinput(bool inchat,
+                   std::string name,
+                   std::string targetname,
+                   std::string targetaccount);
     void sendheart();
+    bool resfuture(std::string idd,json j, json&res);
     void cancel_requests();
     bool is_groupmember2(std::string groupname);
     bool is_groupmember(std::string groupname,std::string account);
@@ -199,14 +210,14 @@ class chatclient {
     void handle_groupmember();
     void handle_setgroupmanager();
     void handle_sendedfile();
+    void fileloadinput(std::vector<std::string> fileres,
+                       std::string& newfilename);
     void handle_sendfile();
-    void handle_loadfile();
     bool is_existsgroup(std::string groupname);
     bool is_manager(std::string groupname, std::string count);
     void handle_chatloadfile(std::string from);
     int is_friend(std::string account);
     void printfmembers();
-    void checkreadlineinput(char *line);
     void handle_ownergrouplist();
     int is_blockfriend(std::string account);
     std::string gen_req_id();

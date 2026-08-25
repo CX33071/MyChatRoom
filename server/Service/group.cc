@@ -5,33 +5,33 @@ Group::Group() {
     std::string sql =
         "create table if not exists groupmember_info (id int auto_increment primary "
         "key,account varchar(30),groupname varchar(20));";
-    mysql_.createinfo(sql.c_str());
+    mysql_.exesql(sql.c_str());
     std::string sql1 =
         "create table if not exists owner_info (id int auto_increment primary "
         "key,groupname "
         "varchar(30),owner varchar(30));";
-    mysql_.createinfo(sql1.c_str());
+    mysql_.exesql(sql1.c_str());
     std::string sql2 =
         "create table if not exists groupmanage_info (id int auto_increment "
         "primary key,groupname "
         "varchar(20),manager varchar(30));";
-    mysql_.createinfo(sql2.c_str());
+    mysql_.exesql(sql2.c_str());
     std::string sql3 =
         "create table if not exists disconnectmsg_info (id int auto_increment "
         "primary "
         "key,account varchar(30),msg longtext);";
-    mysql_.createinfo(sql3.c_str());
+    mysql_.exesql(sql3.c_str());
     std::string sql4 =
         "create table if not exists apply_info (id int auto_increment primary "
         "key,account "
         "varchar(20),groupname varchar(30));";
-    mysql_.createinfo(sql4.c_str());
+    mysql_.exesql(sql4.c_str());
     std::string sql5 =
         "create table if not exists groupchat_history (id int auto_increment "
         "primary "
         "key,sender varchar(30),groupname varchar(30),context longtext,send_time "
         "datetime default current_timestamp);";
-    mysql_.createinfo(sql5.c_str());
+    mysql_.exesql(sql5.c_str());
 }
 std::string Group::getname(std::string account) {
     auto fut = redis_.exists({account});
@@ -88,11 +88,11 @@ std::string Group::getname(std::string account) {
      redis_.sync_commit();
      std::string sql1 = "insert into owner_info (groupname,owner)values('" +
                         name + "','" + account + "')";
-     mysql_.addmsg(sql1.c_str());
+     mysql_.exesql(sql1.c_str());
      std::string sql2 =
          "insert into groupmember_info (account,groupname)values('" + account +
          "','" + name + "')";
-     mysql_.addmsg(sql2.c_str());
+     mysql_.exesql(sql2.c_str());
      group_map[name].insert(account);
      return name;
  }
@@ -159,14 +159,14 @@ std::string Group::getname(std::string account) {
      redis_.sync_commit();
      std::string sql = "insert into groupmanage_info (groupname,manager)values ('" +
                        groupname + "','" + account + "')";
-     mysql_.addmsg(sql.c_str());
+     mysql_.exesql(sql.c_str());
  }
  void Group::delmanager(std::string groupname, std::string account) {
      redis_.srem(groupname + "managers",{account});
      redis_.sync_commit();
      std::string sql = "delete from groupmanage_info where groupname = '" +
                        groupname + "'and manager ='" + account + "'";
-     mysql_.delmsg(sql.c_str());
+     mysql_.exesql(sql.c_str());
  }
  int Group::exitgroup(std::string account, std::string groupname){
      auto f1 = redis_.exists({groupname + "owner:"});
@@ -204,9 +204,8 @@ std::string Group::getname(std::string account) {
      redis_.srem(groupname + "members", {account});
      redis_.srem(groupname + "managers", {account});
      redis_.sync_commit();
-     std::string sql3 = "delete from groupmember_info where groupname = '" +
-                        groupname + "'and account = '" + account + "'";
-     mysql_.delmsg(sql3.c_str());
+     std::string sql3 = "delete from groupmember_info where groupname = '" +groupname + "'and account = '" + account + "'";
+     mysql_.exesql(sql3.c_str());
      return 0;
  }
 void Group::changeowner(std::string groupname,std::string owner,std::string friendaccount){
@@ -219,7 +218,7 @@ void Group::changeowner(std::string groupname,std::string owner,std::string frie
     redis_.sync_commit();
     std::string sql = "update owner_info set owner ='" + friendaccount +
                       "' where groupname ='" + groupname + "'";
-    mysql_.changemsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return;
 }
 bool Group::is_owner(std::string account,std::string groupname){
@@ -407,10 +406,10 @@ int Group::delgroup(std::string groupname, std::string account){
         "delete from groupmanage_info where groupname ='" + groupname + "'";
     std::string sql5 =
         "delete from groupchat_history where groupname ='" + groupname + "'";
-    mysql_.delmsg(sql3.c_str());
-    mysql_.delmsg(sql4.c_str());
-    mysql_.delmsg(sql5.c_str());
-    mysql_.delmsg(sql2.c_str());
+    mysql_.exesql(sql3.c_str());
+    mysql_.exesql(sql4.c_str());
+    mysql_.exesql(sql5.c_str());
+    mysql_.exesql(sql2.c_str());
     group_map.erase(groupname);
     return 0;
 }
@@ -423,11 +422,11 @@ int Group::delgroup(std::string groupname, std::string account){
      redis_.sync_commit();
      std::string sql1 = "delete from apply_info where groupname ='" +
                         groupname + "'and account ='" + account + "'";
-     mysql_.delmsg(sql1.c_str());
+     mysql_.exesql(sql1.c_str());
      std::string sql2 =
          "insert into groupmember_info (groupname,account)values('" +
          groupname + "','" + account + "')";
-     mysql_.addmsg(sql2.c_str());
+     mysql_.exesql(sql2.c_str());
      group_map[groupname].insert(account);
      return true;
 }
@@ -437,7 +436,7 @@ bool Group::refusejoin(std::string account,
     redis_.sync_commit();
     std::string sql = "delete from apply_info where groupname ='" +
                       groupname + "'and account = '" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
     return true;
 }
 std::vector<std::string> Group::applyjoingroup(std::string account,std::string groupname){
@@ -467,7 +466,7 @@ std::vector<std::string> Group::applyjoingroup(std::string account,std::string g
     redis_.sync_commit();
     std::string sql3 = "insert into apply_info (groupname,account)values('" +
                        groupname + "','" + account + "')";
-    mysql_.addmsg(sql3.c_str());
+    mysql_.exesql(sql3.c_str());
     auto reply1 = f.get();
     for (auto it : reply1.as_array()) {
         res.push_back(it.as_string());
@@ -497,7 +496,7 @@ void Group::delmember(std::string groupname,std::string account){
     redis_.sync_commit();
     std::string sql1 = "delete from groupmember_info where groupname = '" +
                        groupname + "'and account ='" + account + "'";
-    mysql_.delmsg(sql1.c_str());
+    mysql_.exesql(sql1.c_str());
     auto s = redis_.exists({groupname + "managers"});
     redis_.sync_commit();
     if(!s.get().as_integer()){
@@ -517,7 +516,7 @@ void Group::delmember(std::string groupname,std::string account){
     }
     std::string sql7 = "delete from groupmanage_info where groupname ='" +
                        groupname + "'and manager ='" + account + "'";
-    mysql_.delmsg(sql7.c_str());
+    mysql_.exesql(sql7.c_str());
 }
 void Group::historygroupchat(std::string account,
                       std::string groupname,std::string name,
@@ -531,7 +530,7 @@ void Group::historygroupchat(std::string account,
     std::string sql =
         "insert into groupchat_history (sender,groupname,context)values('" +
         account + "','" + groupname + "','" + context+ "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::vector<friendchatrecord> Group::getgrouphistory(std::string groupname){
     std::vector<friendchatrecord> res;
@@ -576,7 +575,7 @@ void Group::disconnectmsg(std::string account,json j){
     redis_.sync_commit();
     std::string sql = "insert into disconnectmsg_info (account,msg)values('" +
                       account + "','" + j.dump() + "')";
-    mysql_.addmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }
 std::vector<std::string> Group::getdisconnectmsg(std::string account){
     auto s = redis_.exists({"disconnectmsg" + account});
@@ -604,5 +603,5 @@ void Group::destorydismsg(std::string account){
     redis_.sync_commit();
     std::string sql =
         "delete from disconnectmsg_info where account ='" + account + "'";
-    mysql_.delmsg(sql.c_str());
+    mysql_.exesql(sql.c_str());
 }

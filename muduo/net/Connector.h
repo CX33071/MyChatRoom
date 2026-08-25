@@ -1,11 +1,9 @@
 #ifndef MUDUO_NET_CONNECTOR_H
 #define MUDUO_NET_CONNECTOR_H
-
 #include "../base/noncopyable.h"
 #include "InetAddress.h"
 #include <functional>
 #include <memory>
-
 namespace mulib{
     namespace net{//
         class Channel;
@@ -49,35 +47,4 @@ namespace mulib{
         };
     }
 }
-#endif // MUDUO_NET_CONNECTOR_H
-
-//TCP客户端核心
-//安全使用shared_ptr管理自己
-//客户端事件循环、要连接的服务器地址
-//开始连接
-//重连
-//未连接
-//连接中 
-//已连接
-//用状态及保证不会重复连接，不会乱序
-//最大重试间隔30s
-//初始间隔500ms
-//指数退避重试，连接失败500ms->1s->...->30s
-//设置状态
-//真正开始连接，在IO线程执行,外部调用start(),转到startInLoop()
-//真正停止连接,外部调用stop
-//发起连接
-//连接中处理
-//连接成功，可写事件触发
-//连接出错
-//连接失败，重试
-//移除并重置channel
-//重置channel
-//客户端所在事件循环
-//服务器地址
-//是否正在连接
-//连接状态
-//指向客户端的channel
-//连接成功后的回调
-//重试的延迟时间
-// namespace net
+#endif

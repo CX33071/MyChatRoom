@@ -23,7 +23,6 @@ class Group{
      cpp_redis::client redis_;
      Mysql mysql_;
      std::unordered_map<std::string, std::unordered_set<std::string>> group_map;
-
     public:
      Group();
      std::string creategroup(std::string account, std::string name);

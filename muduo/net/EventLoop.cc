@@ -163,31 +163,3 @@ TimerId EventLoop::runEvery(double interval, const Timer::TimerCallback &cb){
 void EventLoop::cancel(TimerId id){
     return timerQueue_->cancel(id);
 }
-
-//thread_local=每个线程独有一份，一个线程只能有一个EventLoop
-//全局忽略SIGPIPE信号，防止写已关闭socket导致程序崩溃
-//保存创建时的线程ID
-//创建Epoller
-//创建eventfd
-//包装成Channel
-//一个线程智能有一个EventLoop
-//设置wakeupfd的读回调
-//监听读事件
-//取消所有事件
-//线程标记清空
-//整个muduo的主循环
-//epoll_wait
-//处理所有活跃channel的事件
-//执行跨线程任务
-//唤醒epoll,让它退出阻塞
-//当前就是IO线程，直接执行
-//丢到队列，异步执行
-//发送唤醒信号
-//加入待执行队列
-// 如果不是在本线程，或者正在调用 functors（说明是嵌套），就唤醒 EventLoop
-//创建一个事件fd,专门用来唤醒epoll
-//读出写进eventfd的值，清空事件，避免epoll一直触发
-//交换队列，减少锁临界区
-//转发给Epoller的函数,EventLoop不做实际工作，全部交给Epoller
-//定时任务，交给TimerQueue执行
-//非静态成员函数或变量必须依附于某个具体对象

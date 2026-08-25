@@ -142,16 +142,3 @@ std::string Buffer::returnstring() {
     retrieve(len + 1); 
     return res;
 }
-//assert如果条件不满足就打印信息然后退出程序
-//一次性从socket读到缓冲区，空间不够就用栈临时存
-//出错把错误码存在saveErrno
-//在栈上开64KB临时缓冲区，Buffer满了临时放在这
-//readv要用的分散读数组，可以一次读数据到两块不同内存
-//缓冲区当前可写空间大小
-//第一块内存：Buffer自己的可写区域
-//第二块内存：栈上临时缓冲区
-//如果Buffer空间<64KB,用两块内存(Buffer+栈)，否则只用Buffer
-//一次系统调用，把数据读到两块内存，速度比read块很多，数据先放vec[0],满了自动放vec[1]
-//数据装不下放在extrabuf里，调用append把栈上数据搬进Buffer,Buffer自动扩容
-//makeSpace要么整体扩容，要么把数据挪到最前面，腾出后面空间
-//后面剩余空间+前面已读空间

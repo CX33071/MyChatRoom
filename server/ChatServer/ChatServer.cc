@@ -57,6 +57,29 @@ std::string ChatServer::get_current_time() {
     Timestamp now = Timestamp::now();
     return now.toFormattedString(true);
 }
+void ChatServer::getrequest_id(json j,json &j1){
+    std::string request_id = j["request_id"];
+    if (!request_id.empty()) {
+        j1["request_id"] = request_id;
+    }
+}
+void ChatServer::sendtotarget(std::string account,json j){
+    TcpConnectionPtr target_conn;
+    {
+        std::lock_guard<std::mutex> lock(g_mutex);
+        auto it = clientmap.find(account);
+        if (it != clientmap.end()) {
+            target_conn = it->second;
+            LOG_INFO << "目标用户当前在线";
+        } else {
+            LOG_INFO << "用户当前不在线";
+            G.disconnectmsg(account, j);
+        }
+    }
+    if (target_conn) {
+        target_conn->send(j.dump() + '\n');
+    }
+}
 void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                                  Buffer* buf,
                                  Timestamp) {
@@ -84,10 +107,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account=verifycode.getaccount(name);
             json j1;
             j1["data"] = account;
-            std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="getname"){
@@ -95,10 +115,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string name=verifycode.getname(account);
             json j1;
             j1["data"]=name;
-            std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["cmd"] = "getnameres";
             conn->send(j1.dump() + '\n');
         }
@@ -110,10 +127,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "0";
             }
-            std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="is_online"){
@@ -126,10 +140,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             }else{
                 j1["code"] = "2";
             }
-              std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "signup") {
@@ -144,10 +155,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "该账号已被注册过，请重新尝试";
             }
-            std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="is_blocked"){
@@ -155,10 +163,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string account = j["account"];
             std::string friendaccount = j["friendaccount"];
             bool res=F.isblocked(account,friendaccount);
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             if(res){
                 j1["code"] = "1";
             }else{
@@ -173,20 +178,14 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"]="modifynameres";
             j1["data"] = "修改昵称成功";
-            std::string request_id = j["request_id"];
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "verifycode") {
             json j1;
             std::string account = j["account"];
             bool ret = verifycode.addredis(account);
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["cmd"] = "verifycode_res";
             if (ret) {
                 j1["data"] = "验证码成功发送!";
@@ -208,10 +207,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["data"] = "验证码正确，登录成功";
                 std::lock_guard<std::mutex> lock(g_mutex);
                 clientmap[account] = conn;
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                }
+                getrequest_id(j, j1);
                 conn->send(j1.dump() + '\n');
                 std::vector<std::string> disconnectmsg =
                     G.getdisconnectmsg(account);
@@ -223,10 +219,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "2";
                 j1["data"] = "验证码错误，登录失败";
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                }
+                getrequest_id(j, j1);
                 conn->send(j1.dump() + '\n');
             }
         }
@@ -241,11 +234,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j1["data"] = "密码正确，登录成功";
                 std::lock_guard<std::mutex> lock(g_mutex);
                 clientmap[account] = conn;
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                } else {
-                }
+                getrequest_id(j, j1);
                 conn->send(j1.dump() + '\n');
                 std::vector<std::string> disconnectmsg =
                     G.getdisconnectmsg(account);
@@ -257,33 +246,17 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else if (res == 2) {
                 j1["code"] = "2";
                 j1["data"] = "密码错误，登录失败";
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                } else {
-                }
+                getrequest_id(j, j1);
                 conn->send(j1.dump() + '\n');
 
-            } else {
-                j1["code"] = "2";
-                j1["data"] = "该账号并不存在";
-                std::string request_id = j.value("request_id", "");
-                if (!request_id.empty()) {
-                    j1["request_id"] = request_id;
-                } else {
-                }
-                conn->send(j1.dump() + '\n');
-            }
+            } 
         }
         if (cmd == "exitlogin") {
             std::string account = j["account"];
             verifycode.exitlogin(account);
             json reply;
             reply["cmd"] = "exitloginres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                reply["request_id"] = request_id;
-            }
+            getrequest_id(j, reply);
             reply["data"] = "[系统消息]:已经退出登录";
             conn->send(reply.dump() + '\n');
             clientmap.erase(account);
@@ -298,10 +271,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "\n该账号并未注册";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "sendfile") {
@@ -321,16 +291,12 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 } else {
                     s = "0";
                 }
-                std::string fileid = file.friendupbegin(from, to, filename,
-                                                        filesize, s, filepath);
+                std::string fileid = file.friendupbegin(from, to, filename,filesize, s, filepath);
                 res["cmd"] = "sendfileres";
                 res["ID"] = fileid;
                 res["data"] = "已发送上传文件请求给服务端";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
+            getrequest_id(j, res);
             conn->send(res.dump() + '\n');
         }
         if (cmd == "resendfile") {
@@ -341,10 +307,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j1["cmd"]="resendfileres";
             j1["uploaded"] = uploaded;
             j1["filepath"] = filepath;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="recvfile"){
@@ -359,10 +322,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             file.transferinsert(ID, account, filepath,ischat,newfilename);
             json j1;
             j1["cmd"]="recvfileres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["filesize"] = filesize;
             conn->send(j1.dump() + '\n');
         }
@@ -375,10 +335,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             file.deldownrecords(ID, account, filepath, ischat, filename);
             json j1;
             j1["cmd"] = "deldownrecordres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="redownloadfile"){
@@ -391,10 +348,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string filename = file.getfilename(fileid);
             json j1;
             j1["cmd"]="redownloadfileres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["newfilename"] = newfilename;
             j1["filename"] = filename;
             j1["filepath"] = filepath;
@@ -404,11 +358,8 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if(cmd=="downloadcheck"){
             std::string account=j["account"];
             json res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
-            std::vector<filestatusserver> downs=file.getfrienddowninglist(account);
+            getrequest_id(j, res);
+            std::vector<filestatusserver> downs=file.getlist(account,"0","downing",false);
             std::vector<json> hh;
             for(auto t:downs){
                 json j2;
@@ -419,7 +370,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j2["fileid"] = t.fileid;
                 hh.push_back(j2);
             }
-            std::vector<filestatusserver> downs1=file.getgroupdowninglist(account);
+            std::vector<filestatusserver> downs1=file.getlist(account,"0","downing",true);
             for (auto t : downs1) {
                 json j2;
                 j2["sender"] = t.sender;
@@ -438,13 +389,6 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string from = file.getsender(ID);
             std::string account = j["account"];
             json j2, j1;
-            // j1["cmd"] = "finish";
-            // j1["data"] = "下载成功";
-            // std::string request_id = j.value("request_id", "");
-            // if (!request_id.empty()) {
-            //     j1["request_id1"] = request_id;
-            // }
-            // conn->send(j1.dump() + '\n');
             j2["cmd"] = "toRETRres";
             if(j["chatload"]=="1"){
                 j2["chatload"] = "1";
@@ -457,19 +401,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["time"] = get_current_time();
             j2["from"]=name;
             j2["filename"] = filename;
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(from);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                } else {
-                    G.disconnectmsg(from, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-            }
+            sendtotarget(from, j2);
         }
         if(cmd=="sendfile_finish"){
             std::string ID = j["ID"];
@@ -491,31 +423,14 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["from"]=from;
             j2["filename"] = filename;
             j2["ID"] = ID;
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(reciver);
-                if (it != clientmap.end()) {
-                    LOG_INFO << "用户当前在线" << reciver ;
-                    target_conn = it->second;
-                } else {
-                    LOG_INFO << "用户当前不在线"  ;
-                    G.disconnectmsg(reciver, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-                LOG_INFO << "给目标用户发送接收文件消息"  ;
-            }else{
-                LOG_INFO << "目标用户当前不在线"  ;
-            }
+            sendtotarget(reciver, j2);
         }
         if(cmd=="getdownfilelist"){
             json j1;
             j1["cmd"] = "getdownfilelistres";
             std::string account = j["account"];
             std::vector<std::string> grouplist = G.grouplist(account);
-            std::vector<json> data = file.getdownfilelist(account);
+            std::vector<json> data = file.getdownfilelist(account,"0");
             for(int i=0;i<data.size();i++){
                 std::string name=verifycode.getname(data[i]["from"]);
                 std::string ss = "您收到用户";
@@ -532,10 +447,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 data1[i]["data"] = ss;
             }
             data.insert(data.begin(), data1.begin(), data1.end());
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["data"] = data;
             conn->send(j1.dump() + '\n');
         }
@@ -544,19 +456,16 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j1["cmd"] = "getchatdownfilelist";
             std::string account=j["account"];
             std::vector<std::string> grouplist = G.grouplist(account);
-            std::vector<json> data = file.getchatdownfilelist(account);
+            std::vector<json> data = file.getdownfilelist(account,"1");
             std::vector<json> data1=file.getchatgroupdownfilelist(grouplist);
             data.insert(data.begin(), data1.begin(), data1.end());
             for (int i = 0; i < data.size();i++){
                 std::string ss = "您收到" + data[i]["from"].get<std::string>();
                 ss += "发来的文件:" + data[i]["filename"].get<std::string>();
                 ss += "文件ID:" + data[i]["ID"].get<std::string>();
-                data[i]["data"] == ss;
+                data[i]["data"] = ss;
             }
-                std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["data"] = data;
             conn->send(j1.dump() + '\n');
         }
@@ -587,19 +496,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 G.grouptargetmember(groupname1, from);
             for (int i = 0; i < res.size(); i++) {
                 std::string target = res[i];
-                TcpConnectionPtr target_conn;
-                {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it = clientmap.find(target);
-                    if (it != clientmap.end()) {
-                        target_conn = it->second;
-                    } else {
-                        G.disconnectmsg(target, j2);
-                    }
-                }
-                if (target_conn) {
-                    target_conn->send(j2.dump() + '\n');
-                }
+                sendtotarget(target, j2);
             }
         }
         if (cmd == "destory") {
@@ -615,10 +512,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "\n密码正确，成功注销!";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "addfriend") {
@@ -637,27 +531,11 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 j2["target"] = from;
                 std::string t = get_current_time();
                 j2["time"] = t;
-                TcpConnectionPtr target_conn;
-                {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it = clientmap.find(to);
-                    if (it != clientmap.end()) {
-                        target_conn = it->second;
-                    } else {
-                        G.disconnectmsg(to, j2);
-                    }
-                }
-                if (target_conn) {
-                    target_conn->send(j2.dump() + '\n');
-                }
-
+                sendtotarget(to, j2);
             } else {
                 j1["data"] = "要添加的好友账号不存在";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
             LOG_INFO << "目标用户 =" << to  ;
         }
@@ -668,25 +546,12 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "delmemberres";
             j1["data"] = "移出群成员成功!";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
             json j2;
             j2["cmd"] = "deledgroupmember";
             j2["groupname"] = groupname;
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(account);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                    target_conn->send(j2.dump() + '\n');
-                } else {
-                    G.disconnectmsg(account, j2);
-                }
-            }
+            sendtotarget(account, j2);
         }
         if (cmd == "applyjoingroup") {
             std::string groupname = j["groupname"];
@@ -706,28 +571,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["time"] = t;
             for (auto i = 0; i < res.size(); i++) {
                 std::string target = res[i];
-                TcpConnectionPtr target_conn;
-                {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it = clientmap.find(target);
-                    if (it != clientmap.end()) {
-                        target_conn = it->second;
-                        LOG_INFO << "对方在线"  ;
-                    } else {
-                        LOG_INFO << "对方不在线"  ;
-                        G.disconnectmsg(target, j2);
-                    }
-                }
-                if (target_conn) {
-                    target_conn->send(j2.dump() + '\n');
-                    LOG_INFO << "已经给群主发送加群申请"  ;
-                }
+                sendtotarget(target, j2);
             }
-
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "getgrouphistory") {
@@ -744,10 +590,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"]="getgroupnamehistoryres";
             j1["data"] = hh;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="is_owner"){
@@ -756,27 +599,21 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string groupname=j["groupname"];
             bool b=G.is_owner(account,groupname);
             j1["cmd"] = "is_owneres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             if(b){
                 j1["code"] = "1";
             }else{
-                j1["code"] == "2";
+                j1["code"] = "2";
             }
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "uploadcheck") {
             std::string account = j["account"];
             json res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
-            std::vector<filestatusserver> ups = file.getfriendupinglist(account);
+            getrequest_id(j, res);
+            std::vector<filestatusserver> ups = file.getlist(account,"0","uping",false);
             std::vector<filestatusserver> ups1 =
-                file.getgroupupinglist(account);
+                file.getlist(account,"0","uping",true);
             std::vector<json> hh;
             for(auto t:ups){
                 json j2;
@@ -802,13 +639,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if(cmd=="chatuploadcheck"){
             std::string account=j["account"];
             json res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
-            std::vector<filestatusserver> ups = file.getchatfriendupinglist(account);
+            getrequest_id(j, res);
+            std::vector<filestatusserver> ups = file.getlist(account,"1","uping",false);
             std::vector<filestatusserver> ups1 =
-                file.getchatgroupupinglist(account);
+                file.getlist(account,"1","uping",true);
             std::vector<json> hh;
             for (auto t : ups) {
                 json j2;
@@ -834,13 +668,10 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
         if(cmd=="chatdownloadcheck"){
             std::string account = j["account"];
             json res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
-            std::vector<filestatusserver> downs = file.getchatfrienddowninglist(account);
+            getrequest_id(j, res);
+            std::vector<filestatusserver> downs = file.getlist(account,"1","downing",false);
             std::vector<filestatusserver> downs1 =
-                file.getchatgroupdowninglist(account);
+                file.getlist(account,"1","downing",true);
             std::vector<json> hh;
             for (auto t : downs) {
                 json j2;
@@ -874,26 +705,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string name = verifycode.getname(account);
             j2["data"] =
                 name + "已经同意你的好友申请" + "\n" + "请继续菜单输入:";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(friendaccount);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                    LOG_INFO << "pppp当前在线"  ;
-                } else {
-                    LOG_INFO << "用户当前不在线"  ;
-                    G.disconnectmsg(friendaccount, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-            }
+            sendtotarget(friendaccount, j2);
         }
         if (cmd == "refusefriend") {
             std::string account = j["account"];
@@ -904,25 +718,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j1["cmd"] = "refuseres";
             j2["cmd"] = "refusedres";
             j1["data"] = "已经拒绝对方的好友申请";
-            j2["data"] =
-                name + "拒绝了你的好友申请" + "\n" + "请继续菜单输入:";
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(friendaccount);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                } else {
-                    G.disconnectmsg(friendaccount, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-            }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            j2["data"] =name + "拒绝了你的好友申请" + "\n" + "请继续菜单输入:";
+            sendtotarget(friendaccount, j2);
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="groupsendfile"){
@@ -948,10 +746,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 res["ID"] = fileid;
                 res["data"] = "已发送上传文件请求给服务端";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                res["request_id"] = request_id;
-            }
+            getrequest_id(j, res);
             conn->send(res.dump() + '\n');
         }
         if (cmd == "friendlist") {
@@ -970,10 +765,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "friendlistres";
             j1["data"] = list;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
 
@@ -996,10 +788,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
 
                 j1["data"] = list;
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
             
         }
@@ -1014,10 +803,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "2";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "is_existsgroup") {
@@ -1030,10 +816,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "2";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "is_manager") {
@@ -1047,10 +830,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "2";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "addmanager") {
@@ -1060,10 +840,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "addmanagerres";
             j1["data"] = "添加管理员成功!";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "delmanager") {
@@ -1073,10 +850,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "delmanagerres";
             j1["data"] = "删除管理员成功!";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "grouplist") {
@@ -1085,10 +859,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "grouplistres";
             j1["data"] = res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="ownergrouplist"){
@@ -1102,10 +873,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "ownergrouplistres";
             j1["data"] = list;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
 
@@ -1125,10 +893,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "blocklistres";
             j1["data"] = list;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "onlinelist") {
@@ -1146,10 +911,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "onlinelistres";
             j1["data"] = list;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "is_friend") {
@@ -1165,10 +927,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["code"] = "0";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if(cmd=="getfriendchathistory"){
@@ -1187,10 +946,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 hh.push_back(j2);
             }
             j1["data"] = hh;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "friendchat") {
@@ -1206,17 +962,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                 std::string name1 = verifycode.getname(account);
                 j2["fromname"] = name1;
                 std::string name2 = verifycode.getname(target);
-                TcpConnectionPtr target_conn;
-                {
-                    std::lock_guard<std::mutex> lock(g_mutex);
-                    auto it = clientmap.find(target);
-                    if (it != clientmap.end()) {
-                        target_conn = it->second;
-                        target_conn->send(j2.dump() + '\n');
-                    } else {
-                        G.disconnectmsg(target, j2);
-                    }
-                }
+                sendtotarget(target, j2);
                 F.historyfriendchat(account, target, name1, name2,
                                     msg + "   [" + t + "]");
         }
@@ -1232,35 +978,19 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "拉黑失败，该用户不存在";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
             json j2;
             j2["cmd"] = "blockedmes";
             j2["friendname"] = verifycode.getname(account);
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(target);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                    target_conn->send(j2.dump() + '\n');
-                } else {
-                    G.disconnectmsg(target, j2);
-                }
-            }
+            sendtotarget(target, j2);
         }
         if (cmd == "is_block") {
             json j1;
             std::string account = j["account"];
             std::string friendaccount = j["friendaccount"];
             int res = F.isblock(account, friendaccount);
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             if (res == 1) {
                 j1["data"] = "1";
             } else if (res == 2) {
@@ -1275,10 +1005,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             int res = verifycode.isexists(account);
             json j1;
             j1["cmd"] = "isexistsres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             if (res == 1) {
                 j1["code"] = "1";
             }else{
@@ -1293,26 +1020,13 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             F.addfriend(account, target);
             json j1;
             j1["cmd"] = "cancleres";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["data"] = "已成功取消拉黑";
             conn->send(j1.dump() + '\n');
             json j2;
             j2["cmd"] = "cancelblockedmes";
             j2["friendname"] = verifycode.getname(account);
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(target);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                    target_conn->send(j2.dump() + '\n');
-                } else {
-                    G.disconnectmsg(target, j2);
-                }
-            }
+            sendtotarget(target, j2);
         }
         if(cmd=="changeowner"){
             std::string groupname=j["groupname"];
@@ -1320,10 +1034,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             std::string friendaccount = j["friendaccount"];
             G.changeowner(groupname,owner,friendaccount);
             json j1;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             j1["data"] = "转移群聊成功!";
             conn->send(j1.dump() + '\n');
         }
@@ -1340,10 +1051,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "已删除目标用户好友";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "creategroup") {
@@ -1353,10 +1061,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             json j1;
             j1["cmd"] = "creategroupres";
             j1["data"] = "群聊已成功创建:" + res;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "exitgroup") {
@@ -1372,10 +1077,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else {
                 j1["data"] = "成功退出该群聊";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "agreejoingroup") {
@@ -1389,24 +1091,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["data"] =
                 "您已经通过群聊[" + groupname + "]管理员验证，成功进入该群聊";
             j2["groupname"] = groupname;
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(account);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                } else {
-                    G.disconnectmsg(account, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-            }
+            sendtotarget(account, j2);
         }
         if (cmd == "refusejoingroup") {
             std::string account = j["account"];
@@ -1417,24 +1104,9 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             j2["cmd"] = "refusedgroupres";
             j1["data"] = "已拒绝对方的入群邀请";
             j2["data"] = "群聊管理员拒绝了你的邀请入群申请";
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
-            TcpConnectionPtr target_conn;
-            {
-                std::lock_guard<std::mutex> lock(g_mutex);
-                auto it = clientmap.find(account);
-                if (it != clientmap.end()) {
-                    target_conn = it->second;
-                } else {
-                    G.disconnectmsg(account, j2);
-                }
-            }
-            if (target_conn) {
-                target_conn->send(j2.dump() + '\n');
-            }
+            sendtotarget(account, j2);
         }
         if (cmd == "delgroup") {
             std::string account = j["account"];
@@ -1451,10 +1123,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
             } else if (res == 3) {
                 j1["data"] = "密码错误，解散群聊失败";
             }
-            std::string request_id = j.value("request_id", "");
-            if (!request_id.empty()) {
-                j1["request_id"] = request_id;
-            }
+            getrequest_id(j, j1);
             conn->send(j1.dump() + '\n');
         }
         if (cmd == "groupchat") {
@@ -1476,19 +1145,7 @@ void ChatServer::messagecallback(const TcpConnectionPtr& conn,
                     G.grouptargetmember(groupname, account);
                 for (int i = 0; i < res.size(); i++) {
                     std::string target = res[i];
-                    TcpConnectionPtr target_conn;
-                    {
-                        std::lock_guard<std::mutex> lock(g_mutex);
-                        auto it = clientmap.find(target);
-                        if (it != clientmap.end()) {
-                            target_conn = it->second;
-                        } else {
-                            G.disconnectmsg(target, j1);
-                        }
-                    }
-                    if (target_conn) {
-                        target_conn->send(j1.dump() + '\n');
-                    }
+                    sendtotarget(target, j1);
             }
         }
     }
